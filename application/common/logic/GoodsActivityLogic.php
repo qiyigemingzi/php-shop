@@ -55,8 +55,8 @@ class GoodsActivityLogic extends Model {
             $goods_id = M('goods_activity')->where(array('act_id'=>$goods_activity_id))->getField('goods_ids');
         }
         $condition = array(
-            'o.order_prom_type' => 4,
-            'o.order_prom_id' => $goods_activity_id,
+            'o.prom_type' => 4,
+            'o.prom_id' => $goods_activity_id,
             'g.goods_id' => $goods_id,
             'o.order_status' => 0,
             'pay_status' => array(array('eq', 1), array('eq', 2), 'or')

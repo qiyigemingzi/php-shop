@@ -23,15 +23,16 @@
             <tbody>
             <tr>
                 <td><address><strong>{$shop.store_name}</strong><br/>{$shop.address}</address>
-                    <b>电话:</b> {$shop.phone}<br/>
-                    <b>E-Mail:</b> {$shop.smtp_user}<br/>
-                    <b>网址:</b> <a href="{$shop.tpshop_http}">{$shop.tpshop_http}</a>
+                    <b>电话：</b> {$shop.phone}<br/>
+                    <b>E-Mail：</b> {$shop.smtp_user}<br/>
+                    <b>网址：</b> <a href="{$shop.tpshop_http}">{$shop.tpshop_http}</a>
                 </td>
                 <td style="width: 50%;">
-                	<b>下单日期:</b> {$order.add_time|date='Y-m-d',###}<br />
-                    <b>订单号:</b> {$order.order_sn}<br />                    
-					<b>支付方式:</b> {$order.pay_name|default="其他"}<br/>                    
-                    <b>配送方式:</b> {$order.shipping_name}<br/>
+                	<b>下单日期：</b> {$order.add_time|date='Y-m-d',###}<br />
+                    <b>订单号：</b> {$order.order_sn}<br />                    
+					<b>支付方式：</b> {$order.pay_name|default="其他"}<br/>                    
+                    <b>配送方式：</b> {$order.shipping_name}<br/>
+                    <b>用户备注：</b> {$order.user_note}<br/>
                 </td>
             </tr>
             </tbody>
@@ -56,6 +57,7 @@
             <thead>
             <tr>
                 <td><b>商品名称</b></td>
+                <td><b>状态</b></td>
                 <td><b>规格属性</b></td>
                 <td><b>数量</b></td>
                 <td><b>单价</b></td>
@@ -63,9 +65,15 @@
             </tr>
             </thead>
             <tbody>
-            <volist name="orderGoods" id="good">
+            <volist name="$order.orderGoods" id="good">
                 <tr>
                     <td>{$good.goods_name}</td>
+                    <td>
+                        <if condition="$good.is_send eq 0">未发货</if>
+                        <if condition="$good.is_send eq 1">已发货</if>
+                        <if condition="$good.is_send eq 2">已退货</if>
+                        <if condition="$good.is_send eq 3">已换货</if>
+                    </td>
                     <td>{$good.spec_key_name}</td>
                     <td>{$good.goods_num}</td>
                     <td>{$good.goods_price}</td>

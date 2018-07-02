@@ -1,6 +1,7 @@
 <link rel="stylesheet" type="text/css" href="__STATIC__/css/base.css"/>
+<link rel="shortcut icon" type="image/x-icon" href="{$tpshop_config.shop_info_store_ico|default='/public/static/images/logo/storeico_default.png'}" media="screen"/>
 <div class="tpshop-tm-hander">
-	<div class="top-hander clearfix">
+	<div class="top-hander">
 		<div class="[w] pr clearfix">
 			<div class="fl">
 			    <if condition="strtolower(ACTION_NAME) neq 'goodsinfo' ">
@@ -21,7 +22,9 @@
                               </ul>
                           </span>
                       </div>
-                      <script src="__STATIC__/js/location.js"></script>
+					<script src="__PUBLIC__/js/locationJson.js"></script>
+				  	<script src="__STATIC__/js/location.js"></script>
+					<script>doInitRegion();</script>
                 </if>
 				<div class="fl nologin">
 					<a class="red" href="{:U('Home/user/login')}">登录</a>
@@ -47,26 +50,26 @@
 						<i class="share-a_a1"></i>
 					</div>
 					<ul class="conta-hv-nav clearfix">
-						<li>
-							<a href="#">优惠活动</a>
-						</li>
-						<li>
-							<a href="#">预售活动</a>
-						</li>
-						<li>
-							<a href="#">拍卖活动</a>
-						</li>
-						<li>
-							<a href="#">兑换中心</a>
-						</li>
+                        <li>
+                            <a href="{:U('Home/Activity/promoteList')}">优惠活动</a>
+                        </li>
+                        <li>
+                            <a href="{:U('Home/Activity/pre_sell_list')}">预售活动</a>
+                        </li>
+                        <!--<li>
+                            <a href="{:U('Home/Goods/integralMall')}">拍卖活动</a>
+                        </li>-->
+                        <li>
+                            <a href="{:U('Home/Goods/integralMall')}">兑换中心</a>
+                        </li>
 					</ul>
 				</li>
 			</ul>
 		</div>
 	</div>
 	<div class="nav-middan-z [w] clearfix">
-		<a class="ecsc-logo" href="#">
-            <img src="{$tpshop_config['shop_info_store_logo']}" style="width: 159px;height: 58px;">
+		<a class="ecsc-logo" href="{:U('Home/index/index')}">
+            <img src="{$tpshop_config.shop_info_store_logo|default='/public/static/images/logo/pc_home_logo_default.png'}" style="width: 159px;height: 58px;">
         </a>
 		<div class="ecsc-search">
 			<form id="searchForm" name="" method="get" action="{:U('Home/Goods/search')}" class="ecsc-search-form">
@@ -187,11 +190,15 @@
 						</if>
 						<div class="cata-nav-layer">
 							<div class="cata-nav-left">
-								<div class="cata-layer-title">
+								 <!-- 如果没有热门分类就隐藏 --> 
+								 <if condition="count($v.hot_cate) lt 1">
+								 </if>
+								<div class="cata-layer-title" <if condition="count($v.hot_cate) eq 0">style="display:none"</if>>
 									<foreach name="v.hot_cate" item="hc">
-									<a class="layer-title-item" href="">{$hc.name}<i class="ico ico-arrow-right">></i></a>
+									<a class="layer-title-item" href="{:U('Home/Goods/goodsList',['id'=>$hc.id])}">{$hc.name}<i class="ico ico-arrow-right">></i></a>
 									</foreach>
 								</div>
+							 
 								<div class="subitems">
 									<foreach name="v['tmenu']" key="k2" item='v2'>
 									<if condition="$v2[parent_id] eq $v['id']">
@@ -237,7 +244,7 @@
 		</div>
 		<ul class="navitems clearfix" id="navitems">
 			<li <if condition=" CONTROLLER_NAME eq 'Index' ">class="selected"</if>><a href="{:U('Index/index')}">首页</a></li>
-			<tpshop sql="SELECT * FROM `__PREFIX__navigation` where is_show = 1 ORDER BY `sort` DESC" key="k" item='v'>
+			<tpshop sql="SELECT * FROM `__PREFIX__navigation` where is_show = 1 and position = 'top' ORDER BY `sort` DESC" key="k" item='v'>
 			<li <?php if($_SERVER['REQUEST_URI']==str_replace('&amp;','&',$v[url])){ echo "class='selected'";}?>>
        			<a href="{$v[url]}" <if condition="$v[is_new] eq 1">target="_blank" </if> >{$v[name]}</a>
        		</li>

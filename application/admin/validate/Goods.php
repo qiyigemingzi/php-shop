@@ -17,6 +17,7 @@ class Goods extends Validate
         'give_integral'         =>'regex:^\d+$',
         'is_virtual'           =>'checkVirtualIndate',
         'exchange_integral'     =>'checkExchangeIntegral',
+        'is_free_shipping'     =>'require|checkShipping'
     ];
     //错误信息
     protected $message  = [
@@ -38,6 +39,7 @@ class Goods extends Validate
         'give_integral.regex'                           => '赠送积分必须是正整数',
         'exchange_integral.checkExchangeIntegral'       => '积分抵扣金额不能超过商品总额',
         'is_virtual.checkVirtualIndate'                 => '虚拟商品有效期不得小于当前时间',
+        'is_free_shipping.require'                      => '请选择商品是否包邮',
     ];
 
 
@@ -119,6 +121,13 @@ class Goods extends Validate
         $virtualIndate = strtotime($data['virtual_indate']);
         if($value==1 && time() > $virtualIndate){
             return false;
+        }else{
+            return true;
+        }
+    }
+    protected function checkShipping($value,$rule,$data){
+        if($value == 0 && empty($data['template_id'])){
+            return '请选择运费模板';
         }else{
             return true;
         }

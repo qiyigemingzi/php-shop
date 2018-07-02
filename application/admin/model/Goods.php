@@ -22,14 +22,6 @@ class Goods extends Model {
     {
         return $this->hasMany('SpecGoodsPrice','goods_id','goods_id');
     }
-    public function getShippingAreaIdArrAttr($value,$data)
-    {
-        if($data['shipping_area_ids']){
-            return explode(',', $data['shipping_area_ids']);
-        }else{
-            return [];
-        }
-    }
     /**
      * 后置操作方法
      * 自定义的一个函数 用于数据保存后做的相应处理操作, 使用时手动调用
@@ -52,8 +44,7 @@ class Goods extends Model {
              // 删除图片
              foreach($goodsImagesArr as $key => $val)
              {
-                 if(!in_array($val, $goods_images))
-                     M('GoodsImages')->where("img_id = {$key}")->delete(); // 
+                 if(!in_array($val, $goods_images)) M('GoodsImages')->where("img_id = {$key}")->delete();
              }
              // 添加图片
              foreach($goods_images as $key => $val)
@@ -61,11 +52,8 @@ class Goods extends Model {
                  if($val == null)  continue;                                  
                  if(!in_array($val, $goodsImagesArr))
                  {                 
-                        $data = array(
-                            'goods_id' => $goods_id,
-                            'image_url' => $val,
-                        );
-                        M("GoodsImages")->insert($data); // 实例化User对象                     
+                      $data = array('goods_id' => $goods_id,'image_url' => $val);
+                      M("GoodsImages")->insert($data); // 实例化User对象                     
                  }
              }
          }
@@ -83,9 +71,10 @@ class Goods extends Model {
          }
          delFile(UPLOAD_PATH."goods/thumb/$goods_id"); // 删除缩略图
          
-         // 商品规格价钱处理        
-//         M("SpecGoodsPrice")->where('goods_id = '.$goods_id)->delete(); // 删除原有的价格规格对象
+         // 商品规格价钱处理
         $goods_item = I('item/a');
+        $eidt_goods_id = I('goods_id',0);
+        $specStock = Db::name('spec_goods_price')->where('goods_id = '.$goods_id)->getField('key,store_count');
         if ($goods_item) {
             $keyArr = '';//规格key数组
             foreach ($goods_item as $k => $v) {
@@ -95,7 +84,7 @@ class Goods extends Model {
                 $store_count = $v['store_count'] = trim($v['store_count']); // 记录商品总库存
                 $v['sku'] = trim($v['sku']);
                 $data = ['goods_id' => $goods_id, 'key' => $k, 'key_name' => $v['key_name'], 'price' => $v['price'], 'store_count' => $v['store_count'], 'sku' => $v['sku']];
-                $specGoodsPrice = Db::name('spec_goods_price')->where(['goods_id' => $data['goods_id'], 'key' => $data['key']])->find();
+                
                 if ($item_img) {
                     $spec_key_arr = explode('_', $k);
                     foreach ($item_img as $key => $val) {
@@ -105,12 +94,20 @@ class Goods extends Model {
                         }
                     }
                 }
-                if ($specGoodsPrice) {
+                
+                if (!empty($specStock[$k])) {
                     Db::name('spec_goods_price')->where(['goods_id' => $goods_id, 'key' => $k])->update($data);
                 } else {
                     Db::name('spec_goods_price')->insert($data);
                 }
-                $dataList[] = $data;
+                
+                if(!empty($specStock[$k]) && $v['store_count'] != $specStock[$k] && $eidt_goods_id>0){
+                	$stock = $v['store_count'] - $specStock[$k];
+                }else{
+                	$stock = $v['store_count'];
+                }
+                //记录库存日志
+                update_stock_log(session('admin_id'),$stock,array('goods_id'=>$goods_id,'goods_name'=>I('goods_name'),'spec_key_name'=>$v['key_name']));               
                 // 修改商品后购物车的商品价格也修改一下
                 M('cart')->where("goods_id = $goods_id and spec_key = '$k'")->save(array(
                     'market_price' => $v['price'], //市场价
@@ -121,8 +118,6 @@ class Goods extends Model {
             if($keyArr){
                 Db::name('spec_goods_price')->where('goods_id',$goods_id)->whereNotIn('key',$keyArr)->delete();
             }
-//             M("SpecGoodsPrice")->insertAll($dataList);
-
         }
          
          // 商品规格图片处理

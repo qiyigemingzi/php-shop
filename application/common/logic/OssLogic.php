@@ -54,7 +54,7 @@ class OssLogic
     
     /**
      * 获取错误信息，一旦其他接口返回false时，可调用此接口查看具体错误信息
-     * @return type
+     * @return string
      */
     public function getError()
     {

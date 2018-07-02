@@ -7,7 +7,7 @@
  * ----------------------------------------------------------------------------
  * 这不是一个自由软件！您只能在不用于商业目的的前提下对程序代码进行修改和使用 .
  * 不允许对程序代码以任何形式任何目的的再发布。
- * 采用TP5助手函数可实现单字母函数M D U等,也可db::name方式,可双向兼容
+ * 采用最新Thinkphp5助手函数特性实现单字母函数M D U等简写方式
  * ============================================================================
  * Author: lhb
  * Date: 2017-05-15
@@ -15,6 +15,7 @@
 
 namespace app\common\logic;
 
+use app\common\model\Coupon;
 use think\Model;
 use think\Db;
 
@@ -81,12 +82,13 @@ class ActivityLogic extends Model
 
         return $groups;
     }
-    
+
     /**
      * 优惠券列表
      * @param type $atype 排序类型 1:默认id排序，2:即将过期，3:面值最大
      * @param $user_id  用户ID
-     * @param type $p 第几页
+     * @param int $p 第几页
+     * @return array
      */
     public function getCouponList($atype, $user_id, $p = 1)
     {
@@ -126,8 +128,9 @@ class ActivityLogic extends Model
      * 获取优惠券查询对象
      * @param int $queryType 0:count 1:select
      * @param type $user_id
-     * @param type $type 查询类型 0:未使用，1:已使用，2:已过期
+     * @param int $type 查询类型 0:未使用，1:已使用，2:已过期
      * @param type $orderBy 排序类型，use_end_time、send_time,默认send_time
+     * @param int $order_money
      * @return Query
      */
     public function getCouponQuery($queryType, $user_id, $type = 0, $orderBy = null , $order_money = 0)
@@ -139,16 +142,16 @@ class ActivityLogic extends Model
             // 未使用
             $where['l.order_id'] = 0;
             $where['c.use_end_time'] = array('gt', time());
-            $where['c.status'] = 0;
+            $where['l.status'] = 0;
         } elseif ($type == 1) {
             //已使用
             $where['l.order_id'] = array('gt', 0);
             $where['l.use_time'] = array('gt', 0);
-            $where['c.status'] = 1;
+            $where['l.status'] = 1;
         } elseif ($type == 2) {
             //已过期
             $where['c.use_end_time'] = array('lt', time());
-            $where['l.status'] = array('neq', 1);
+            $where['l.status|c.status'] = array('neq', 1);
         }
 
         if ($orderBy == 'use_end_time') {
@@ -173,18 +176,30 @@ class ActivityLogic extends Model
         
         return $query;
     }
-    
+
     /**
      * 获取优惠券数目
+     * @param $user_id
+     * @param int $type
+     * @param null $orderBy
+     * @param int $order_money
+     * @return mixed
      */
     public function getUserCouponNum($user_id, $type = 0, $orderBy = null,$order_money = 0)
     {
         $query = $this->getCouponQuery(0, $user_id, $type, $orderBy,$order_money);
         return $query->count();
     }
-    
+
     /**
      * 获取用户优惠券列表
+     * @param $firstRow
+     * @param $listRows
+     * @param $user_id
+     * @param int $type
+     * @param null $orderBy
+     * @param int $order_money
+     * @return mixed
      */
     public function getUserCouponList($firstRow, $listRows, $user_id, $type = 0, $orderBy = null,$order_money = 0)
     {
@@ -205,7 +220,7 @@ class ActivityLogic extends Model
         $cur_time = time();
         $coupon_where = ['type'=>2, 'status'=>1, 'send_start_time'=>['elt',time()], 'send_end_time'=>['egt',time()]];
         $query = M('coupon')->alias('c')
-            ->field('c.name,c.id,c.money,c.condition,c.createnum,c.send_num,c.send_end_time-'.$cur_time.' as spacing_time')
+            ->field('c.use_type,c.name,c.id,c.money,c.condition,c.createnum,c.send_num,c.send_end_time-'.$cur_time.' as spacing_time')
             ->where('((createnum-send_num>0 AND createnum>0) OR (createnum=0))')    //领完的也不要显示了
             ->where($coupon_where)->page($p, 15)
             ->order('spacing_time', 'asc');
@@ -233,8 +248,10 @@ class ActivityLogic extends Model
         }
 
         $store_logo = tpCache('shop_info.store_logo') ?: '';
+        $Coupon = new Coupon();
         foreach ($coupon_list as $k => $coupon) {
             /* 是否已获取 */
+            $coupon_list[$k]['use_type_title'] = $Coupon->getUseTypeTitleAttr(null, $coupon_list[$k]);
             $coupon_list[$k]['isget'] = 0;
             if (in_array($coupon['id'], $user_coupon)) {
                 $coupon_list[$k]['isget'] = 1;
@@ -242,11 +259,6 @@ class ActivityLogic extends Model
 
             /* 构造封面和标题 */
             $coupon_list[$k]['image'] = $store_logo;
-            if ($cat_id) {
-                $coupon_list[$k]['title'] = '可购买'.$types[$cat_id].'类等商品';
-            } else {
-                $coupon_list[$k]['title'] = '可用于全平台的商品';
-            }
         }
         
         return  $coupon_list;
@@ -358,14 +370,18 @@ class ActivityLogic extends Model
         $prom = $goodsPromLogic->getPromModel()->getData();
         if (in_array($goods['prom_type'], [1, 2])) {
             $prom['virtual_num'] = $prom['virtual_num'] + $prom['buy_num'];//参与人数
-            $goods['prom_is_able'] = 1; 
+            $goods['prom_is_able'] = 1;
             $activity = [
                 'prom_type' => $goods['prom_type'],
                 'prom_price' => $prom['price'],
-                'prom_start_time' => $prom['start_time'],
-                'prom_end_time' => $prom['end_time'],
                 'virtual_num' => $prom['virtual_num']
             ];
+            if($prom['start_time']){
+                $activity['prom_start_time'] = $prom['start_time'];
+            }
+            if($prom['end_time']) {
+                $activity['prom_end_time'] = $prom['end_time'];
+            }
             return $activity;
         }
         
@@ -390,10 +406,14 @@ class ActivityLogic extends Model
                 $goods['prom_is_able'] = 1;
                 $activity = [
                     'prom_type' => $goods['prom_type'],
-                    'prom_start_time' => $prom['start_time'],
-                    'prom_end_time' => $prom['end_time'],
                     'data' => $activityData
                 ];
+                if($prom['start_time']){
+                    $activity['prom_start_time'] = $prom['start_time'];
+                }
+                if($prom['end_time']) {
+                    $activity['prom_end_time'] = $prom['end_time'];
+                }
             }
         }
         

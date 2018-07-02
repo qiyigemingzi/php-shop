@@ -91,7 +91,7 @@ function user_login_or_no()
 	} else {
 		$('.nologin').remove();
 		$('.islogin').show();
-		$('.userinfo').html(decodeURIComponent(uname).substring(0,5));
+		$('.userinfo').html(decodeURIComponent(uname).substring(0,11));
 	}
 }
 

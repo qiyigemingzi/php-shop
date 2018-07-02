@@ -309,6 +309,32 @@ a:hover.btn-darkgray, a:hover.ncbtn-darkgray { background-color: #434A54; }
 .pagination li span.currentpage { color: #FFF; font-weight: bold; background-color: #ED5564; border-color: #DB4453; position: relative; z-index: 2; }
 .pagination li:first-child { margin-right: 8px; }
 .pagination li:last-child { margin-left: 8px; }
+
+.pagination-wrap-h a{
+    color: inherit;
+}
+.pagination-wrap-h .pagination{
+    text-align: right;
+    height: 26px;
+}
+.pagination-wrap-h .pagination>li{
+    display: inline-block;
+    vertical-align: top;
+    min-width: 24px;
+    height: 24px;
+    line-height: 24px;
+    border:1px solid #ddd;
+    margin-right: 10px;
+    text-align: center;
+}
+.pagination-wrap-h .pagination>.next,.pagination-wrap-h .pagination>.previous{
+    padding: 0 8px;
+}
+.pagination-wrap-h .pagination>.active{
+    background-color: #3baeda;
+    border-color: #3baeda;
+    color: #fff;
+}
 /*弹窗登录*/
 .quick-login { background: #FFF; overflow: hidden; width: 298px; padding: 0 30px; }
 .quick-login dl { width: 100%; margin: 0 auto; overflow: hidden; }

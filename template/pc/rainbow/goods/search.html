@@ -329,7 +329,7 @@
 			type: "GET",
 			url: "/index.php?m=Home&c=Index&a=ajax_favorite&i=7&p="+favorite_page,//+tab,
 			success: function (data) {
-				if(data == ''){
+				if(data == ''&& favorite_page > 1){
 					favorite_page = 0;
 					favourite();
 				}else{

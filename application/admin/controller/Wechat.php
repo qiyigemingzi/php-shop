@@ -5,120 +5,120 @@
  * 版权所有 2015-2027 深圳搜豹网络科技有限公司，并保留所有权利。
  * 网站地址: http://www.tp-shop.cn
  * ----------------------------------------------------------------------------
- * 这不是一个自由软件！您只能在不用于商业目的的前提下对程序代码进行修改和使用 .
- * 不允许对程序代码以任何形式任何目的的再发布。
- * 采用TP5助手函数可实现单字母函数M D U等,也可db::name方式,可双向兼容
+ * 商业用途务必到官方购买正版授权, 使用盗版将严厉追究您的法律责任。
  * ============================================================================
- * Author: 当燃      
- * Date: 2015-09-09
+ * Author: lhb
  */
 
 namespace app\admin\controller;
 
 use think\Db;
 use think\Page;
+use think\AjaxPage;
+use app\common\model\WxNews;
+use app\common\model\WxReply;
+use app\common\model\WxTplMsg;
+use app\common\model\WxMaterial;
+use app\common\logic\wechat\WechatUtil;
+use app\common\logic\WechatLogic;
 
-class Wechat extends Base 
+class Wechat extends Base
 {
-    public function index(){
-        //$wechat_list = M('wx_user')->select();
-        //$this->assign('lists',$wechat_list);
-        //return $this->fetch();
-        $wx_user = M('wx_user')->find();
+    private $wx_user;
+
+    function __construct()
+    {
+        parent::__construct();
+        $this->wx_user = Db::name('wx_user')->find();
+    }
+
+    public function index()
+    {
+        $wx_user = $this->wx_user;
         header("Location:".U('Wechat/setting',['id'=>$wx_user['id']]));
-        exit;            
+        exit;
     }
 
-    public function add(){
-        $exist = M('wx_user')->select();
-        if($exist[0]['id'] > 0){
-            $this->error('只能添加一个公众号噢');
-            exit;
-        }
-        if(IS_POST){
-            $data = I('post.');
-            $data['create_time'] = time();
-            $data['token'] = get_rand_str(6,1,0);
-            $row = DB::name('wx_user')->insertGetId($data);
-            if($row){
-                $this->success('添加成功',U('Admin/Wechat/setting',array('id'=>$row)));
-            }else{
-                $this->error('操作失败');
-            }
-            exit;
-        }
-        return $this->fetch();
-    }
-
-    public function del(){
-        $id = I('get.id');
-        $row = M('wx_user')->where(array('id'=>$id))->delete();
-        if($row){
-            $this->success('操作成功');
-        }else{
-            $this->error('操作失败');
-
-        }
-    }
     public function setting()
     {
         $id = I('get.id');
-        $wechat = M('wx_user')->where(array('id'=>$id))->find();
-        if(empty($wechat)){
-            return $this->error('请先在公众号配置添加公众号，才能进行微信菜单管理', U('Admin/Wechat/index'));
-        }
-        if(IS_POST){
-            $post_data = input('post.');
-            $post_data['web_expires'] = 0;
-            $row = M('wx_user')->where(array('id'=>$id))->update($post_data);
-            $row && exit($this->success("修改成功"));
-            exit($this->error("修改失败"));
-        }
-        //$apiurl = 'http://'.$_SERVER['HTTP_HOST'].'/index.php?m=api&c=Wechat&a=handleMessage';
-        $apiurl = 'http://'.$_SERVER['HTTP_HOST'].'/index.php?m=Home&c=Weixin&a=index';
+        if (!empty($id)) {
+            $wechat = Db::name('wx_user')->where(array('id' => $id))->find();
+            if (!$wechat) {
+                $this->error("公众号不存在");
+                exit;
+            }
+            if (IS_POST) {
+                $post_data = input('post.');
+                $post_data['web_expires'] = 0;
+                $row = Db::name('wx_user')->where(array('id' => $id))->update($post_data);
+                $row && exit($this->success("修改成功"));
+                exit($this->error("修改失败"));
+            }
+            $apiurl = 'http://' . $_SERVER['HTTP_HOST'] . '/index.php?m=Home&c=Weixin&a=index';
 
-        $this->assign('wechat',$wechat);
-        $this->assign('apiurl',$apiurl);
-
+            $this->assign('wechat', $wechat);
+            $this->assign('apiurl', $apiurl);
+        } else {
+            //不存在ID则添加
+            $exist = $this->wx_user;
+            if ($exist[0]['id'] > 0) {
+                $this->error('只能添加一个公众号噢');
+                exit;
+            }
+            if (IS_POST) {
+                $data = input('post.');
+                $data['token'] = get_rand_str(6, 1, 0);
+                $data['create_time'] = time();
+                $row = Db::name('wx_user')->insertGetId($data);
+                if ($row) {
+                    $this->success('添加成功', U('Admin/Wechat/setting', array('id' => $row)));
+                } else {
+                    $this->error('操作失败');
+                }
+                exit;
+            }
+        }
         return $this->fetch();
     }
-    public function menu(){
 
-        $wechat = M('wx_user')->find();
-        if(empty($wechat)){
+    public function menu()
+    {
+        $wechat = $this->wx_user;
+        if (empty($wechat)) {
             $this->error('请先在公众号配置添加公众号，才能进行微信菜单管理', U('Admin/Wechat/index'));
         }
-        if(IS_POST){
+        if (IS_POST) {
             $post_menu = input('post.menu/a');
             //查询数据库是否存在
-            $menu_list = M('wx_menu')->where(array('token'=>$wechat['token']))->getField('id',true);
-            foreach($post_menu as $k=>$v){
+            $menu_list = Db::name('wx_menu')->where(array('token' => $wechat['token']))->getField('id', true);
+            foreach ($post_menu as $k => $v) {
                 $v['token'] = $wechat['token'];
-               if(in_array($k,$menu_list)){
-                   //更新
-                   M('wx_menu')->where(array('id'=>$k))->save($v);
-               }else{
-                   //插入
-                   M('wx_menu')->where(array('id'=>$k))->add($v);
-               }
+                if (in_array($k, $menu_list)) {
+                    //更新
+                    Db::name('wx_menu')->where(array('id' => $k))->save($v);
+                } else {
+                    //插入
+                    Db::name('wx_menu')->where(array('id' => $k))->add($v);
+                }
             }
-            $this->success('操作成功,进入发布步骤',U('Admin/Wechat/pub_menu'));
+            $this->success('操作成功,进入发布步骤', U('Admin/Wechat/pub_menu'));
             exit;
         }
         //获取最大ID
-        //$max_id = M('wx_menu')->where(array('token'=>$wechat['token']))->field('max(id) as id')->find();
+        //$max_id = Db::name('wx_menu')->where(array('token'=>$wechat['token']))->field('max(id) as id')->find();
         $max_id = DB::query("SHOW TABLE STATUS WHERE NAME = '__PREFIX__wx_menu'");
         $max_id = $max_id[0]['auto_increment'] ? $max_id[0]['auto_increment'] : $max_id[0]['Auto_increment'];
 
         //获取父级菜单
-        $p_menus = M('wx_menu')->where(array('token'=>$wechat['token'],'pid'=>0))->order('id ASC')->select();
-        $p_menus = convert_arr_key($p_menus,'id');
+        $p_menus = Db::name('wx_menu')->where(array('token' => $wechat['token'], 'pid' => 0))->order('id ASC')->select();
+        $p_menus = convert_arr_key($p_menus, 'id');
         //获取二级菜单
-        $c_menus = M('wx_menu')->where(array('token'=>$wechat['token'],'pid'=>array('gt',0)))->order('id ASC')->select();
-        $c_menus = convert_arr_key($c_menus,'id');
-        $this->assign('p_lists',$p_menus);
-        $this->assign('c_lists',$c_menus);
-        $this->assign('max_id',$max_id ? $max_id-1 : 0);
+        $c_menus = Db::name('wx_menu')->where(array('token' => $wechat['token'], 'pid' => array('gt', 0)))->order('id ASC')->select();
+        $c_menus = convert_arr_key($c_menus, 'id');
+        $this->assign('p_lists', $p_menus);
+        $this->assign('c_lists', $c_menus);
+        $this->assign('max_id', $max_id ? $max_id - 1 : 0);
         return $this->fetch();
     }
 
@@ -126,13 +126,14 @@ class Wechat extends Base
     /*
      * 删除菜单
      */
-    public function del_menu(){
+    public function del_menu()
+    {
         $id = I('get.id');
         if(!$id){
             exit('fail');
         }
-        $row = M('wx_menu')->where(array('id'=>$id))->delete();
-        $row && M('wx_menu')->where(array('pid'=>$id))->delete(); //删除子类
+        $row = Db::name('wx_menu')->where(array('id'=>$id))->delete();
+        $row && Db::name('wx_menu')->where(array('pid'=>$id))->delete(); //删除子类
         if($row){
             exit('success');
         }else{
@@ -143,72 +144,60 @@ class Wechat extends Base
     /*
      * 生成微信菜单
      */
-    public function pub_menu(){
-        $menu = array();
-        $menu['button'][] = array(
-            'name'=>'测试',
-            'type'=>'view',
-            'url'=>'http://www.tp-shop.cn'
-        );
-        $menu['button'][] = array(
-            'name'=>'测试',
-            'sub_button'=>array(
-                array(
-                    "type"=> "scancode_waitmsg",
-                    "name"=> "系统拍照发图",
-                    "key"=> "rselfmenu_1_0",
-                   "sub_button"=> array()
-                 )
-            )
-        );
+    public function pub_menu()
+    {
+//        $menu = array();
+//        $menu['button'][] = array(
+//            'name'=>'测试',
+//            'type'=>'view',
+//            'url'=>'http://wwwtp-shhop.cn'
+//        );
+//        $menu['button'][] = array(
+//            'name'=>'测试',
+//            'sub_button'=>array(
+//                array(
+//                    "type"=> "scancode_waitmsg",
+//                    "name"=> "系统拍照发图",
+//                    "key"=> "rselfmenu_1_0",
+//                    "sub_button"=> array()
+//                )
+//            )
+//        );
 
-        //获取菜单
-        $wechat = M('wx_user')->find();
         //获取父级菜单
-        $p_menus = M('wx_menu')->where(array('token'=>$wechat['token'],'pid'=>0))->order('id ASC')->select();
-        $p_menus = convert_arr_key($p_menus,'id');
+        $p_menus = Db::name('wx_menu')->where(array('pid' => 0))->order('id ASC')->select();
+        $p_menus = convert_arr_key($p_menus, 'id');
+        if (!count($p_menus) > 0) {
+            $this->error('没有菜单可发布', U('Wechat/menu'));
+        }
 
-        $post_str = $this->convert_menu($p_menus,$wechat['token']);
-        // http post请求
-        if(!count($p_menus) > 0){
-           $this->error('没有菜单可发布',U('Wechat/menu'));
-            exit;
+        $post = $this->convert_menu($p_menus);
+        $wechatObj = new WechatUtil($this->wx_user);
+        if ($wechatObj->createMenu($post) === false) {
+            $this->error($wechatObj->getError());
         }
-        $access_token = $this->get_access_token($wechat['appid'],$wechat['appsecret']);
-        if(!$access_token){
-            $this->error('获取access_token失败',U('Wechat/menu')); //  http://www.tpshop.com/index.php/Admin/Wechat/menu
-			
-            exit;
-        }
-        $url ="https://api.weixin.qq.com/cgi-bin/menu/create?access_token={$access_token}";
-//        exit($post_str);
-        $return = httpRequest($url,'POST',$post_str);
-        $return = json_decode($return,1);
-        if($return['errcode'] == 0){
-            $this->success('菜单已成功生成',U('Wechat/menu'));
-        }else{
-            echo "错误代码;".$return['errcode'];
-            exit;
-        }
+
+        $this->success('菜单已成功生成', U('Wechat/menu'));
     }
 
     //菜单转换
-    private function convert_menu($p_menus,$token){
-        $key_map = array(
-            'scancode_waitmsg'=>'rselfmenu_0_0',
-            'scancode_push'=>'rselfmenu_0_1',
-            'pic_sysphoto'=>'rselfmenu_1_0',
-            'pic_photo_or_album'=>'rselfmenu_1_1',
-            'pic_weixin'=>'rselfmenu_1_2',
-            'location_select'=>'rselfmenu_2_0',
-        );
+    private function convert_menu($p_menus)
+    {
+//        $key_map = array(
+//            'scancode_waitmsg'=>'rselfmenu_0_0',
+//            'scancode_push'=>'rselfmenu_0_1',
+//            'pic_sysphoto'=>'rselfmenu_1_0',
+//            'pic_photo_or_album'=>'rselfmenu_1_1',
+//            'pic_weixin'=>'rselfmenu_1_2',
+//            'location_select'=>'rselfmenu_2_0',
+//        );
         $new_arr = array();
         $count = 0;
         foreach($p_menus as $k => $v){
             $new_arr[$count]['name'] = $v['name'];
 
             //获取子菜单
-            $c_menus = M('wx_menu')->where(array('token'=>$token,'pid'=>$k))->select();
+            $c_menus = Db::name('wx_menu')->where(['pid'=>$k])->select();
 
             if($c_menus){
                 foreach($c_menus as $kk=>$vv){
@@ -221,8 +210,7 @@ class Wechat extends Base
                     }elseif($add['type'] == 'view'){
                         $add['url'] = $vv['value'];
                     }else{
-                        //$add['key'] = $key_map[$add['type']];
-                        $add['key'] = $vv['value'];       //2016年9月29日01:28:37  QQ  海南大卫照明  367013672  提供
+                        $add['key'] = $vv['value'];
                     }
                     $add['sub_button'] = array();
                     if($add['name']){
@@ -239,344 +227,404 @@ class Wechat extends Base
                     $new_arr[$count]['url'] = $v['value'];
                 }else{
                     //其他事件类型
-                    //$new_arr[$count]['key'] = $key_map[$v['type']];
-                    $new_arr[$count]['key'] = $v['value'];  //2016年9月29日01:40:13
+                    $new_arr[$count]['key'] = $v['value'];
                 }
             }
             $count++;
         }
-       // return json_encode(array('button'=>$new_arr));
-        return json_encode(array('button'=>$new_arr),JSON_UNESCAPED_UNICODE);
+
+        return array('button'=>$new_arr);
     }
 
-    /*
-     * 文本回复
+    /**
+     * 自动回复的菜单
      */
-    public function text(){
-        $wechat = M('wx_user')->find();
-        if(empty($wechat)){
-            $this->error('请先在公众号配置添加公众号，才能进行文本回复管理', U('Admin/Wechat/index'));
-        }
-        $count = M('wx_keyword')->where(array('token'=>$wechat['token'],'type'=>'TEXT'))->count();
-        $pager = new Page($count,10);
-        $sql = "SELECT k.id,k.keyword,t.text FROM __PREFIX__wx_keyword k LEFT JOIN __PREFIX__wx_text AS t ON t.id = k.pid WHERE k.token = '{$wechat['token']}' AND type = 'TEXT' ORDER BY t.createtime DESC LIMIT {$pager->firstRow},{$pager->listRows}";
-        $show = $pager->show();
-        $lists = DB::query($sql);
-
-        $this->assign('page',$show);
-        $this->assign('lists',$lists);
-        $this->assign('wechat',$wechat);
-
-        return $this->fetch();
+    private function auto_reply_menu()
+    {
+        return [
+            WxReply::TYPE_KEYWORD => ['menu' => '关键词自动回复', 'url' => url('auto_reply', ['type' => WxReply::TYPE_KEYWORD])],
+            WxReply::TYPE_DEFAULT => ['menu' => '消息自动回复', 'url' => url('auto_reply_edit', ['type' => WxReply::TYPE_DEFAULT])],
+            WxReply::TYPE_FOLLOW  => ['menu' => '关注时自动回复', 'url' => url('auto_reply_edit', ['type' => WxReply::TYPE_FOLLOW])]
+        ];
     }
-    /*
-     * 添加文本回复
+
+    /**
+     * 自动回复展示
      */
-    public function add_text(){
-        $wechat = M('wx_user')->find();
-        if(empty($wechat)){
-            $this->error('请先在公众号配置添加公众号，才能添加文本回复', U('Admin/Wechat/index'));
+    public function auto_reply()
+    {
+        $type = input('type', WxReply::TYPE_KEYWORD);
+        $types = $this->auto_reply_menu();
+        if (!key_exists($type, $types)) {
+            $this->error("标签 $type 不存在");
         }
-        if(IS_POST){
-            $edit = I('get.edit');
-            $add['keyword'] =  I('post.keyword');
-            $add['token'] =  $wechat['token'];
-            $add['text'] = I('post.text');
-            if(!$edit){
-                //添加模式
-                $add['createtime'] = time();
-                $add['pid'] = DB::name('wx_text')->insertGetId($add);
-                unset($add['text']);
-                unset($add['createtime']);
-                $add['type'] = 'TEXT';
-                $row = M('wx_keyword')->add($add);
-            }else{
-                //编辑模式
-                $id = I('post.kid');
-                $model = M('wx_keyword')->where(array('id'=>$id));
+        $this->assign('type', $type);
+        $this->assign('types', $types);
 
-                $data = $model->find();
-                if($data){
-                    $update = I('post.');
-                    $update['type'] = 'TEXT';
-                    M('wx_keyword')->where(array('id'=>$id))->save($update);
-                    $row = M('wx_text')->where(array('id'=>$data['pid']))->save($add);
+        if ($type == WxReply::TYPE_KEYWORD) {
+            $p = input('p');
+            $num = 10;
+            $condition = ['type' => $type];
+            $replies = WxReply::where($condition)->with('wxKeywords')->order('id', 'asc')->page($p, $num)->select();
+            $count = WxReply::where($condition)->count();
+            $page = new Page($count, $num);
+            $this->assign('page', $page);
+            $this->assign('replies', $replies);
+            return $this->fetch('auto_replies');
 
-                }
+        } else {
+            $this->redirect('auto_reply_edit', ['type' => $type]);
+        }
+    }
+
+    /**
+     * 自动回复编辑页面
+     */
+    public function auto_reply_edit()
+    {
+        $id = input('id/d');
+        $type = input('type', WxReply::TYPE_KEYWORD);
+        $types = $this->auto_reply_menu();
+        if (!key_exists($type, $types)) {
+            $this->error("标签 $type 不存在");
+        }
+        $this->assign('type', $type);
+        $this->assign('types', $types);
+
+        if ($type == WxReply::TYPE_KEYWORD) {
+            if ($id && !$reply = WxReply::get(['id' => $id, 'type' => $type])) {
+                $this->error('该自动回复不存在');
             }
-            $row ? $this->success("添加成功",U('Admin/Wechat/text')) : $this->error("添加失败",U('Admin/Wechat/text'));
-            exit;
+        } else {
+            $reply = WxReply::get(['type' => $type]);
         }
 
-        $id = I('get.id');
-        if($id){
-            $sql = "SELECT k.id,k.keyword,t.text FROM __PREFIX__wx_keyword k LEFT JOIN __PREFIX__wx_text AS t ON t.id = k.pid WHERE k.token = '{$wechat['token']}' AND k.id = {$id} AND k.type = 'TEXT'";
-            $data = DB::query($sql);
-            $this->assign('keyword',$data[0]);
-        }
-
-        return $this->fetch();
-    }
-
-    /*
-     * 删除文本回复
-     */
-    public function del_text(){
-        $id = I('get.id');
-        $row = M('wx_keyword')->where(array('id'=>$id))->find();
-        if($row){
-            M('wx_keyword')->where(array('id'=>$id))->delete();
-            M('wx_text')->where(array('id'=>$row['pid']))->delete();
-            $this->success("删除成功");
-        }else{
-            $this->error("删除失败");
-        }
-    }
-    /*
-     * 图文列表
-     */
-    public function img(){
-        $wechat = M('wx_user')->find();
-        if(empty($wechat)){
-            $this->error('请先在公众号配置添加公众号，才能进行图文回复管理', U('Admin/Wechat/index'));
-        }
-        $count = M('wx_keyword')->where(array('token'=>$wechat['token'],'type'=>'IMG'))->count();
-        $pager = new Page($count,10);
-        $sql = "SELECT k.id,k.keyword,i.title,i.url,i.pic,i.desc FROM __PREFIX__wx_keyword k LEFT JOIN __PREFIX__wx_img i ON i.id = k.pid WHERE k.token = '{$wechat['token']}' AND type = 'IMG' ORDER BY i.createtime DESC LIMIT {$pager->firstRow},{$pager->listRows}";
-        $show = $pager->show();
-        $lists = DB::query($sql);
-
-        $this->assign('page',$show);
-        $this->assign('lists',$lists);
-        $this->assign('wechat',$wechat);
-        return $this->fetch();
-    }
-    /*
-     * 添加图文回复
-     */
-    public function add_img(){
-        $wechat = M('wx_user')->find();
-        if(empty($wechat)){
-            $this->error('请先在公众号配置添加公众号，才能添加图文回复', U('Admin/Wechat/index'));
-        }
-        if(IS_POST){
-            
-            $add['keyword'] =  I('post.keyword');
-            $add['token'] =  $wechat['token'];
-            $add['title'] = I('post.title');
-            $add['desc'] = I('post.desc');
-
-            $add['pic'] = I('post.pic'); //封面图片
-            if(!strstr($add['pic'],'http'))
-                    $add['pic'] = SITE_URL.$add['pic'];
-            
-            $add['url'] = I('post.url');  // 商品地址 或 其他
-            $add['goods_id'] = I('post.goods_id');
-            $add['goods_name'] = I('post.goods_name'); //商品名字
-            
-            empty($add['keyword']) && $this->error("关键词不得为空");
-            empty($add['title'])   && $this->error("标题不得为空");
-            empty($add['url'])     && $this->error("url不得为空");
-            empty($add['pic'])     && $this->error("封面图片不得为空");
-            empty($add['desc'])    && $this->error("简介不得为空");
-                       
-            $edit = I('get.edit');
-            if(!$edit){
-                //添加模式
-                $add['createtime'] = time();                
-                
-            if(!strstr($add['pic'],'http'))
-                $add['pic'] = SITE_URL.$add['pic'];                
-                
-                $wx_img_last_ins_id =  DB::name('wx_img')->insertGetId($add);
-                $add['pid'] = $wx_img_last_ins_id;
-                $add['type'] = 'IMG';                
-                $row = M('wx_keyword')->add($add);
-            }else{
-                //编辑模式
-                $id = I('post.kid');
-                $model = M('wx_keyword')->where(array('id'=>$id,'type'=>'IMG'));
-
-                $data = $model->find();
-                if($data){
-                    $update = input('post.');
-                    $update['type'] = 'IMG';
-                    M('wx_keyword')->where(array('id'=>$id))->save($update);
-                    $add['uptatetime'] = time();
-                    $row = M('wx_img')->where(array('id'=>$data['pid']))->save($add);
-
-                }
+        if  ( ! empty($reply)) {
+            if ($reply->msg_type == WxReply::MSG_NEWS) {
+                $news = WxMaterial::get($reply->material_id, 'wxNews');
+                $this->assign('news', $news);
             }
-            $row ? $this->success("添加成功",U('Admin/Wechat/img')) : $this->error("添加失败",U('Admin/Wechat/img'));
-            exit;
+            $this->assign('reply', $reply);
         }
 
-        $id = I('get.id');
-        if($id){
-            $sql = "SELECT k.id,k.keyword,i.title,i.url,i.pic,i.desc FROM __PREFIX__wx_keyword k LEFT JOIN __PREFIX__wx_img i ON i.id = k.pid WHERE k.token = '{$wechat['token']}' AND type = 'IMG' AND k.id = {$id}";
-            $data = DB::query($sql);
-            $this->assign('keyword',$data[0]);
-        }
-        return $this->fetch();
-
-
-    }
-
-    /*
-     * 选择商品
-     * //todo
-     * //与wap端一起做
-     */
-    public function select_goods(){
-        $url = 'http://'.$_SERVER['HTTP_HOST'];
-        //http://www.tp-shop.cn/index.php?m=Home&c=Goods&a=info&id=
-
-        $count = M('goods')->count();
-        $pager = new Page($count,10);
-        //$sql = "SELECT k.id,k.keyword,t.text FROM tp_wx_keyword k LEFT JOIN tp_wx_text AS t ON t.id = k.pid WHERE k.token = '{$wechat['token']}' AND type = 'TEXT' ORDER BY t.createtime DESC LIMIT {$pager->firstRow},{$pager->listRows}";
-        $show = $pager->show();
-        $sql = "SELECT goods_name,shop_price,
-                CONCAT('{$url}/index.php?m=Home&c=Goods&a=info&id=',goods_id) AS goods_url,
-                CONCAT('{$url}/',original_img) AS original_img
-                 FROM __PREFIX__goods ORDER BY goods_id DESC LIMIT {$pager->firstRow},{$pager->listRows}";
-        $lists = DB::query($sql);
-        $this->assign('page',$show);
-        $this->assign('lists',$lists);
-        return $this->fetch();
-    }
-    /*
-     * 删除图文回复
-     */
-    public function del_img(){
-        $id = I('get.id');
-        $row = M('wx_keyword')->where(array('id'=>$id))->find();
-        if($row){
-            M('wx_keyword')->where(array('id'=>$id))->delete();
-            M('wx_img')->where(array('id'=>$row['pid']))->delete();
-            $this->success("删除成功");
-        }else{
-            $this->error("删除失败");
-        }
-    }
-
-    /*
-     * 多图文消息列表
-     */
-    public function news(){
-        $wechat = M('wx_user')->find();
-        if(empty($wechat)){
-            $this->error('请先在公众号配置添加公众号，才能进行多图文管理', U('Admin/Wechat/index'));
-        }
-        $count = M('wx_keyword')->where(array('token'=>$wechat['token'],'type'=>'NEWS'))->count();
-        $pager = new Page($count,10);
-        $sql = "SELECT k.id,k.keyword,k.pid,i.img_id FROM __PREFIX__wx_keyword k LEFT JOIN __PREFIX__wx_news i ON i.id = k.pid WHERE k.token = '{$wechat['token']}' AND type = 'NEWS' ORDER BY i.createtime DESC LIMIT {$pager->firstRow},{$pager->listRows}";
-        $show = $pager->show();
-        $lists = DB::query($sql);
-
-        $this->assign('page',$show);
-        $this->assign('lists',$lists);
-        $this->assign('wechat',$wechat);
         return $this->fetch();
     }
 
-    /*
-     * 添加多图文
+    /**
+     * 新增自动回复
      */
-    public function add_news(){
-        $wechat = M('wx_user')->find();
-        if(empty($wechat)){
-            $this->error('请先在公众号配置添加公众号，才能添加多图文', U('Admin/Wechat/index'));
+    public function add_auto_reply()
+    {
+        $type = input('msg_type');
+        $data = input('post.');
+
+        $logic = new WechatLogic($this->wx_user);
+        $return = $logic->addAutoReply($type, $data);
+        $this->ajaxReturn($return);
+    }
+
+    /**
+     * 更新自动回复
+     */
+    public function update_auto_reply()
+    {
+        $type = input('msg_type');
+        $id = input('id/d', 0);
+        $data = input('post.');
+
+        $logic = new WechatLogic($this->wx_user);
+        $return = $logic->updateAutoReply($type, $id, $data);
+        $this->ajaxReturn($return);
+    }
+
+    /**
+     * 删除自动回复
+     */
+    public function delete_auto_reply()
+    {
+        $id = input('id/d', 0);
+
+        $logic = new WechatLogic($this->wx_user);
+        $return = $logic->deleteAutoReply($id);
+        $this->ajaxReturn($return);
+    }
+
+    /**
+     * 粉丝详细列表
+     */
+    public function fans_list()
+    {
+        $keyword = input('keyword');
+        $p = input('p/d');
+        $num = 10;
+        $logic = new WechatLogic;
+        $return = $logic->getFanList($p, $num, $keyword);
+        if ($return['status'] != 1) {
+            $this->error($return['msg'], null, '', 100);
         }
-        if(IS_POST){
-            $arr = explode(',',I('post.img_id/s'));
-            if($arr)
-                array_pop($arr);
-            if(count($arr) <= 1){
-                $this->error("单图文请到图文回复设置",U('Admin/Wechat/news'));
-                exit;
+
+        $texts = WxMaterial::all(['type' => WxMaterial::TYPE_TEXT]);
+        $page  = new Page($return['result']['total'], $num);
+
+        $this->assign('page', $page);
+        $this->assign('texts', $texts);
+        $this->assign('user_list', $return['result']['list']);
+        return $this->fetch();
+    }
+
+    public function fan_info()
+    {
+        $openid = I('get.id');
+        $wechatObj = new WechatUtil($this->wx_user);
+        $list = $wechatObj->getFanInfo($openid);
+        if ($list === false) {
+            $this->error($wechatObj->getError());
+        }
+
+        $list['tags'] = $wechatObj->getFanTagNames($list['tagid_list']);
+        if ($list['tags'] === false) {
+            $this->error($wechatObj->getError());
+        }
+
+        $this->assign('list', $list);
+        return $this->fetch();
+    }
+
+    /**
+     * 处理发送的消息
+     */
+    public function send_text_msg()
+    {
+        $msg = I('post.msg');//内容
+        $to_all = I('post.to_all', 0);//个体or全体
+        $openids = I('post.openids');//个体id
+
+        $wechatObj = new WechatUtil($this->wx_user);
+        if ($to_all) {
+            $result = $wechatObj->sendMsgToAll(0, 'text', $msg);
+        } else {
+            $result = $wechatObj->sendMsg($openids, 'text', $msg);
+        }
+
+        if ($result === false) {
+            return $this->ajaxReturn(['status'=>0,'msg'=>$wechatObj->getError()]);
+        }
+
+        return $this->ajaxReturn(['status'=>1,'msg'=>'已发送！']);
+    }
+
+    /**
+     * 素材管理
+     */
+    public function materials()
+    {
+        $tab = input('tab', 'news');
+        $tabs = [
+            'news' => '图文素材',
+            'text' => '文本素材'
+        ];
+        if (!key_exists($tab, $tabs)) {
+            $this->error("标签 $tab 不存在");
+        }
+
+        $p = input('p', 0);
+        $num = 10;
+        if ($tab == 'news') {
+            $materials = WxMaterial::where(['type' => $tab])->with('wxNews')->order('update_time', 'desc')->page($p, $num)->select();
+        } else {
+            $materials = WxMaterial::where(['type' => $tab])->order('update_time', 'desc')->page($p, $num)->select();
+        }
+
+        $count = WxMaterial::where(['type' => $tab])->count();
+        $page  = new Page($count, $num);
+
+        $this->assign('page', $page);
+        $this->assign('list', $materials);
+        $this->assign('tab', $tab);
+        $this->assign('tabs', $tabs);
+        return $this->fetch('materials_'.$tab);
+    }
+
+    /**
+     * 异步请求图文消息
+     */
+    public function ajax_news()
+    {
+        $p = input('p', 0);
+        $num = 9;
+        $materials = WxMaterial::where(['type' => WxMaterial::TYPE_NEWS])->with('wxNews')->order('update_time', 'desc')->page($p, $num)->select();
+        $count = WxMaterial::where(['type' => WxMaterial::TYPE_NEWS])->count();
+        $page  = new AjaxPage($count, $num);
+
+        $this->assign('page', $page);
+        $this->assign('list', $materials);
+        return $this->fetch();
+    }
+
+    /**
+     * 单图文素材编辑
+     */
+    public function news_edit()
+    {
+        $material_id = input('material_id/d');
+        $news_id = input('news_id/d');
+
+        if ($news_id) {
+            if (!$news = WxNews::get(['id' => $news_id, 'material_id' => $material_id])) {
+                $this->error('该图文素材不存在');
             }
-            $add['keyword'] =  I('post.keyword');
-            $add['token'] =  $wechat['token'];
-            $add['img_id'] =  implode(',',$arr);
-
-            //添加模式
-                $add['createtime'] = time();
-                $wx_news_last_ins_id = DB::name('wx_news')->insertGetId($add);
-                $add['pid'] = $wx_news_last_ins_id;
-                $add['type'] = 'NEWS';
-                $row = M('wx_keyword')->add($add);
-            $row ? $this->success("添加成功",U('Admin/Wechat/news')) : $this->error("添加失败",U('Admin/Wechat/news'));
-            exit;
+            $this->assign('info', $news);
         }
+
         return $this->fetch();
     }
-    /*
-     * 删除多图文
+
+    /**
+     * 删除素材
      */
-    public function del_news(){
-        $id = I('get.id');
-        $row = M('wx_keyword')->where(array('id'=>$id))->find();
-        if($row){
-            M('wx_keyword')->where(array('id'=>$id))->delete();
-            M('wx_news')->where(array('id'=>$row['pid']))->delete();
-            $this->success("删除成功");
-        }else{
-            $this->error("删除失败");
-        }
+    public function delete_news()
+    {
+        $material_id = input('material_id/d');
+
+        $logic = new WechatLogic($this->wx_user);
+        $return = $logic->deleteNews($material_id);
+
+        return $this->ajaxReturn($return);
     }
-    /*
-     * 预览多图文
+
+    /**
+     * 删除多图文中的单图文
      */
-    public function preview(){
-        $id = I('get.id');
-        $news = M('wx_news')->where(array('id'=>$id))->find();
-        $lists = M('wx_img')->where(array('id'=>array('in',$news['img_id'])))->select();
-        $first = $lists[0];
-        unset($lists[0]);
-        $this->assign('first',$first);
-        $this->assign('lists',$lists);
-        return $this->fetch();
-    }
-    
-    public function select(){
-        $wechat = M('wx_user')->find();
-        $count = M('wx_keyword')->where(array('token'=>$wechat['token'],'type'=>'IMG'))->count();
-        $pager = new Page($count,10);
-        $sql = "SELECT k.id,k.pid,k.keyword,i.title,i.url,i.pic,i.desc FROM __PREFIX__wx_keyword k LEFT JOIN __PREFIX__wx_img i ON i.id = k.pid WHERE k.token = '{$wechat['token']}' AND type = 'IMG' ORDER BY i.createtime DESC LIMIT {$pager->firstRow},{$pager->listRows}";
-        $show = $pager->show();
-        $lists = DB::query($sql);
+    public function delete_single_news()
+    {
+        $news_id = input('news_id/d');
 
-        $this->assign('page',$show);
-        $this->assign('lists',$lists);
-        return $this->fetch();
+        $logic = new WechatLogic($this->wx_user);
+        $return = $logic->deleteSingleNews($news_id);
+
+        return $this->ajaxReturn($return);
     }
 
-    public function get_access_token($appid,$appsecret){
-        //判断是否过了缓存期
-        $wechat = M('wx_user')->find();
-        $expire_time = $wechat['web_expires'];
-        if($expire_time > time()){
-           return $wechat['web_access_token'];
+    /**
+     * 新增或更新单图文素材
+     */
+    public function handle_news()
+    {
+        $material_id = input('material_id/d');//为0新增多素材，否则更新多素材
+        $news_id = input('news_id/d', 0);//为0新增单素材，否则更新单素材，此时material_id不为0
+        $data = input('post.');
+
+        $result = $this->validate($data, 'WechatNews', [], true);
+        if ($result !== true) {
+            $this->ajaxReturn(['status' => 0, 'msg' => '参数错误', 'result' => $result]);
         }
-        $url = "https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid={$appid}&secret={$appsecret}";
-        $return = httpRequest($url,'GET');
-        $return = json_decode($return,1);
-        $web_expires = time() + 7000; // 提前200秒过期
-        
-        if(isset($return['access_token'])){
-            M('wx_user')->where(array('id'=>$wechat['id']))->save(array('web_access_token'=>$return['access_token'],'web_expires'=>$web_expires));
-         }else{
-             $this->error($return['errmsg']);//提示错误
-        }
-        
-        return $return['access_token'];
+
+        $logic = new WechatLogic;
+        $return = $logic->createOrUpdateNews($material_id, $news_id, $data);
+        return $this->ajaxReturn($return);
     }
 
-    public function nes(){
+    /**
+     * 发送图文素材消息
+     */
+    public function send_news_msg()
+    {
+        $material_id = input('material_id');
+        $to_all = input('to_all', 0);//个体or全体
+        $openids = input('openids');//个体id
+
+        $logic = new WechatLogic($this->wx_user);
+        $return = $logic->sendNewsMsg($material_id, $openids, $to_all);
+        return $this->ajaxReturn($return);
+    }
+
+    /**
+     * 编辑文本素材
+     */
+    public function text_edit()
+    {
+        $material_id = input('material_id/d');
+        if ($material_id) {
+            if (!$text = WxMaterial::get(['id' => $material_id, 'type' => WxMaterial::TYPE_TEXT])) {
+                $this->error('该文本素材不存在');
+            }
+            $this->assign('info', $text);
+        }
+
         return $this->fetch();
     }
-	
-    public function source(){
-    	return $this->fetch();
+
+    /**
+     * 新增或更新文本素材
+     */
+    public function handle_text()
+    {
+        $material_id = input('material_id/d');//为0新增素材，否则更新素材
+        $data = input('post.');
+
+        $logic = new WechatLogic;
+        $return = $logic->createOrUpdateText($material_id, $data);
+        return $this->ajaxReturn($return);
+    }
+
+    /**
+     * 删除文本素材
+     */
+    public function delete_text()
+    {
+        $material_id = input('material_id/d');
+
+        $logic = new WechatLogic($this->wx_user);
+        $return = $logic->deleteText($material_id);
+
+        return $this->ajaxReturn($return);
+    }
+
+    /**
+     * 模板消息
+     */
+    public function template_msg()
+    {
+        $logic = new WechatLogic;
+        $tpls = $logic->getDefaultTemplateMsg();
+
+        $template_sns = get_arr_column($tpls, 'template_sn');
+        $user_tpls = WxTplMsg::all(['template_sn' => ['in', $template_sns]]);
+        $user_tpls = convert_arr_key($user_tpls, 'template_sn');
+
+        $this->assign('tpls', $tpls);
+        $this->assign('user_tpls', $user_tpls);
+        return $this->fetch();
+    }
+
+    /**
+     * 设置模板消息
+     */
+    public function set_template_msg()
+    {
+        $template_sn = input('template_sn');
+        $is_use = input('is_use/d');
+        $remark = input('remark');
+
+        $data = [];
+        !is_null($is_use) && $data['is_use'] = $is_use;
+        !is_null($remark) && $data['remark'] = $remark;
+
+        $logic = new WechatLogic;
+        $return = $logic->setTemplateMsg($template_sn, $data);
+        $this->ajaxReturn($return);
+    }
+
+    /**
+     * 重置模板消息
+     */
+    public function reset_template_msg()
+    {
+        $template_sn = input('template_sn');
+
+        $logic = new WechatLogic;
+        $return = $logic->resetTemplateMsg($template_sn);
+
+        $this->ajaxReturn($return);
     }
 }

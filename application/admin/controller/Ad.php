@@ -7,7 +7,7 @@
  * ----------------------------------------------------------------------------
  * 这不是一个自由软件！您只能在不用于商业目的的前提下对程序代码进行修改和使用 .
  * 不允许对程序代码以任何形式任何目的的再发布。
- * 采用TP5助手函数可实现单字母函数M D U等,也可db::name方式,可双向兼容
+ * 采用最新Thinkphp5助手函数特性实现单字母函数M D U等简写方式
  * ============================================================================
  * Author: 当燃      
  * Date: 2015-09-21
@@ -156,6 +156,8 @@ class Ad extends Base{
         delFile(RUNTIME_PATH.'html'); // 先清除缓存, 否则不好预览
         \think\Cache::clear();
     	if($r){
+    	    $redirect_url = session("ad_request_url");
+    	    $redirect_url && $this->success("操作成功",U('Admin/Ad/editAd' , array('request_url'=>$redirect_url)));
     		$this->success("操作成功",U('Admin/Ad/adList'));
     	}else{
     		$this->error("操作失败",$referurl);
@@ -267,10 +269,13 @@ class Ad extends Base{
         $img_url = I('img_url');
         $pid = I('pid/d',0); 
         \think\Cache::clear();        
+        $request_url = I('request_url');
+        //缓存请求的编辑广告URL
+        session('ad_request_url' , $request_url);
         $request_url = urldecode(I('request_url'));
         $request_url = urldecode($request_url);
         $request_url = U($request_url,array('edit_ad'=>1,'img_url'=>$img_url,'pid'=>$pid));
-  
+        
         echo "<script>location.href='".$request_url."';</script>";
         exit;                
     }

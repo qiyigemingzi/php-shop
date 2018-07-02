@@ -7,16 +7,19 @@
  * ----------------------------------------------------------------------------
  * 这不是一个自由软件！您只能在不用于商业目的的前提下对程序代码进行修改和使用 .
  * 不允许对程序代码以任何形式任何目的的再发布。
- * 采用TP5助手函数可实现单字母函数M D U等,也可db::name方式,可双向兼容
+ * 采用最新Thinkphp5助手函数特性实现单字母函数M D U等简写方式
  * ============================================================================
  * Author: 当燃      
  * Date: 2015-10-09
  */
 
 namespace app\admin\controller;
+
 use app\admin\logic\GoodsLogic;
+use app\common\logic\ModuleLogic;
 use think\db;
 use think\Cache;
+
 class System extends Base
 {
 	/*
@@ -32,9 +35,10 @@ class System extends Base
             'shopping'  => '购物流程设置',
             'smtp'      => '邮件设置',
             'water'     => '水印设置',
-//            'distribut' => '分销设置',
-//            'push'      => '推送设置',
-//            'oss'       => '对象存储'
+            'distribut' => '分销设置',
+            'push'      => '推送设置',
+            'oss'       => '对象存储',
+            'express'	=> '物流设置'
         ];		
 		$this->assign('group_list',$group_list);
 		$inc_type =  I('get.inc_type','shop_info');
@@ -62,7 +66,16 @@ class System extends Base
 		$inc_type = $param['inc_type'];
 		//unset($param['__hash__']);
 		unset($param['inc_type']);
-		tpCache($inc_type,$param);
+		tpCache($inc_type,$param);                
+                
+                // 设置短信商接口
+                if($param['sms_platform'] == 2 &&  !empty($param['sms_appkey'])  && !empty($param['sms_secretKey']))
+                {                     
+                    $sms_appkey = trim($param['sms_appkey']);
+                    $sms_secretKey = trim($param['sms_secretKey']);
+                    $url = 'http://open.1cloudsp.com:8090/api/admin/setParentId?parentId=14257&accesskey='.urlencode($sms_appkey).'&secret='.urlencode($sms_secretKey);
+                    httpRequest($url);                    
+                }                                
 		$this->success("操作成功",U('System/index',array('inc_type'=>$inc_type)));
 	}        
         
@@ -79,48 +92,69 @@ class System extends Base
     /**
      * 添加修改编辑 前台导航
      */
-    public function addEditNav()
-    {
+    public  function addEditNav(){
         $model = D("Navigation");
-        if (IS_POST) {
-            if (I('id')){
+        if(IS_POST)
+        {
+            if (I('id'))
                 $model->update(I('post.'));
-            }else{
+            else
                 $model->add(I('post.'));
-            }
-            $this->success("操作成功!!!", U('Admin/System/navigationList'));
+
+            $this->success("操作成功!!!",U('Admin/System/navigationList'));
             exit;
         }
         // 点击过来编辑时
         $id = I('id',0);
         $navigation = DB::name('navigation')->where('id',$id)->find();
-        // 系统菜单
+        //导航位置数组
+        $system_position = array(
+            'top' => '导航顶部',
+            'bottom' => '导航底部'
+        );
+        // 系统菜单 顶部
         $GoodsLogic = new GoodsLogic();
         $cat_list = $GoodsLogic->goods_cat_list();
         $select_option = array();
         if(!empty($cat_list))
-        {        
-            foreach ($cat_list AS $key => $value) {
-                $strpad_count = $value['level'] * 4;
-                $select_val = U("/Home/Goods/goodsList", array('id' => $key));
-                $select_option[$select_val] = str_pad('', $strpad_count, "-", STR_PAD_LEFT) . $value['name'];
+        {
+            foreach ($cat_list AS $key => $value)
+            {
+                $strpad_count = $value['level']*4;
+                $select_val = U("/Home/Goods/goodsList",array('id'=>$key));
+                $select_option[$select_val] = str_pad('',$strpad_count,"-",STR_PAD_LEFT).$value['name'];
             }
-        }    
+        }
         $system_nav = array(
-            'http://www.tp-shop.cn' => 'tpshop官网',
+            'http://www.tpshop.cn' => 'tpshop官网',
             'http://www.99soubao.com' => '搜豹公司',
-            '/index.php?m=Home&c=Activity&a=promoteList' => '促销',
-            '/index.php?m=Home&c=Activity&a=flash_sale_list' => '抢购',
+            '/index.php?m=Home&c=Activity&a=promoteList' => '促销活动',
+            '/index.php?m=Home&c=Activity&a=flash_sale_list' => '限时抢购',
             '/index.php?m=Home&c=Activity&a=group_list' => '团购',
-			'/index.php?m=Home&c=Activity&a=pre_sell_list' => '预售',
+            '/index.php?m=Home&c=Index&a=street' => '店铺街',
             '/index.php?m=Home&c=Goods&a=integralMall' => '积分商城',
         );
-        $system_nav = array_merge($system_nav, $select_option);
-        $this->assign('system_nav', $system_nav);
+        $system_nav = array_merge($system_nav,$select_option);
+        $this->assign('system_nav',$system_nav);
 
-        $this->assign('navigation', $navigation);
+        //地下菜单文章
+        $system_bottom = array();
+        $article = db('article')->where('is_open',1)->select();
+        if(!empty($article)){
+            foreach($article as $value){
+                $system_bottom['/index.php/Home/Article/detail/article_id/'.$value['article_id']] = $value['title'];
+            }
+        }
+
+        //分配底部文章
+        $this->assign('system_bottom',$system_bottom);
+
+        //分配位置数组
+        $this->assign('position',$system_position);
+
+        $this->assign('navigation',$navigation);
         return $this->fetch('_navigation');
-    }   
+    }
     
     /**
      * 删除前台 自定义 导航
@@ -159,9 +193,13 @@ class System extends Base
         public function cleanCache(){          
 			delFile(RUNTIME_PATH);
 			Cache::clear();
-            $script = "<script>parent.layer.msg('缓存清除成功', {time:3000,icon: 1});window.location='/index.php?m=Admin&c=Index&a=welcome';</script>";
-            echo $script;
-            exit;
+			$quick = I('quick',0);
+			if($quick == 1){
+				$script = "<script>parent.layer.msg('缓存清除成功', {time:3000,icon: 1});window.parent.location.reload();</script>";
+			}else{
+				$script = "<script>parent.layer.msg('缓存清除成功', {time:3000,icon: 1});window.location='/index.php?m=Admin&c=Index&a=welcome';</script>";
+			}
+           	exit($script);
         }
 	    
     /**
@@ -190,13 +228,15 @@ class System extends Base
     /**
      * 商品静态页面缓存清理
      */
-      public function ClearGoodsThumb(){
-            $goods_id = I('goods_id');
-            delFile(UPLOAD_PATH."goods/thumb/".$goods_id); // 删除缩略图
-            $json_arr = array('status'=>1,'msg'=>'清除成功,请清除对应的静态页面','result'=>'');
-            $json_str = json_encode($json_arr);            
-            exit($json_str);            
-      } 
+    public function ClearGoodsThumb()
+    {
+        $goods_id = I('goods_id');
+        delFile(UPLOAD_PATH . "goods/thumb/" . $goods_id); // 删除缩略图
+        Cache::clear('original_img_cache');
+        $json_arr = array('status' => 1, 'msg' => '清除成功,请清除对应的静态页面', 'result' => '');
+        $json_str = json_encode($json_arr);
+        exit($json_str);
+    }
     /**
      * 清空 文章静态页面缓存
      */
@@ -257,74 +297,104 @@ class System extends Base
      
      function ajax_get_action()
      {
-     	$control = I('controller');
-     	$advContrl = get_class_methods("app\\admin\\controller\\".str_replace('.php','',$control));
-     	$baseContrl = get_class_methods('app\admin\controller\Base');
-     	$diffArray  = array_diff($advContrl,$baseContrl);
-     	$html = '';
-     	foreach ($diffArray as $val){
-     		$html .= "<option value='".$val."'>".$val."</option>";
-     	}
-     	exit($html);
+         $control = I('controller');
+         $type = I('type',0);
+         $module = (new ModuleLogic)->getModule($type);
+         if (!$module) {
+             exit('模块不存在或不可见');
+         }
+
+         $selectControl = [];
+         $className = "app\\".$module['name']."\\controller\\".$control;
+         $methods = (new \ReflectionClass($className))->getMethods(\ReflectionMethod::IS_PUBLIC);
+         foreach ($methods as $method) {
+             if ($method->class == $className) {
+                 if ($method->name != '__construct' && $method->name != '_initialize') {
+                     $selectControl[] = $method->name;
+                 }
+             }
+         }
+
+         $html = '';
+         foreach ($selectControl as $val){
+             $html .= "<li><label><input class='checkbox' name='act_list' value=".$val." type='checkbox'>".$val."</label></li>";
+             if($val && strlen($val)> 18){
+                 $html .= "<li></li>";
+             }
+         }
+         exit($html);
      }
      
-     function right_list(){
-     	$group = array('system'=>'系统设置','content'=>'内容管理','goods'=>'商品中心','member'=>'会员中心','finance'=>'财务管理',
-     			'order'=>'订单中心','marketing'=>'营销推广','tools'=>'插件工具','count'=>'统计报表'//,'distribut'=>'分销中心'
-     	);
-     	
-     	$name = I('name');
-     	if($name){
-     	    $condition['name|right'] = array('like',"%$name%");
-     	    $right_list = M('system_menu')->where($condition)->order('id desc')->select();
-     	}else{
-     	    $right_list = M('system_menu')->order('id desc')->select();
-     	}
-     	
-     	$this->assign('right_list',$right_list);
-     	$this->assign('group',$group);
-     	return $this->fetch();
-     }
-     
-     public function edit_right(){
-     	if(IS_POST){
-     		$data = I('post.');
-     		$data['right'] = implode(',',$data['right']);
-     		if(!empty($data['id'])){
-     			M('system_menu')->where(array('id'=>$data['id']))->save($data);
-     		}else{
-     			if(M('system_menu')->where(array('name'=>$data['name']))->count()>0){
-     				$this->error('该权限名称已添加，请检查',U('System/right_list'));
-     			}
-     			unset($data['id']);
-     			M('system_menu')->add($data);
-     		}
-     		$this->success('操作成功',U('System/right_list'));
-     		exit;
-     	}
-     	$id = I('id');
-     	if($id){
-     		$info = M('system_menu')->where(array('id'=>$id))->find();
-     		$info['right'] = explode(',', $info['right']);
-     		$this->assign('info',$info);
-     	}
-     	$group = array('system'=>'系统设置','content'=>'内容管理','goods'=>'商品中心','member'=>'会员中心','finance'=>'财务管理',
-     			'order'=>'订单中心','marketing'=>'营销推广','tools'=>'插件工具','count'=>'统计报表','distribut'=>'分销中心'
-     	);
-     	$planPath = APP_PATH.'admin/controller';
-     	$planList = array();
-     	$dirRes   = opendir($planPath);
-     	while($dir = readdir($dirRes))
-     	{
-     		if(!in_array($dir,array('.','..','.svn')))
-     		{
-     			$planList[] = basename($dir,'.php');
-     		}
-     	}
-     	$this->assign('planList',$planList);
-     	$this->assign('group',$group);
+    function right_list()
+    {
+        $type = I('type',0);
+        $moduleLogic = new ModuleLogic;
+        if (!$moduleLogic->isModuleExist($type)) {
+            $this->error('权限类型不存在');
+        }
+        $modules = $moduleLogic->getModules();
+        $group = $moduleLogic->getPrivilege($type);
+
+        $condition['type'] = $type;
+        $name = I('name');
+        if(!empty($name)){
+            $condition['name|right'] = array('like',"%$name%");
+        }
+        $right_list = M('system_menu')->where($condition)->order('id desc')->select();
+        $this->assign('right_list',$right_list);
+        $this->assign('group',$group);
+        $this->assign('modules',$modules);
         return $this->fetch();
-     }
+    }
+
+    public function edit_right()
+    {
+        $type = I('type',0);  //0:平台权限资源;1:商家权限资源
+        $moduleLogic = new ModuleLogic;
+        if (!$moduleLogic->isModuleExist($type)) {
+            $this->error('模块不存在或不可见');
+        }
+
+        if(IS_POST){
+            $data = I('post.');
+            $data['right'] = implode(',',$data['right']);
+            if(!empty($data['id'])){
+                M('system_menu')->where(array('id'=>$data['id']))->save($data);
+            }else{
+                if(M('system_menu')->where(array('type'=>$data['type'],'name'=>$data['name']))->count()>0){
+                    $this->error('该权限名称已添加，请检查',U('System/right_list'));
+                }
+                unset($data['id']);
+                M('system_menu')->add($data);
+            }
+            $this->success('操作成功',U('System/right_list',array('type'=>$data['type'])));
+            exit;
+        }
+        $id = I('id');
+        if($id){
+            $info = M('system_menu')->where(array('id'=>$id))->find();
+            $info['right'] = explode(',', $info['right']);
+            $this->assign('info',$info);
+        }
+
+        $modules = $moduleLogic->getModules();
+        $group = $moduleLogic->getPrivilege($type);
+        $planPath = APP_PATH.$modules[$type]['name'].'/controller';
+        $planList = array();
+        $dirRes   = opendir($planPath);
+        while($dir = readdir($dirRes))
+        {
+            if(!in_array($dir,array('.','..','.svn')))
+            {
+                $planList[] = basename($dir,'.php');
+            }
+        }
+
+        $this->assign('modules', $modules);
+        $this->assign('planList',$planList);
+        $this->assign('group',$group);
+        return $this->fetch();
+    }
      
      public function right_del(){
      	$id = I('del_id');
@@ -367,8 +437,44 @@ class System extends Base
 		Db::name('team_lottery')->where('1=1')->delete();
 		Db::name('goods')->where('prom_type',6)->update(['prom_type' => 0, 'prom_id' => 0]);
 		Db::name('spec_goods_price')->where('prom_type',6)->update(['prom_type' => 0, 'prom_id' => 0]);
-		Db::name('order')->where('order_prom_type',6)->update(['order_prom_type' => 0, 'order_prom_id' => 0]);
+		Db::name('order')->where('prom_type',6)->update(['prom_type' => 0, 'prom_id' => 0]);
 		Db::name('order_goods')->where('prom_type',6)->update(['prom_type' => 0, 'prom_id' => 0]);
 		$this->success('清除拼团活动数据成功');
 	}
+        
+    /**
+     * 清空演示数据 用完切记删除
+     * http://www.xxx.com/Admin/system/truncate_demo_data
+     */
+    public function truncate_demo_data(){
+        /*
+        $result = Db::query('show tables');        
+        $prefix   = \think\config::get('database.prefix');
+        $database = \think\config::get('database.database');
+        $tables = array();        
+        foreach($result as $key => $val){
+                $tables[] = array_shift($val);
+        }	 			    
+         
+        $bl_table = array('tp_admin','tp_config','tp_region','tp_system_module','tp_admin_role','tp_system_menu','tp_article_cat','tp_article','tp_wx_user');
+        foreach($bl_table as $k => $v)
+        {
+                $bl_table[$k] = str_replace('tp_',$prefix,$v); 
+        }			      
+        
+        foreach($tables as $key => $val)
+        {					
+                if(!in_array($val, $bl_table))
+                {
+                     Db::execute("truncate table ".$val); 
+                }		
+        }   	
+        delFile('../public/upload/goods'); // 清空测试图片			
+               
+        header("Content-type: text/html; charset=utf-8");  
+        echo "数据已清空,请立即删除这个方法";
+        */ 
+         
+    }        
+        
 }

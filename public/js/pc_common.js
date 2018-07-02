@@ -3,10 +3,9 @@
   *  将商品加入购物车
   * @param goods_id|商品id
   * @param num|商品数量
-  * @param to_cart|加入购物车后再跳转到 购物车页面 默认不跳转 1 为跳转
   * @constructor
   */
- function AjaxAddCart(goods_id, num, to_cart) {
+ function AjaxAddCart(goods_id, num) {
 	 // 如果有商品规格 说明是商品详情页提交
 	 var form = $("#buy_goods_form");
 	 var cart_quantity = $("#cart_quantity");
@@ -24,10 +23,6 @@
 		 success: function (data) {
 			 var cart_num;
 			 if (form.length > 0) {
-				 // 加入购物车后再跳转到 购物车页面
-				 if (to_cart == 1) {
-					 location.href = "/index.php?m=Home&c=Cart&a=index";//直接购买
-				 }
 				 cart_num = parseInt(cart_quantity.html()) + parseInt($('input[name="goods_num"]').val());
 			 } else {
 				 if (data.status == -1) {
@@ -58,7 +53,7 @@
 	 });
  }
  //购买兑换商品
- function buyIntegralGoods(goods_id, num, to_cart){
+ function buyIntegralGoods(goods_id, num){
 	 var form = $("#buy_goods_form");
 	 var data;//post数据
 	 if(getCookie('user_id') == ''){
@@ -113,4 +108,20 @@ function collect_goods(goods_id){
 		 area: ['490px', '460px'],
 		 content: "/index.php?m=Home&c=User&a=pop_login",
 	 });
+ }
+
+ //是否可购买
+ function joinCart(able)
+ {
+     if(able == true){
+         $('#join_cart_now').show();
+         $('#join_cart').show();
+         $('#no_join_cart_now').hide();
+         $('#no_join_cart').hide();
+     }else{
+         $('#join_cart_now').hide();
+         $('#join_cart').hide();
+         $('#no_join_cart_now').show();
+         $('#no_join_cart').show();
+     }
  }

@@ -7,7 +7,7 @@
  * ----------------------------------------------------------------------------
  * 这不是一个自由软件！您只能在不用于商业目的的前提下对程序代码进行修改和使用 .
  * 不允许对程序代码以任何形式任何目的的再发布。
- * 采用TP5助手函数可实现单字母函数M D U等,也可db::name方式,可双向兼容
+ * 采用最新Thinkphp5助手函数特性实现单字母函数M D U等简写方式
  * ============================================================================
  * 2015-11-21
  */
@@ -36,8 +36,11 @@ class User extends MobileBase
     {
         parent::_initialize();
         if (session('?user')) {
-            $user = session('user');
-            $user = M('users')->where("user_id", $user['user_id'])->find();
+            $session_user = session('user');
+            $select_user = M('users')->where("user_id", $session_user['user_id'])->find();
+            $oauth_users = M('OauthUsers')->where(['user_id'=>$session_user['user_id']])->find();
+            empty($oauth_users) && $oauth_users = [];
+            $user =  array_merge($select_user,$oauth_users);
             session('user', $user);  //覆盖session 中的 user
             $this->user = $user;
             $this->user_id = $user['user_id'];
@@ -204,7 +207,7 @@ class User extends MobileBase
         $logic = new UsersLogic();
         $res = $logic->login($username, $password);
         if ($res['status'] == 1) {
-            $res['url'] = urldecode(I('post.referurl'));
+            $res['url'] = htmlspecialchars_decode(I('post.referurl'));
             session('user', $res['result']);
             setcookie('user_id', $res['result']['user_id'], null, '/');
             setcookie('is_distribut', $res['result']['is_distribut'], null, '/');
@@ -377,15 +380,6 @@ class User extends MobileBase
             return $this->fetch();
         }
     }
-    public function express()
-    {
-        $order_id = I('get.order_id/d', 195);
-        $order_goods = M('order_goods')->where("order_id", $order_id)->select();
-        $delivery = M('delivery_doc')->where("order_id", $order_id)->find();
-        $this->assign('order_goods', $order_goods);
-        $this->assign('delivery', $delivery);
-        return $this->fetch();
-    }
 
     /*
      * 用户地址列表
@@ -404,8 +398,8 @@ class User extends MobileBase
      */
     public function add_address()
     {
+        $source = input('source');
         if (IS_POST) {
-            $source = input('source');
             $post_data = input('post.');
             $logic = new UsersLogic();
             $data = $logic->add_address($this->user_id, 0, $post_data);
@@ -414,7 +408,6 @@ class User extends MobileBase
             $goods_num = input('goods_num/d');
             $order_id = input('order_id/d');
             $action = input('action');
-           
             if ($data['status'] != 1){
                 $this->error($data['msg']);
             } elseif ($source == 'cart2') {
@@ -431,13 +424,13 @@ class User extends MobileBase
                 $this->ajaxReturn($data);
             }else{
                 $data['url']= U('/Mobile/User/address_list');
-                $this->success($data['msg'], U('/Mobile/User/address_list'));
+                $this->ajaxReturn($data);
             } 
             
         }
         $p = M('region')->where(array('parent_id' => 0, 'level' => 1))->select();
         $this->assign('province', $p);
-        //return $this->fetch('edit_address');
+        $this->assign('source', $source);
         return $this->fetch();
 
     }
@@ -542,7 +535,7 @@ class User extends MobileBase
         		$file = $this->request->file('head_pic');
                 $image_upload_limit_size = config('image_upload_limit_size');
         		$validate = ['size'=>$image_upload_limit_size,'ext'=>'jpg,png,gif,jpeg'];
-        		$dir = 'public/upload/head_pic/';
+        		$dir = UPLOAD_PATH.'head_pic/';
         		if (!($_exists = file_exists($dir))){
         			$isMk = mkdir($dir);
         		}
@@ -587,7 +580,7 @@ class User extends MobileBase
             if (!$userLogic->update_info($this->user_id, $post))
                 $this->error("保存失败");
             setcookie('uname',urlencode($post['nickname']),null,'/');
-            $this->success("操作成功");
+            $this->success("操作成功",U('User/userinfo'));
             exit;
         }
         //  获取省份
@@ -621,7 +614,7 @@ class User extends MobileBase
             $scene = input('post.scene', 6);
             $validate = I('validate',0);
             $status = I('status',0);
-            $c = Db::name('users')->where(['mobile' => mobile, 'user_id' => ['<>', $this->user_id]])->count();
+            $c = Db::name('users')->where(['mobile' => $mobile, 'user_id' => ['<>', $this->user_id]])->count();
             $c && $this->error('手机已被使用');
             if (!$mobile_code)
                 $this->error('请输入验证码');
@@ -632,6 +625,8 @@ class User extends MobileBase
             if($validate == 1 & $status == 0){
                 $res = Db::name('users')->where(['user_id' => $this->user_id])->update(['mobile'=>$mobile]);
                 if($res){
+                    $source = I('source');
+                    !empty($source) && $this->success('绑定成功', U('Home/User/'.$source));
                     $this->success('修改成功',U('User/userinfo'));
                 }
                 $this->error('修改失败');
@@ -966,7 +961,7 @@ class User extends MobileBase
             'imageH' =>  60,
             'imageW' =>  300,
             'fontttf' => '5.ttf',
-            'useCurve' => true,
+            'useCurve' => false,
             'useNoise' => false,
         );
         $Verify = new Verify($config);
@@ -1027,7 +1022,6 @@ class User extends MobileBase
      */
     public function withdrawals()
     {
-
         C('TOKEN_ON', true);
         if (IS_POST) {
             if(!$this->verifyHandle('withdrawals')){
@@ -1037,16 +1031,20 @@ class User extends MobileBase
             $data['user_id'] = $this->user_id;
             $data['create_time'] = time();
             $distribut_min = tpCache('basic.min'); // 最少提现额度
+            $distribut_need = tpCache('basic.need'); // 满多少才能提现
+            if($this->user['user_money'] < $distribut_need)
+            {
+                $this->ajaxReturn(['status'=>0,'msg'=>'账户余额最少达到'.$distribut_need.'多少才能提现']);
+                exit;
+            }
             if(encrypt($data['paypwd']) != $this->user['paypwd']){
-                $this->error("支付密码错误");
+                $this->ajaxReturn(['status'=>0,'msg'=>'支付密码错误']);
             }
             if ($data['money'] < $distribut_min) {
                 $this->ajaxReturn(['status'=>0,'msg'=>'每次最少提现额度' . $distribut_min]);
-                exit;
             }
             if ($data['money'] > $this->user['user_money']) {
                 $this->ajaxReturn(['status'=>0,'msg'=>"你最多可提现{$this->user['user_money']}账户余额."]);
-                exit;
             }
             $withdrawal = M('withdrawals')->where(array('user_id' => $this->user_id, 'status' => 0))->sum('money');
             if ($this->user['user_money'] < ($withdrawal + $data['money'])) {
@@ -1054,10 +1052,8 @@ class User extends MobileBase
             }
             if (M('withdrawals')->add($data)) {
                 $this->ajaxReturn(['status'=>1,'msg'=>"已提交申请",'url'=>U('User/withdrawals_list')]);
-                exit;
             } else {
                 $this->ajaxReturn(['status'=>0,'msg'=>'提交失败,联系客服!']);
-                exit;
             }
         }
         $this->assign('user_money', $this->user['user_money']);    //用户余额
@@ -1220,11 +1216,8 @@ class User extends MobileBase
     {
         //检查是否第三方登录用户
         $user = M('users')->where('user_id', $this->user_id)->find();
-        if(strrchr($_SERVER['HTTP_REFERER'],'/') =='/cart2.html'){  //用户从提交订单页来的，后面设置完有要返回去
-            session('payPriorUrl',U('Mobile/Cart/cart2'));
-        }
         if ($user['mobile'] == '')
-            $this->error('请先绑定手机号',U('User/userinfo',['action'=>'mobile']));
+            $this->error('请先绑定手机号',U('User/setMobile',['source'=>'paypwd']));
         $step = I('step', 1);
         if ($step > 1) {
             $check = session('validate_code');
@@ -1248,151 +1241,77 @@ class User extends MobileBase
         $this->assign('step', $step);
         return $this->fetch();
     }
-    /**
-     *  点赞
-     * @author lxl
-     * @time  17-4-20
-     * 拷多商家Order控制器
-     */
-    public function ajaxZan()
-    {
-        $comment_id = I('post.comment_id/d');
-        $user_id = $this->user_id;
-        $comment_info = M('comment')->where(array('comment_id' => $comment_id))->find();  //获取点赞用户ID
-        $comment_user_id_array = explode(',', $comment_info['zan_userid']);
-        if (in_array($user_id, $comment_user_id_array)) {  //判断用户有没点赞过
-            $result['success'] = 0;
-        } else {
-            array_push($comment_user_id_array, $user_id);  //加入用户ID
-            $comment_user_id_string = implode(',', $comment_user_id_array);
-            $comment_data['zan_num'] = $comment_info['zan_num'] + 1;  //点赞数量加1
-            $comment_data['zan_userid'] = $comment_user_id_string;
-            M('comment')->where(array('comment_id' => $comment_id))->save($comment_data);
-            $result['success'] = 1;
-        }
-        exit(json_encode($result));
-    }
 
 
     /**
      * 会员签到积分奖励
      * 2017/9/28
      */
-    public function sign() {
+    public function sign()
+    {
+        $userLogic = new UsersLogic();
         $user_id = $this->user_id;
-        $config = tpCache('sign');
-        if (IS_AJAX) {
-            $date = I('str'); //20170929
-            //是否正确请求
-            (date("Y-n-j", time()) != $date) && $this->ajaxReturn(['status' => -1, 'msg' => '请求错误！', 'result' => date("Y-n-j", time())]);
+        $info = $userLogic->idenUserSign($user_id);//标识签到
+        $this->assign('info', $info);
+        return $this->fetch();
+    }
 
-            $integral = $config['sign_integral'];
-            $msg = "签到赠送" . $integral . "积分";
-            //签到开关
-            if ($config['sign_on_off'] > 0) {
-                $map['lastsign'] = $date;
-                $map['user_id'] = $user_id;
-                $check = DB::name('user_sign')->where($map)->find();
-                $check && $this->ajaxReturn(['status' => -1, 'msg' => '您今天已经签过啦！', 'result' => '']);
-                if (!DB::name('user_sign')->where(['user_id' => $user_id])->find()) {
-                    //第一次签到
-                    $data = [];
-                    $data['user_id'] = $user_id;
-                    $data['signtotal'] = 1;
-                    $data['lastsign'] = $date;
-                    $data['cumtrapz'] = $config['sign_integral'];
-                    $data['signtime'] = "$date";
-                    $data['signcount'] = 1;
-                    $data['thismonth'] = $config['sign_integral'];
-                    if (M('user_sign')->add($data)) {
-                        $status = ['status' => 1, 'msg' => '签到成功！', 'result' => $config['sign_integral']];
-                    } else {
-                        $status = ['status' => -1, 'msg' => '签到失败!', 'result' => ''];
-                    }
-                    $this->ajaxReturn($status);
-                } else {
-                    $update_data = array(
-                        'signtotal' => ['exp', 'signtotal+' . 1], //累计签到天数            
-                        'lastsign' => ['exp', "'$date'"], //最后签到时间    
-                        'cumtrapz' => ['exp', 'cumtrapz+' . $config['sign_integral']], //累计签到获取积分
-                        'signtime' => ['exp', "CONCAT_WS(',',signtime ,'$date')"], //历史签到记录
-                        'signcount' => ['exp', 'signcount+' . 1], //连续签到天数
-                        'thismonth' => ['exp', 'thismonth+' . $config['sign_integral']], //本月累计积分
-                    );
-
-                    $daya = Db::name('user_sign')->where('user_id', $user_id)->value('lastsign');    //上次签到时间
-                    $dayb = date("Y-n-j", strtotime($date) - 86400);                                   //今天签到时间
-                    //不是连续签
-                    if ($daya != $dayb) {
-                        $update_data['signcount'] = ['exp', 1];                                       //连续签到天数
-                    }
-                    $mb = date("m", strtotime($date));                                               //获取本次签到月份
-                    //不是本月签到
-                    if (intval($mb) != intval(date("m", strtotime($daya)))) {
-                        $update_data['signcount'] = ['exp', 1];                                      //连续签到天数
-                        $update_data['signtime'] = ['exp', "'$date'"];                                  //历史签到记录;
-                        $update_data['thismonth'] = ['exp', $config['sign_integral']];              //本月累计积分
-                    }
-
-                    $update = Db::name('user_sign')->where(['user_id' => $user_id])->update($update_data);
-
-                    (!$update) && $this->ajaxReturn(['status' => -1, 'msg' => '网络异常！', 'result' => '']);
-
-                    $signcount = Db::name('user_sign')->where('user_id', $user_id)->value('signcount');
-                    $integral = $config['sign_integral'];
-                    //满足额外奖励                     
-                    if (( $signcount >= $config['sign_signcount']) && ($config['sign_on_off'] > 0)) {
-                        Db::name('user_sign')->where(['user_id' => $user_id])->update([
-                            'cumtrapz' => ['exp', 'cumtrapz+' . $config['sign_award']],
-                            'thismonth' => ['exp', 'thismonth+' . $config['sign_award']]
-                        ]);
-                        $integral = $config['sign_integral'] + $config['sign_award'];
-                        $msg = "签到赠送" . $config['sign_integral'] . "积分，连续签到奖励" . $config['sign_award'] . "积分，共" . $integral . "积分";
-                    }
-                }
-                if ($config['sign_integral'] > 0 && $config['sign_on_off'] > 0) {
-                    accountLog($user_id, 0, $integral, $msg);
-                    $status = ['status' => 1, 'msg' => '签到成功！', 'result' => $integral];
-                } else {
-                    $status = ['status' => -1, 'msg' => '签到失败!', 'result' => ''];
-                }
-                $this->ajaxReturn($status);
+    /**
+     * Ajax会员签到
+     * 2017/11/19
+     */
+    public function user_sign()
+    {
+        $userLogic = new UsersLogic();
+        $user_id   = $this->user_id;
+        $config    = tpCache('sign');
+        $date      = I('date'); //2017-9-29
+        //是否正确请求
+        (date("Y-n-j", time()) != $date) && $this->ajaxReturn(['status' => false, 'msg' => '签到失败！', 'result' => '']);
+        //签到开关
+        if ($config['sign_on_off'] > 0) {
+            $map['sign_last'] = $date;
+            $map['user_id']   = $user_id;
+            $userSingInfo     = Db::name('user_sign')->where($map)->find();
+            //今天是否已签
+            $userSingInfo && $this->ajaxReturn(['status' => false, 'msg' => '您今天已经签过啦！', 'result' => '']);
+            //是否有过签到记录
+            $checkSign = Db::name('user_sign')->where(['user_id' => $user_id])->find();
+            if (!$checkSign) {
+                $result = $userLogic->addUserSign($user_id, $date);            //第一次签到
             } else {
-                $this->ajaxReturn(['status' => -1, 'msg' => '该功能未开启！', 'result' => '']);
+                $result = $userLogic->updateUserSign($checkSign, $date);       //累计签到
+            }
+            $return = ['status' => $result['status'], 'msg' => $result['msg'], 'result' => ''];
+        } else {
+            $return = ['status' => false, 'msg' => '该功能未开启！', 'result' => ''];
+        }
+        $this->ajaxReturn($return);
+    }
+
+
+    /**
+     * vip充值
+     */
+    public function rechargevip(){
+        $paymentList = M('Plugin')->where("`type`='payment' and code!='cod' and status = 1 and  scene in(0,1)")->select();
+        //微信浏览器
+        if (strstr($_SERVER['HTTP_USER_AGENT'], 'MicroMessenger')) {
+            $paymentList = M('Plugin')->where("`type`='payment' and status = 1 and code='weixin'")->select();
+        }
+        $paymentList = convert_arr_key($paymentList, 'code');
+
+        foreach ($paymentList as $key => $val) {
+            $val['config_value'] = unserialize($val['config_value']);
+            if ($val['config_value']['is_bank'] == 2) {
+                $bankCodeList[$val['code']] = unserialize($val['bank_code']);
             }
         }
-        $map = [];
-        $map['us.user_id'] = $user_id;
-        $field = [
-            'u.user_id as user_id',
-            'u.nickname',
-            'u.mobile',
-            'us.*',
-        ];
-        $join = [
-            ['users u', 'u.user_id=us.user_id', 'left']
-        ];
-        $info = Db::name('user_sign')->alias('us')->field($field)
-                        ->join($join)->where($map)->find();
-
-        ($info['lastsign'] != date("Y-n-j", time())) && $tab = "1";
-
-        $signtime = explode(",", $info['signtime']);
-        $str = "";
-        //是否标识历史签到
-        if (date("m", strtotime($info['lastsign'])) == date("m", time())) {
-            foreach ($signtime as $val) {
-                $str .= date("j", strtotime($val)) . ',';
-            }
-            $this->assign('info', $info);
-            $this->assign('str', $str);
-        }
-      
-        $this->assign('cumtrapz', $info['cumtrapz']);
-        $this->assign("jifen", ($config['sign_signcount'] * $config['sign_integral']) + $config['sign_award']);
-        $this->assign('config', $config);
-        $this->assign('tab', $tab);
-
+        $bank_img = include APP_PATH . 'home/bank.php'; // 银行对应图片
+        $payment = M('Plugin')->where("`type`='payment' and status = 1")->select();
+        $this->assign('paymentList', $paymentList);
+        $this->assign('bank_img', $bank_img);
+        $this->assign('bankCodeList', $bankCodeList);
         return $this->fetch();
     }
 }

@@ -47,7 +47,8 @@
                     <form method="post" id="add_comment" onsubmit="return false">
                         <input type="hidden" id="order_id" name="order_id" value="{$order_info.order_id}">
                         <input type="hidden" id="goods_id" name="goods_id" value="{$order_info.goods_id}">
-                        <input type="hidden" name="order_prom_type"  value="{$order_info['order_prom_type']}">
+                        <input type="hidden" name="prom_type"  value="{$order_info['prom_type']}">
+                        <input type="hidden" name="rec_id"  value="{$order_info['rec_id']}">
                         <div class="mycomment-form">
                             <!-- page -->
                             <div class="form-part1">
@@ -81,7 +82,7 @@
                                                     </span>
                                                     <input type="hidden" id="service_rank_hidden" name="service_rank">
                                                 </div>
-                                                <if condition="$order_info['order_prom_type'] neq 5">
+                                                <if condition="$order_info['prom_type'] neq 5">
                                                 <div class="fop-label">物流服务质量</div>
                                                 <div class="fop-main">
                                                     <span class="commstargoods a_number" id="deliver_rank">
@@ -206,7 +207,7 @@
                 flag = true;
             }
         })
-        var order_prom_type = $('input[name="order_prom_type"]').val();
+        var prom_type = $('input[name="prom_type"]').val();
         var comment_content = $('#comment_content').val()
         if($('#goods_rank_hidden').val()==''){
             showErrorMsg('请给描述相符打分');
@@ -216,7 +217,7 @@
             showErrorMsg('请给卖家服务打分');
             return false;
         }
-        if($('#deliver_rank_hidden').val()=='' && order_prom_type != 5){
+        if($('#deliver_rank_hidden').val()=='' && prom_type != 5){
             showErrorMsg('请给物流服务打分');
             return false;
         }

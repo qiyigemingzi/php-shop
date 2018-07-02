@@ -7,7 +7,7 @@
 		<meta name="description" content="{$tpshop_config['shop_info_store_desc']}" />
 		<link rel="stylesheet" type="text/css" href="__STATIC__/css/tpshop.css" />
 		<link rel="stylesheet" type="text/css" href="__STATIC__/css/myaccount.css" />
-		<link rel="shortcut  icon" type="image/x-icon" href="{$tpshop_config['shop_info_store_logo']}" media="screen"  />
+		<link rel="shortcut  icon" type="image/x-icon" href="{$tpshop_config.shop_info_store_ico|default='/public/static/images/logo/storeico_default.png'}" media="screen"  />
 		<script src="__STATIC__/js/jquery-1.11.3.min.js" type="text/javascript" charset="utf-8"></script>
 		<script src="__PUBLIC__/js/global.js"></script>
 		<script src="__PUBLIC__/js/pc_common.js"></script>
@@ -27,7 +27,7 @@
 						<div class="cancel-order-record" id="cancel-order-record" data-state="2">
 							<div class="title">
 								<div class="left-title">取消订单详情</div>
-								<a class="right-btn" href="tencent://message/?uin={$tpshop_config['shop_info_phone']|default='2812952605'}&Site=微商城&Menu=yes"><i class="ico-contact-small"></i>联系卖家</a>
+								<a class="right-btn" href="tencent://message/?uin={$tpshop_config['shop_info_phone']|default='2812952605'}&Site=TPshop商城&Menu=yes"><i class="ico-contact-small"></i>联系卖家</a>
 							</div>
 							<div class="cont">
 								<ul class="mes">

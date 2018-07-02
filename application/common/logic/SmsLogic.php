@@ -7,7 +7,7 @@
  * ----------------------------------------------------------------------------
  * 这不是一个自由软件！您只能在不用于商业目的的前提下对程序代码进行修改和使用 .
  * 不允许对程序代码以任何形式任何目的的再发布。
- * 采用TP5助手函数可实现单字母函数M D U等,也可db::name方式,可双向兼容
+ * 采用最新Thinkphp5助手函数特性实现单字母函数M D U等简写方式
  * ============================================================================
  * Author: lhb
  * Date: 2017-06-17
@@ -46,22 +46,22 @@ class SmsLogic
         }else{
             $session_id = $unique_id;
         }
-        $smsParams = array(
-            1 => "{\"code\":\"$code\"}",                                                                                                          //1. 用户注册 (验证码类型短信只能有一个变量)
-            2 => "{\"code\":\"$code\"}",                                                                                                          //2. 用户找回密码 (验证码类型短信只能有一个变量)
-            3 => "{\"consignee\":\"$consignee\",\"phone\":\"$mobile\"}",                                                       //3. 客户下单
-            4 => "{\"order_id\":\"$order_id\"}",                                                                                                //4. 客户支付
-            5 => "{\"user_name\":\"$user_name\",\"consignee\":\"$consignee\"}",                                           //5. 商家发货
-            6 => "{\"code\":\"$code\"}",                                                                                                           //6. 修改手机号码 (验证码类型短信只能有一个变量)
-        );
-        
+         
+        $smsParams = [ // 短信模板中字段的值
+            1 => ['code'=>$code],                                                                                                          //1. 用户注册 (验证码类型短信只能有一个变量)
+            2 => ['code'=>$code],                                                                                                          //2. 用户找回密码 (验证码类型短信只能有一个变量)
+            3 => ['consignee'=>$consignee ,'phone'=>$mobile],                                                      //3. 客户下单
+            4 =>['orderId'=>$order_id],                                                                                                //4. 客户支付
+            5 => ['userName'=>$user_name, 'consignee'=>$consignee],                                           //5. 商家发货
+            6 => ['code'=>$code]
+        ];
+
         $smsParam = $smsParams[$scene];
 
         //提取发送短信内容
         $scenes = C('SEND_SCENE');
         $msg = $scenes[$scene][1];
-        $params_arr = json_decode($smsParam);
-        foreach ($params_arr as $k => $v) {
+        foreach ($smsParam as $k => $v) {
             $msg = str_replace('${' . $k . '}', $v, $msg);
         }
 
@@ -94,6 +94,14 @@ class SmsLogic
                 break;
             case 1:
                 $result = $this->sendSmsByAliyun($mobile, $smsSign, $smsParam, $templateCode);
+                break;
+            case 2:
+                //重新组装发送内容, 将变量内容组装成:  13800138006##张三格式
+                foreach ($smsParam as $k => $v){
+                    $contents[] = $v;
+                }
+                $content = implode($contents, "##");
+                $result = $this->sendSmsByCloudsp($mobile, $smsSign, $content, $templateCode);
                 break;
             default:
                 $result = ['status' => -1, 'msg' => '不支持的短信平台'];
@@ -137,6 +145,7 @@ class SmsLogic
         //短信签名 必须
         $req->setSmsFreeSignName($smsSign);
         //短信模板 必须
+        $smsParam = json_encode($smsParam, JSON_UNESCAPED_UNICODE);// 短信模板中字段的值
         $req->setSmsParam($smsParam);
         //短信接收号码 支持单个或多个手机号码，传入号码为11位手机号码，不能加0或+86。群发短信需传入多个号码，以英文逗号分隔，
         $req->setRecNum("$mobile");
@@ -146,6 +155,7 @@ class SmsLogic
         $c->format = 'json';
         //发送短信
         $resp = $c->execute($req);
+         
         //短信发送成功返回True，失败返回false
         if ($resp && $resp->result) {
             return array('status' => 1, 'msg' => $resp->sub_msg);
@@ -154,6 +164,40 @@ class SmsLogic
         }
     }
 
+    
+   /**
+    * 发送短信（天瑞短信）
+    * @param unknown $mobile
+    * @param unknown $smsSign
+    * @param unknown $smsParam
+    * @param unknown $templateCode
+    */
+    private function sendSmsByCloudsp($mobile, $smsSign, $smsParam, $templateCode){
+        
+        $url = "http://api.1cloudsp.com/api/v2/send";
+        $post_data = ["accesskey"=>$this->config['sms_appkey'],
+            "secret"=> $this->config['sms_secretKey'],
+            "sign"=>$smsSign,
+            "templateId"=>$templateCode,
+            "mobile"=>$mobile,
+            "content"=>$smsParam];
+        
+        $resp = httpRequest($url,'post' , $post_data);
+        $resp = json_decode($resp);
+         if ($resp && $resp->code==0) {
+            return array('status' => 1, 'msg' => '已发送成功, 请注意查收');
+        } else {
+
+            if($resp->code == '9006'){
+                return array('status' => -1, 'msg' => '请在后台配置短信或按照文档接入短信' .$resp->code);
+            }else{
+                return array('status' => -1, 'msg' => '发生失败:'.$resp->msg.' , 错误代码:'.$resp->code);
+            }		
+		
+        }
+        
+    }
+    
     /**
      * 发送短信（阿里云短信）
      * @param $mobile  手机号码
@@ -187,6 +231,8 @@ class SmsLogic
         $request->setSignName($smsSign);
         //必填-短信模板Code
         $request->setTemplateCode($templateCode);
+        // 短信模板中字段的值
+        $smsParam = json_encode($smsParam, JSON_UNESCAPED_UNICODE);
         //选填-假如模板中存在变量需要替换则为必填(JSON格式)
         $request->setTemplateParam($smsParam);
         //选填-发送短信流水号

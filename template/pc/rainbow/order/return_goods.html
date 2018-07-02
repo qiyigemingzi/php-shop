@@ -29,7 +29,7 @@
                     <div class="return_area">
                         <div class="user-head clearfix">
                             <h3>退换货申请</h3>
-                            <a class="" href="tencent://message/?uin={$store[store_qq]}&Site=微商城&Menu=yes">联系卖家</a>
+                            <a class="" href="tencent://message/?uin={$store[store_qq]}&Site=TPshop商城&Menu=yes">联系卖家</a>
                             <a class="" href="">售后政策</a>
                         </div>
                         <!-- tab -->
@@ -81,19 +81,12 @@
                                                         <div class="item"> <span class="label"> <em> * </em> 服务类型： </span>
                                                             <div class="clr">
                                                                 <ul class="list-type list-type-new">
-                                                                    <li tvalue="0" class="selected">
-                                                                        <a href="javascript:void(0);">仅退款<b></b> </a>
-                                                                        <input type="radio" name="type" value="0" hidden/>
-                                                                    </li>
-                                                                    <li tvalue="1" class="">
-                                                                        <a href="javascript:void(0);">退货退款<b></b> </a>
-                                                                        <input type="radio" name="type" value="1" hidden/>
-                                                                    </li>
-
-                                                                    <li tvalue="2" class="">
-                                                                        <a href="javascript:void(0);">换货<b></b> </a>
-                                                                        <input type="radio" name="type" value="2" hidden/>
-                                                                    </li> 
+                                                                    <foreach name="$return_type" item="rtype" key="k">
+                                                                        <li tvalue="{$k}" <if condition="$k eq 0">class="selected"</if>>
+                                                                        <a href="javascript:void(0);">{$rtype}<b></b> </a>
+                                                                        </li>
+                                                                    </foreach>
+                                                                    <input type="hidden" id="type_reido" name="type" value="0" hidden/>
                                                                 </ul>
                                                             </div>
                                                         </div>
@@ -238,6 +231,7 @@
       	//初始化 - 仅退款
     	$('.clr_unfinished').show();
     	$('.clr_unfinished').children('input').prop('checked',true);
+        $('#type_reido').val(0);
         $('.clr_achieve').hide();
     })
     
@@ -303,15 +297,15 @@
     $(document).ready(function(){
         $("ul.list-type-new li").click(function(){
         	
-        	var  typeval= $(this).attr('tvalue');
+        	var  typeval= $(this).attr('tvalue')
             if(typeval == 0){ 	
             	//仅退款
             	$('.clr_unfinished').show();
-            	$('.clr_unfinished').children('input').prop('checked',true); 
+            	$('.clr_unfinished').children('input').prop('checked',true);
                 $('.clr_achieve').hide();
             }else if(typeval == 2){
             	//换货
-                $('.clr_unfinished').show();
+                $('.clr_unfinished').hide();
                 $('.clr_achieve').show();
                 $('.clr_achieve').children('input').prop('checked',true);
             }else{
@@ -320,7 +314,7 @@
                 $('.clr_achieve').show();
                 $('.clr_achieve').children('input').prop('checked',true);
             }
-            
+            $('#type_reido').val(typeval);
             $(this).addClass('selected').siblings().removeClass('selected');
             $(this).children('input').trigger('click');
         });

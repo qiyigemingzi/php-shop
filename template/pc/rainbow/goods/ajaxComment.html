@@ -61,7 +61,7 @@
 
     <!--点赞，回复-->
         <div class="g_come">
-            <a href="javascript:void(0);"><i class="detai-ico c-cen"></i>{:count($replyList[$v['comment_id']])}</a>
+           <!-- <a href="javascript:void(0);"><i class="detai-ico c-cen"></i>{:count($replyList[$v['comment_id']])}</a>-->
             <a  onclick="zan(this);"  data-comment-id="{$v['comment_id']}"><i class="detai-ico z-ten"></i><span id="span_zan_{$v['comment_id']}" data-io="{$v['zan_num']}">{$v['zan_num']}</span></a>
         </div>
     </div>

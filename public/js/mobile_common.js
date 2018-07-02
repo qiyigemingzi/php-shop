@@ -2,10 +2,9 @@
  * 将商品加入购物车
  * @param goods_id|商品id
  * @param num|商品数量
- * @param to_cart|加入购物车后再跳转到 购物车页面 默认不跳转 1 为跳转
  * @constructor
  */
-function AjaxAddCart(goods_id, num, to_cart) {
+function AjaxAddCart(goods_id, num) {
 	var form = $("#buy_goods_form");
 	var cart_quantity = $('#tp_cart_info');
 	var data;//post数据
@@ -38,10 +37,6 @@ function AjaxAddCart(goods_id, num, to_cart) {
 				if (data.status < 0) {
 					layer.open({content: data.msg, time: 2});
 					return false;
-				}
-				if (to_cart == 1) {
-					//直接购买
-					location.href = "/index.php?m=Mobile&c=Cart&a=index";
 				}
 				var cart_num = parseInt(cart_quantity.html()) + parseInt($('#number').val());
 				cart_quantity.html(cart_num);
@@ -79,7 +74,7 @@ function AjaxAddCart(goods_id, num, to_cart) {
 }
 
 //购买兑换商品
-function buyIntegralGoods(goods_id, num, to_cart){
+function buyIntegralGoods(goods_id, num){
 	var form = $("#buy_goods_form");
 	var data;//post数据
 	if(getCookie('user_id') == ''){

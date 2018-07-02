@@ -17,6 +17,7 @@
  
 use think\Model; 
 use think\Request;
+use app\admin\logic\RefundLogic;
 
 /**
  * 支付 逻辑定义
@@ -234,10 +235,12 @@ exit("请联系TPshop官网客服购买高级版支持此功能");
     		    $rec_str = substr($batch_no,12);
     			if($res[2] == 'SUCCESS'){
     				$rec_id = substr($rec_str,1);
+    				$refundLogic = new RefundLogic();
     				if(stripos($rec_str,'r') !== false){
-    					updateRefundGoods($rec_id);//订单商品售后退款原路退回
+    					$refundLogic->updateRefundGoods($rec_id);//订单商品售后退款原路退回
     				}else{
-   						updateRefundOrder($rec_id);//订单整单申请原路退款
+    					$order = M('order')->where(array('order_id'=>$rec_id))->find();
+   						$refundLogic->updateRefundOrder($rec_id);//订单整单申请原路退款
     				}
     			}
     		}

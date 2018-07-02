@@ -7,7 +7,7 @@
  * ----------------------------------------------------------------------------
  * 这不是一个自由软件！您只能在不用于商业目的的前提下对程序代码进行修改和使用 .
  * 不允许对程序代码以任何形式任何目的的再发布。
- * 采用TP5助手函数可实现单字母函数M D U等,也可db::name方式,可双向兼容
+ * 采用最新Thinkphp5助手函数特性实现单字母函数M D U等简写方式
  * ============================================================================
  * Author: 当燃      
  * 专题管理
@@ -27,7 +27,6 @@ class Topic extends Base {
     	$act = I('get.act','add');
     	$this->assign('act',$act);
     	$topic_id = I('get.topic_id');
-    	$topic_info = array();
     	if($topic_id){
     		$topic_info = D('topic')->where('topic_id='.$topic_id)->find();
     		$this->assign('info',$topic_info);

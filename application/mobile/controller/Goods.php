@@ -7,7 +7,7 @@
  * ----------------------------------------------------------------------------
  * 这不是一个自由软件！您只能在不用于商业目的的前提下对程序代码进行修改和使用 .
  * 不允许对程序代码以任何形式任何目的的再发布。
- * 采用TP5助手函数可实现单字母函数M D U等,也可db::name方式,可双向兼容
+ * 采用最新Thinkphp5助手函数特性实现单字母函数M D U等简写方式
  * ============================================================================
  * $Author: IT宇宙人 2015-08-10 $
  */
@@ -98,7 +98,7 @@ class Goods extends MobileBase {
     	$page = new Page($count,C('PAGESIZE'));
     	if($count > 0)
     	{
-    		$goods_list = M('goods')->where("goods_id","in", implode(',', $filter_goods_id))->order("$sort $sort_asc")->limit($page->firstRow.','.$page->listRows)->select();
+    		$goods_list = M('goods')->where("goods_id","in", implode(',', $filter_goods_id))->order([$sort=>$sort_asc])->limit($page->firstRow.','.$page->listRows)->select();
     		$filter_goods_id2 = get_arr_column($goods_list, 'goods_id');
     		if($filter_goods_id2)
     			$goods_images = M('goods_images')->where("goods_id", "in", implode(',', $filter_goods_id2))->cache(true)->select();
@@ -162,11 +162,6 @@ class Goods extends MobileBase {
         $goods = $goodsModel::get($goods_id);
         if(empty($goods) || ($goods['is_on_sale'] == 0) || ($goods['is_virtual']==1 && $goods['virtual_indate'] <= time())){
             $this->error('此商品不存在或者已下架');
-        }
-        $goodsPromFactory = new GoodsPromFactory();
-        if (!empty($goods['prom_id']) && $goodsPromFactory->checkPromType($goods['prom_type'])) {
-            $goodsPromLogic = $goodsPromFactory->makeModule($goods, null);//这里会自动更新商品活动状态，所以商品需要重新查询
-            $goods = $goodsPromLogic->getGoodsInfo();//上面更新商品信息后需要查询
         }
         if (cookie('user_id')) {
             $goodsLogic->add_visit_log(cookie('user_id'), $goods);
@@ -276,6 +271,7 @@ class Goods extends MobileBase {
         foreach ($list as $k => $v) {
             $list[$k]['img'] = unserialize($v['img']); // 晒单图片
             $replyList[$v['comment_id']] = M('Comment')->where(['is_show' => 1, 'goods_id' => $goods_id, 'parent_id' => $v['comment_id']])->order("add_time desc")->select();
+            $list[$k]['reply_num'] = Db::name('reply')->where(['comment_id'=>$v['comment_id'],'parent_id'=>0])->count();
         }
         $this->assign('goods_id', $goods_id);//商品id
         $this->assign('commentlist', $list);// 商品评论
@@ -407,7 +403,7 @@ class Goods extends MobileBase {
     	$page = new Page($count,12);
     	if($count > 0)
     	{
-    		$goods_list = M('goods')->where("goods_id", "in", implode(',', $filter_goods_id))->order("$sort $sort_asc")->limit($page->firstRow.','.$page->listRows)->select();
+    		$goods_list = M('goods')->where("goods_id", "in", implode(',', $filter_goods_id))->order([$sort=>$sort_asc])->limit($page->firstRow.','.$page->listRows)->select();
     		$filter_goods_id2 = get_arr_column($goods_list, 'goods_id');
     		if($filter_goods_id2)
     			$goods_images = M('goods_images')->where("goods_id", "in", implode(',', $filter_goods_id2))->cache(true)->select();

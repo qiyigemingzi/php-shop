@@ -14,9 +14,9 @@
                                 echo 'btn-default';                          
                              ?>" >
                     {$vo2}
-                </button>                                                        
-                        <img width="35" height="35" src="{$specImageList[$k2]|default='/public/images/add-button.jpg'}" id="item_img_{$k2}" onclick="GetUploadify3('{$k2}');"/>    
-                        <input type="hidden" name="item_img[{$k2}]" value="{$specImageList[$k2]}" />                                                      
+                </button>
+                <img width="35" height="35" src="{$specImageList[$k2]|default='/public/images/add-button.jpg'}" id="item_img_{$k2}" onclick="GetUploadify3('{$k2}');"/>
+                <input type="hidden" name="item_img[{$k2}]" value="{$specImageList[$k2]}" />
                 &nbsp;&nbsp;&nbsp;            
             </foreach>         
         </td>
@@ -40,24 +40,22 @@
         $("input[name='item_img["+cur_item_id+"]']").val(fileurl_tmp); // 输入框保存一下 方便提交
     }    
     
-   // 按钮切换 class
+   // 规格按钮切换 class
    $("#ajax_spec_data button").click(function(){
 	   if($(this).hasClass('btn-success'))
 	   {
 		   $(this).removeClass('btn-success');
-		   $(this).addClass('btn-default');		   
-	   }
-	   else
-	   {
+		   $(this).addClass('btn-default');
+	   }else{
 		   $(this).removeClass('btn-default');
-		   $(this).addClass('btn-success');		   
+		   $(this).addClass('btn-success');
 	   }
 	   ajaxGetSpecInput();	  	   	 
 });
 	
 
 /**
-*  点击商品规格处罚 下面输入框显示
+*  点击商品规格触发下面输入框显示
 */
 function ajaxGetSpecInput()
 {
@@ -79,7 +77,18 @@ function ajaxGetSpecInput()
 		ajaxGetSpecInput2(spec_arr); // 显示下面的输入框
 	
 }
-	
+
+    $(function () {
+        $(document).on("click", '.delete_item', function (e) {
+            if($(this).text() == '无效'){
+                $(this).parent().parent().find('input').attr('disabled','disabled');
+                $(this).text('有效');
+            }else{
+                $(this).text('无效');
+                $(this).parent().parent().find('input').removeAttr('disabled');
+            }
+        })
+    })
 	
 /**
 * 根据用户选择的不同规格选项 
@@ -91,11 +100,10 @@ function ajaxGetSpecInput2(spec_arr)
     var goods_id = $("input[name='goods_id']").val();
 	$.ajax({
 			type:'POST',
-			data:{'spec_arr':spec_arr},
-			url:"/index.php/admin/Goods/ajaxGetSpecInput/goods_id/"+goods_id,
+			data:{spec_arr:spec_arr,goods_id:goods_id},
+			url:"/index.php/admin/Goods/ajaxGetSpecInput",
 			success:function(data){                            
-				   $("#goods_spec_table2").html('')
-				   $("#goods_spec_table2").append(data);
+				   $("#goods_spec_table2").html('').append(data);
 				   hbdyg();  // 合并单元格
 			}
 	});

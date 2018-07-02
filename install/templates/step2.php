@@ -134,6 +134,20 @@
                               <td><span class='correct_span error_span'>&radic;</span>不可读</td>";                        
                      }
                   ?>
+                </tr>
+                <tr>
+                  <td>favicon.ico</td>
+                  <td>读写</td>
+                  <?php
+                     if (is_writable(SITEDIR.'favicon.ico')){
+                        echo "<td><span class='correct_span'>√</span>可写 </td>
+                              <td><span class='correct_span'>√</span>可读</td>";                 
+                     }else{
+                         $err++;
+                        echo "<td><span class='correct_span error_span'>&radic;</span>不可写 </td>
+                              <td><span class='correct_span error_span'>&radic;</span>不可读</td>";                        
+                     }
+                  ?>
                 </tr>                                 
       </table>
       <table width="100%">

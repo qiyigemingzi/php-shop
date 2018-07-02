@@ -7,7 +7,7 @@
     <meta name="description" content="{$tpshop_config['shop_info_store_desc']}" />
     <link rel="stylesheet" type="text/css" href="__STATIC__/css/tpshop.css" />
     <link rel="stylesheet" type="text/css" href="__STATIC__/css/myaccount.css" />
-    <link rel="shortcut  icon" type="image/x-icon" href="{$tpshop_config['shop_info_store_logo']}" media="screen"  />
+    <link rel="shortcut  icon" type="image/x-icon" href="{$tpshop_config.shop_info_store_ico|default='/public/static/images/logo/storeico_default.png'}" media="screen"  />
     <script src="__STATIC__/js/jquery-1.11.3.min.js" type="text/javascript" charset="utf-8"></script>
 </head>
 <body class="bg-f5">
@@ -23,7 +23,7 @@
             <div class="com-topyue">
                 <div class="wacheng fl">
                     <p class="ddn1"><span>订单号：</span><span>{$order_info.order_sn}</span></p>
-                    <if condition="$order_info.order_prom_type eq 4">
+                    <if condition="$order_info.prom_type eq 4">
                         <p class="ddn1"><span>订单类型：</span><span>预售订单&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></p>
                         <if condition="$order_info.pre_sell_is_finished eq 2">
                             <p class="ddn1"><span>关闭原因：</span><span>商家取消活动，返还订金</span></p>
@@ -54,11 +54,11 @@
                             <a class="consoorder ddn3" href="javascript:void(0);" data-url="{:U('Home/Order/refund_order',array('order_id'=>$order_info[order_id]))}" onClick="refund_order(this)" >取消订单</a>
                         </if>
                     </if>
-                    <if condition="$order_info.order_prom_type eq 4 AND $order_info.pay_status eq 2 AND $order_info.pre_sell_is_finished eq 1 AND (time() egt $order_info.pre_sell_retainage_start AND time() elt $order_info.pre_sell_retainage_end)">
-                        <a class="ddn3" style="margin-top:20px;" href="{:U('/Home/Cart/cart4',array('order_id'=>$order_info[order_id]))}'">支付尾款</a>
+                    <if condition="$order_info.prom_type eq 4 AND $order_info.pay_status eq 2 AND $order_info.pre_sell_is_finished eq 1 AND (time() egt $order_info.pre_sell_retainage_start AND time() elt $order_info.pre_sell_retainage_end)">
+                        <a class="ddn3" style="margin-top:20px;" href="{:U('/Home/Cart/cart4',array('order_id'=>$order_info[order_id]))}">支付尾款</a>
                     </if>
 
-                    <p class="ddn4"><a href="{:U('order_detail',array('id'=>$order_info[order_id],'act'=>'print'))}" target="_blank"><i class="y-comp6"></i>打印订单</a></p>
+                   <!-- <p class="ddn4"><a href="{:U('order_detail',array('id'=>$order_info[order_id],'act'=>'print'))}" target="_blank"><i class="y-comp6"></i>打印订单</a></p>-->
                 </div>
                 <div class="wacheng2 fr">
                     <p class="dd2n">感谢您在商城购物，欢迎您对本次交易及所购商品进行评价。</p>
@@ -126,12 +126,6 @@
                         <if condition="$order_info.pay_status eq 0">
                             <a href="javascript:;">完成订单可能获得:<i class="y-comp7"></i>积分&nbsp;&nbsp;<i class="y-comp8"></i>会员成长值&nbsp;&nbsp;<i class="y-comp7"></i>优惠券</a>
                             <else/>
-                            <!--<a href="javascript:;">-->
-                                <!--<i class="y-comp7"></i>积分<span class="red">{$order_info.integral}</span>-->
-                            <!--</a>-->
-                            <!--<a href="javascript:;">-->
-                                <!--<i class="y-comp8"></i>会员成长值<span class="red">+{$order_info.order_amount|intval}</span>-->
-                            <!--</a>-->
                         </if>
                     </div>
                 </div>
@@ -162,9 +156,7 @@
                 </div>
             </div>
             <script>
-                queryExpress();
-                function queryExpress()
-                {
+                $(function(){
                     var shipping_code = "{$order_info['shipping_code']}";
                     var invoice_no = "{$order_info['invoice_no']}";
                     $.ajax({
@@ -187,7 +179,7 @@
                             $("#express_info").html(html);
                         }
                     });
-                }
+                })
             </script>
         </if>
         <div class="home-main ma-to-20">
@@ -215,13 +207,13 @@
                     <div class="psbaowq">
                         <p><span class="fircl">付款方式：</span><span class="lascl">
                             <if condition="$order_info[pay_status] eq 1 and empty($order_info.pay_name)">
-                                其他支付
+                                在线支付
                                 <else/>
                                 {$order_info.pay_name}
                             </if>
                         </span></p>
                         <p><span class="fircl">付款时间：</span><span class="lascl"><if condition="$order_info[pay_status] eq 1 or $order_info[pay_status] eq 2">{$order_info.pay_time|date='Y-m-d H:i:s',###}<else/>未支付</if></span></p>
-                        <if condition="$order_info.order_prom_type neq 4">
+                        <if condition="$order_info.prom_type neq 4">
                             <p><span class="fircl">商品总额：</span><span class="lascl"><em>￥</em>{$order_info.goods_price}</span></p>
                             <p><span class="fircl">运费金额：</span><span class="lascl"><em>￥</em>{$order_info.shipping_price}</span></p>
                             <p><span class="fircl">优惠券：</span><span class="lascl"><em>￥</em>{$order_info.coupon_price}</span></p>
@@ -230,7 +222,7 @@
                         </if>
                         <p><span class="fircl">余额支付：</span><span class="lascl"><em>￥</em>{$order_info.user_money}</span></p>
                         <!-- 预售商品 start -->
-                        <if condition="$order_info.order_prom_type eq 4 AND $order_info.paid_money gt 0" >
+                        <if condition="$order_info.prom_type eq 4 AND $order_info.paid_money gt 0" >
                             <if condition="$order_info.pay_status eq 1">
                                 <p><span class="fircl">已付尾款：</span><span class="lascl"><em>￥</em>{$order_info.order_amount}</span></p>
                             </if>
@@ -238,7 +230,7 @@
                                 <p><span class="fircl">已付订金：</span><span class="lascl"><em>￥</em>{$order_info.paid_money}</span></p>
                             </tr>
                             <tr>
-                                <p><span class="fircl">发货时间：</span><span class="lascl"><em></em>{$order_info.pre_sell_deliver_goods}</span></p>
+                                <p><span class="fircl">预售发货时间描述：</span><span class="lascl"><em></em>{$order_info.pre_sell_deliver_goods}</span></p>
                             </tr>
                         </if>
                         <!-- 预售商品 end -->
@@ -249,13 +241,14 @@
                     <div class="psbaowq">
                         <p><span class="fircl">发票类型：</span><span class="lascl">普通发票</span></p>
                         <p><span class="fircl">发票抬头：</span><span class="lascl">{$order_info.invoice_title}</span></p>
+                        <p><span class="fircl">纳税人识别号：</span><span class="lascl">{$order_info.taxpayer}</span></p>
                     </div>
                 </div>
             </div>
         </div>
         <div class="beenovercom">
             <div class="shoptist">
-                <span>{$tpshop_config['shop_info_store_name']}<a href="tencent://message/?uin={$tpshop_config['shop_info_qq']}&Site=微商城&Menu=yes" target="_blank"><i class="y-comp9"></i></a></span>
+                <span>{$tpshop_config['shop_info_store_name']}<a href="tencent://message/?uin={$tpshop_config['shop_info_qq']}&Site=TPshop商城&Menu=yes" target="_blank"><i class="y-comp9"></i></a></span>
             </div>
             <div class="orderbook-list">
                 <div class="book-tit">
@@ -340,7 +333,24 @@
         layer.confirm("确定取消订单?",{
             btn:['确定','取消']
         },function(){
-            location.href = "/index.php?m=Home&c=Order&a=cancel_order&id="+id;
+            $.ajax({
+                url:"{:U('Home/Order/cancel_order')}",
+                type:'POST',
+                dataType:'JSON',
+                data:{id:id},
+                success:function(data){
+                    if(data.status == 1){
+                        layer.alert(data.msg, {icon: 1},function(){
+                            location.href ='/index.php?m=home&c=Virtual&a=virtual_order&order_id='+id;
+                        })
+                    }else{
+                        layer.alert(data.msg, {icon: 2});
+                    }
+                },
+                error : function() {
+                    layer.alert('网络失败，请刷新页面后重试', {icon: 2});
+                }
+            });
         }, function(tmp){
             layer.close(tmp);
         })
@@ -368,10 +378,12 @@
                 dataType : 'json',
                 success : function(data){
                     if(data.status == 1){
-                        showErrorMsg(data.msg);
-                        window.location.href = data.url;
+                        layer.alert(data.msg, {icon: 1},function () {
+                            window.location.href = data.url;
+                        });
                     }else{
-                        showErrorMsg(data.msg);
+                        layer.alert(data.msg,{icon:2});
+                        verify();
                     }
                 },
                 error : function(XMLHttpRequest, textStatus, errorThrown) {

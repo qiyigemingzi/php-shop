@@ -30,7 +30,7 @@
                         <td class="text-right">发货单号:</td>
 
                         <td class="text-center">
-                            <input disabled onblur="$('#invoice_no').val(this.value)" name="num" value="{$order.invoice_no}">
+                            <input disabled onblur="$('#invoice_no').val($(this).val())" name="num" value="{$order.invoice_no}">
                             <a onclick="$(this).prev().attr('disabled',false)" data-toggle="tooltip" title="" data-original-title="修改订单号" class="btn btn-primary btn-xs">
                                 <i class="fa fa-pencil"></i>
                             </a>
@@ -128,7 +128,7 @@
                             <td colspan="4">
                                 <div class="form-group text-center">
                                     <button onclick="ajax_submit_form('delivery-form','{:U('Admin/order/delivery',array('id'=>$order['order_id']))}');"  class="btn btn-primary" type="submit" id="disabled">生成发货单</button>
-                                    <button onclick="history.go(-1)"  class="btn btn-primary" type="button">返回</button>
+                                    <button onclick="history.go(-1)"  class="btn btn-primary" type="submit">返回</button>
                                 </div>
                             </td>
                         </div>

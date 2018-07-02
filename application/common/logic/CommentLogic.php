@@ -7,7 +7,7 @@
  * ----------------------------------------------------------------------------
  * 这不是一个自由软件！您只能在不用于商业目的的前提下对程序代码进行修改和使用 .
  * 不允许对程序代码以任何形式任何目的的再发布。
- * 采用TP5助手函数可实现单字母函数M D U等,也可db::name方式,可双向兼容
+ * 采用最新Thinkphp5助手函数特性实现单字母函数M D U等简写方式
  * ============================================================================
  * Author: dyr
  * Date: 2016-08-09
@@ -31,8 +31,42 @@ class CommentLogic extends Model
 		$reply = $this->getReplyPage($comment_id);
 		return array('comment_info'=>$comment_info,'reply'=>$reply);
 	}
-    
-	/**
+
+    /**
+     * 获取评论数
+     * @param int $user_id
+     * @return array
+     */
+    public function getAllTypeCommentNum($user_id)
+    {
+        //已评价
+        $data['had'] = $this->getHadCommentNum($user_id);
+
+        //待评价
+        $data['no'] = $this->getWaitCommentNum($user_id);
+
+        return $data;
+    }
+    /**
+     * 获取已评论数
+     * @param int $user_id
+     * @return array
+     */
+    public function getHadCommentNum($user_id)
+    {
+        return $this->getCommentNum($user_id, 1);
+    }
+
+    /**
+     * 获取未(待)评论数
+     */
+    public function getWaitCommentNum($user_id)
+    {
+        return $this->getCommentNum($user_id, 0);
+    }
+
+
+    /**
 	 * 添加商品评论
 	 * @param $order_id  订单id
 	 * @param $goods_id  商品id
@@ -111,52 +145,7 @@ class CommentLogic extends Model
         //添加评论
         return $this->addGoodsComment($add);
     }  
-    
-    /**
-     * 获取评论列表
-     * @param $user_id 用户id
-     * @param $status  状态 0 未评论 1 已评论 ,其他 全部
-     * @return mixed
-     */
-    public function getComment($user_id, $status = 2)
-    {
-        if ($status == 1) {
-            //已评论
-            $query = M('comment')->alias('c')
-                ->join('__ORDER__ o', 'o.order_id = c.order_id')
-                ->join('__ORDER_GOODS__ og','c.goods_id = og.goods_id AND c.order_id = og.order_id AND og.is_comment=1')
-                ->where('c.user_id', $user_id);
-            $query2 = clone($query);
-            $commented_count = $query->count();
-            $page = new \think\Page($commented_count, 10);
-            $comment_list = $query2->field('og.*,o.*')
-                ->order('c.add_time', 'desc')
-                ->limit($page->firstRow, $page->listRows)
-                ->select();
-        } else {
-            $comment_where = ['og.is_send'=>1];
-            if ($status == 0) {
-                $comment_where['og.is_comment'] = 0;
-            }
-            $query = M('order_goods')->alias('og')
-                ->join('__ORDER__ o',"o.order_id = og.order_id AND o.user_id=$user_id AND o.order_status IN (2,4)")
-                ->where($comment_where);
-            $query2 = clone($query);
-            $comment_count = $query->count();
-            $page = new \think\Page($comment_count,10);
-            $comment_list = $query2->field('og.*,o.*')
-                ->order('o.order_id', 'desc')
-                ->limit($page->firstRow,$page->listRows)
-                ->select();
-        }
-        $show = $page->show();
 
-        $return['result'] = $comment_list;
-        $return['show'] = $show; //分页
-        $return['page'] = $page; //分页
-        return $return;
-    }
-    
     /**
      * 把回复树状数组转换成二维数组
      * @param $comment_id 回复id
@@ -236,51 +225,7 @@ class CommentLogic extends Model
         }
         return $result;
     }
-    
-    /**
-     * 获取已评论数
-     * @param type $user_id
-     * @return type
-     */
-    public function getHadCommentNum($user_id)
-    {
-        $num = M('comment')->alias('c')
-                ->join('__ORDER__ o', 'o.order_id = c.order_id')
-                ->join('__ORDER_GOODS__ g','c.goods_id = g.goods_id AND c.order_id = g.order_id AND g.is_comment=1')
-                ->where('c.user_id', $user_id)
-                ->count();
-        return $num;
-    }
-    
-    /**
-     * 获取未(待)评论数
-     */
-    public function getWaitCommentNum($user_id)
-    {
-        (!$user_id) && $user_id = 0;
-        
-        $num = M('order_goods')->alias('og')
-            ->join('__ORDER__ o',"o.order_id = og.order_id AND o.user_id=$user_id AND o.order_status IN (2,4)",'inner')
-            ->where(['og.is_send' => 1, 'og.is_comment' => 0])
-            ->count();
-        return $num;
-    }
 
-    /**
-     * 获取评论数
-     * @param type $user_id
-     * @return type
-     */
-    public function getCommentNum($user_id)
-    {
-        //已评价
-        $data['had'] = $this->getHadCommentNum($user_id);
-
-        //待评价
-        $data['no'] = $this->getWaitCommentNum($user_id);
-
-        return $data;
-    }
     
     /**
      * 上传评论图片
@@ -297,7 +242,7 @@ class CommentLogic extends Model
             }
             $image_upload_limit_size = config('image_upload_limit_size');
             $validate = ['size'=>$image_upload_limit_size,'ext'=>'jpg,png,gif,jpeg'];
-            $dir = 'public/upload/comment/';
+            $dir = UPLOAD_PATH.'comment/';
             if (!($_exists = file_exists($dir))) {
                 mkdir($dir);
             }
@@ -317,5 +262,67 @@ class CommentLogic extends Model
         }
 
         return ['status' => 1, 'msg' => '上传成功', 'result' => $comment_img];
+    }
+
+    /**
+     * 获取评论列表
+     * @param $user_id 用户id
+     * @param int $status 状态 0 未评论 1 已评论 ,其他 全部
+     * @return mixed
+     */
+    public function getComment($user_id, $status = 2)
+    {
+        $comment_count = $this->getCommentNum($user_id, $status);
+        $page = new \think\Page($comment_count,10);
+        $comment_list = $this->getCommentList($user_id, $status, $page->firstRow, $page->listRows);
+        $return['result'] = $comment_list;
+        $return['page'] = $page; //分页
+        return $return;
+    }
+
+    /**
+     * 获取评论查询数
+     * @param $user_id 用户id
+     * @param int $status 状态 0 未评论 1 已评论 ,其他 全部
+     * @return mixed
+     */
+    public function getCommentNum($user_id, $status = 2)
+    {
+        return $this->getCommentQuery(0, $user_id, $status);
+    }
+
+    public function getCommentList($user_id, $status = 2, $firstRow = 1, $listRows = 10)
+    {
+        return $this->getCommentQuery(1, $user_id, $status, $firstRow, $listRows);
+    }
+
+    /**
+     * 获取评论查询结果
+     * @param $user_id 用户id
+     * @param $queryType: 0: 获取数量， 1:获取列表
+     * @param int $status 状态 0 未评论 1 已评论 ,其他 全部
+     * @return mixed
+     */
+    public function getCommentQuery($queryType, $user_id, $status = 2, $firstRow = 1, $listRows = 10)
+    {
+        $comment_where = ['og.is_send'=> ['in', [1,3]],'o.user_id'=>$user_id];
+        switch($status){
+            case 0: $comment_where['og.is_comment'] = 0;break;
+            case 1: $comment_where['og.is_comment'] = 1;break;
+        }
+
+        $query = M('order_goods')->alias('og')
+            ->join('__ORDER__ o',"o.prom_type != 5 AND o.order_id = og.order_id AND o.user_id=$user_id AND o.deleted = 0 AND o.order_status IN (2,4)")
+            ->join('__COMMENT__ c',"c.rec_id = og.rec_id", 'LEFT')  //要查看评论详情，得连表找出评论ID
+            ->where($comment_where);
+
+        if ($queryType) {
+            return $query->field('og.*,og.is_comment as goods_comment,o.*,c.comment_id')
+                ->order('o.order_id', 'desc')
+                ->limit($firstRow, $listRows)
+                ->select();
+        }
+
+        return $query->count();
     }
 }

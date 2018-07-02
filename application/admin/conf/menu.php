@@ -12,6 +12,8 @@ return	array(
 						array('name'=>'友情链接','act'=>'linkList','op'=>'Article'),
 						array('name'=>'清除缓存','act'=>'cleanCache','op'=>'System'),
 						array('name'=>'自提点','act'=>'index','op'=>'Pickup'),
+						array('name' => '运费模板', 'act'=>'index', 'op'=>'Freight'),
+						array('name' => '快递公司', 'act'=>'index', 'op'=>'Shipping'),
 				)),
 				array('name' => '会员','child'=>array(
 						array('name'=>'会员列表','act'=>'index','op'=>'User'),
@@ -44,6 +46,8 @@ return	array(
 			
 				array('name' => '模板','child'=>array(
 						array('name' => '模板设置', 'act'=>'templateList', 'op'=>'Template'),
+						//array('name' => '自定义手机模板', 'act'=>'index', 'op'=>'Block'),
+						array('name' => '自定义页面', 'act'=>'pageList', 'op'=>'Block'),
 //						array('name' => '手机首页', 'act'=>'mobile_index', 'op'=>'Template'),
 				)),
 				array('name' => '数据','child'=>array(
@@ -58,6 +62,7 @@ return	array(
 	'shop'=>array('name'=>'商城','child'=>array(
 				array('name' => '商品','child' => array(
 				    array('name' => '商品列表', 'act'=>'goodsList', 'op'=>'Goods'),
+				    array('name' => '淘宝导入', 'act'=>'index', 'op'=>'Import'),
 					array('name' => '商品分类', 'act'=>'categoryList', 'op'=>'Goods'),
 					array('name' => '库存日志', 'act'=>'stock_list', 'op'=>'Goods'),
 					array('name' => '商品模型', 'act'=>'goodsTypeList', 'op'=>'Goods'),
@@ -66,7 +71,6 @@ return	array(
 					array('name' => '商品属性', 'act'=>'goodsAttributeList', 'op'=>'Goods'),
 					array('name' => '评论列表', 'act'=>'index', 'op'=>'Comment'),
 					array('name' => '商品咨询', 'act'=>'ask_list', 'op'=>'Comment'),
-                                    
 			)),
 			array('name' => '订单','child'=>array(
 					array('name' => '订单列表', 'act'=>'index', 'op'=>'Order'),
@@ -90,19 +94,21 @@ return	array(
 					array('name' => '拼团管理','act'=>'index', 'op'=>'Team'),
 			)),
 			
-//			array('name' => '分销','child' => array(
-//					array('name' => '分销商品列表', 'act'=>'goods_list', 'op'=>'Distribut'),
-//					array('name' => '分销商列表', 'act'=>'distributor_list', 'op'=>'Distribut'),
-//					array('name' => '分销关系', 'act'=>'tree', 'op'=>'Distribut'),
-//					array('name' => '分销商等级', 'act'=>'grade_list', 'op'=>'Distribut'),
-//					array('name' => '分成日志', 'act'=>'rebate_log', 'op'=>'Distribut'),
-//			)),
+			array('name' => '分销','child' => array(
+					array('name' => '分销商品列表', 'act'=>'goods_list', 'op'=>'Distribut'),
+					array('name' => '分销商列表', 'act'=>'distributor_list', 'op'=>'Distribut'),
+					array('name' => '分销关系', 'act'=>'tree', 'op'=>'Distribut'),
+					array('name' => '分销商等级', 'act'=>'grade_list', 'op'=>'Distribut'),
+					array('name' => '分成日志', 'act'=>'rebate_log', 'op'=>'Distribut'),
+			)),
 	     
     	    array('name' => '微信','child' => array(
     	        array('name' => '公众号配置', 'act'=>'index', 'op'=>'Wechat'),
     	        array('name' => '微信菜单管理', 'act'=>'menu', 'op'=>'Wechat'),
-    	        array('name' => '文本回复', 'act'=>'text', 'op'=>'Wechat'),
-    	        //array('name' => '图文回复', 'act'=>'img', 'op'=>'Wechat'),
+    	        array('name' => '自动回复', 'act'=>'auto_reply', 'op'=>'Wechat'),
+                array('name' => '粉丝列表', 'act'=>'fans_list', 'op'=>'Wechat'),
+                array('name' => '模板消息', 'act'=>'template_msg', 'op'=>'Wechat'),
+                array('name' => '素材管理', 'act'=>'materials', 'op'=>'Wechat'),
     	    )),
 
 			

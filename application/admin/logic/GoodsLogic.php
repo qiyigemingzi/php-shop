@@ -45,14 +45,6 @@ class GoodsLogic extends Model
                     if($value['level'] == 1)
                         $this->get_cat_tree($value['id']);                                
                 }
-                /*
-                foreach ($goods_category2 AS $key => $value)
-                {
-                        $strpad_count = $value['level']*10;
-                        echo str_pad('',$strpad_count,"-",STR_PAD_LEFT);             
-                        echo $value['name'];
-                        echo "<br/>";
-                }*/
                 return $goods_category2;               
     }
     
@@ -133,7 +125,7 @@ class GoodsLogic extends Model
     {
         header("Content-type: text/html; charset=utf-8");
         $GoodsAttribute = D('GoodsAttribute');
-        $attributeList = $GoodsAttribute->where("type_id = $type_id")->select();                                
+        $attributeList = $GoodsAttribute->where(['type_id' => $type_id])->select();
         
         foreach($attributeList as $key => $val)
         {                                                                        
@@ -254,7 +246,6 @@ class GoodsLogic extends Model
                    if(empty($v2))
                        continue;
                    
-                   
                    $tmp_key = $attr_id."_".$v2;
                    $post_attr_price = I("post.attr_price_{$attr_id}");
                    $attr_price = $post_attr_price[$k2]; 
@@ -340,6 +331,7 @@ class GoodsLogic extends Model
         $str .="<td><b>价格</b></td>
                <td><b>库存</b></td>
                <td><b>SKU</b></td>
+               <td><b>操作</b></td>
              </tr>";
        // 显示第二行开始 
        foreach ($spec_arr2 as $k => $v) 
@@ -359,9 +351,9 @@ class GoodsLogic extends Model
 			$keySpecGoodsPrice[$item_key][store_count] ? false : $keySpecGoodsPrice[$item_key][store_count] = 0; //库存默认为0
             $str .="<td><input name='item[$item_key][price]' value='{$keySpecGoodsPrice[$item_key][price]}' onkeyup='this.value=this.value.replace(/[^\d.]/g,\"\")' onpaste='this.value=this.value.replace(/[^\d.]/g,\"\")' /></td>";
             $str .="<td><input name='item[$item_key][store_count]' value='{$keySpecGoodsPrice[$item_key][store_count]}' onkeyup='this.value=this.value.replace(/[^\d.]/g,\"\")' onpaste='this.value=this.value.replace(/[^\d.]/g,\"\")'/></td>";            
-            $str .="<td><input name='item[$item_key][sku]' value='{$keySpecGoodsPrice[$item_key][sku]}' />
-                <input type='hidden' name='item[$item_key][key_name]' value='$item_name' /></td>";
-            $str .="</tr>";           
+            $str .="<td><input name='item[$item_key][sku]' value='{$keySpecGoodsPrice[$item_key][sku]}' /><input type='hidden' name='item[$item_key][key_name]' value='$item_name' /></td>";
+            $str .="<td><button type='button' class='btn btn-default delete_item'>无效</button></td>";
+            $str .="</tr>";
        }
         $str .= "</table>";
        return $str;   
@@ -373,8 +365,7 @@ class GoodsLogic extends Model
      * @param type $checked
      */
     function GetSpecCheckboxList($type_id, $checked = array()){
-        $list = M('Spec')->where("type_id = $type_id")->order('`order` desc')->select();        
-        //$list = M('Spec')->where("1=1")->order('`order` desc')->select();        
+        $list = M('Spec')->where("type_id = $type_id")->order('`order` desc')->select();     
         $str = '';
         
         foreach($list as $key => $val)
@@ -393,8 +384,7 @@ class GoodsLogic extends Model
      * @param type $checked
      */
     function GetAttrCheckboxList($type_id, $checked = array()){                
-        $list = M('GoodsAttribute')->where("type_id = $type_id and attr_index > 0 ")->order('`order` desc')->select();        
-        //$list = M('Spec')->where("1=1")->order('`order` desc')->select();        
+        $list = M('GoodsAttribute')->where("type_id = $type_id and attr_index > 0 ")->order('`order` desc')->select();                
         $str = '';
         
         foreach($list as $key => $val)
@@ -435,26 +425,31 @@ class GoodsLogic extends Model
              $cat_level_arr[$cat_list[$grandfather_id]['level']] = $grandfather_id;
         
         return $cat_level_arr;      
-    }        
-    
+    }
+
     /**
-     *  获取排好序的品牌列表    
+     * 获取排好序的品牌列表
+     * @param int $cat_id
+     * @return mixed
      */
-    function getSortBrands()
+    function getSortBrands($cat_id=0)
     {
         $brandList = S('getSortBrands');
         if(!empty($brandList)){
             return $brandList;
         }
-        $brandList =  M("Brand")->cache(true)->select();
-        $brandIdArr =  M("Brand")->cache(true)->where("name in (select `name` from `".C('database.prefix')."brand` group by name having COUNT(id) > 1)")->getField('id,cat_id');
+        $brand_where=[];
+        if ($cat_id){
+            $brand_where['cat_id|parent_cat_id'] = $cat_id;  //查找分类下的品牌，没值就查找全部
+        }
+        $brandList =  M("Brand")->cache(true)->where($brand_where)->select();
+        $brandIdArr =  M("Brand")->cache(true)->where($brand_where)->where("name in (select `name` from `".C('database.prefix')."brand` group by name having COUNT(id) > 1)")->getField('id,cat_id');
         $goodsCategoryArr = M('goodsCategory')->cache(true)->where("level = 1")->getField('id,name');
         $nameList = array();
         foreach($brandList as $k => $v)
         {
 
             $name = getFirstCharter($v['name']) .'  --   '. $v['name']; // 前面加上拼音首字母
-
             if(array_key_exists($v[id],$brandIdArr) && $v[cat_id]) // 如果有双重品牌的 则加上分类名称
                     $name .= ' ( '. $goodsCategoryArr[$v[cat_id]] . ' ) ';
 
@@ -463,7 +458,6 @@ class GoodsLogic extends Model
         }
         array_multisort($nameList,SORT_STRING,SORT_ASC,$brandList);
 
-        S('getSortBrands',$brandList); 
         return $brandList;
     }
     /**
@@ -504,22 +498,9 @@ class GoodsLogic extends Model
         $nameList = array();
         foreach($categoryList as $k => $v)
         {
-
-            //$str_pad = str_pad('',($v[level] * 5),'-',STR_PAD_LEFT);
             $name = getFirstCharter($v['name']) .' '. $v['name']; // 前面加上拼音首字母
-            //$name = getFirstCharter($v['name']) .' '. $v['name'].' '.$v['level']; // 前面加上拼音首字母
-            /*
-            // 找他老爸
-            $parent_id = $v['parent_id'];
-            if($parent_id)
-                $name .= '--'.$categoryList[$parent_id]['name'];
-            // 找他 爷爷
-            $parent_id = $categoryList[$v['parent_id']]['parent_id'];
-            if($parent_id)
-                $name .= '--'.$categoryList[$parent_id]['name'];
-            */
-             $nameList[] = $v['name'] = $name;
-             $categoryList[$k] = $v;
+            $nameList[] = $v['name'] = $name;
+            $categoryList[$k] = $v;
         }
        array_multisort($nameList,SORT_STRING,SORT_ASC,$categoryList);
 
@@ -527,6 +508,43 @@ class GoodsLogic extends Model
         return $categoryList;
     }
 
+    
+    /**
+     * @方法：将数据格式转换成树形结构数组
+     * @param array $items 要进行转换的数组
+     * return array $items 转换完成的数组
+     */
+    function getCatTree(Array $items) {
+    	$tree = array();
+    	foreach ($items as $item)
+    	if (isset($items[$item['parent_id']])) {
+    		$items[$item['parent_id']]['son'][] = &$items[$item['id']];
+    	} else {
+    		$tree[] = &$items[$item['id']];
+    	}
+    	return $tree;
+    }
+    
+    /**
+     * * 将树形结构数组输出
+     * @param $items    要输出的数组
+     * @param int $deep 顶级父节点id
+     * @param int $type_id 已选中项
+     * @return string
+     */
+    function exportTree($items, $deep = 0, $type_id = 0){
+    	foreach ($items as $item) {
+    		$select .= '<option value="' . $item['id'] . '" ';
+    		$select .= ($type_id == $item['id']) ? 'selected="selected">' : '>';
+    		if ($deep > 0) $select .= str_repeat('&nbsp;', $deep*4);
+    		$select .= '&nbsp;&nbsp;'.htmlspecialchars(addslashes($item['name'])).'</option>';
+    		if (!empty($item['son'])){
+    			$select .= $this->exportTree($item['son'], $deep+1,$type_id);
+    		}
+    	}
+    	return $select;
+    }
+    
     /**
      * 添加编辑预售商品
      * @param $data

@@ -16,8 +16,7 @@
 
 namespace app\admin\controller;
 
-use app\common\logic\OrderLogic;
-use app\common\logic\TeamActivityLogic;
+use app\admin\logic\OrderLogic;
 use app\common\model\Order;
 use app\common\model\TeamActivity;
 use app\common\model\TeamFollow;

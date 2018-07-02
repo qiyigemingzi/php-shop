@@ -2,7 +2,9 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>商品详情</title>
+    <title>{$goods.goods_name}-{$tpshop_config['shop_info_store_name']}</title>
+    <meta name="keywords" content="{$goods.keywords}"/>
+    <meta name="description" content="{$goods.goods_remark}"/>    
     <link rel="stylesheet" type="text/css" href="__STATIC__/css/tpshop.css" />
     <link rel="stylesheet" type="text/css" href="__STATIC__/css/jquery.jqzoom.css">
     <script src="__STATIC__/js/jquery-1.11.3.min.js" type="text/javascript" charset="utf-8"></script>
@@ -11,7 +13,28 @@
     <script src="__PUBLIC__/js/global.js"></script>
     <script src="__PUBLIC__/js/pc_common.js"></script>
     <link rel="stylesheet" href="__STATIC__/css/location.css" type="text/css"><!-- 收货地址，物流运费 -->
+    <link rel="shortcut icon" type="image/x-icon" href="{$tpshop_config.shop_info_store_ico|default='/public/static/images/logo/storeico_default.png'}" media="screen"/>
 </head>
+<style>
+    #detail_video{
+        width: 790px;
+    }
+    .product-gallery .next-right {
+        margin-left: 3px;
+    }
+    .product-gallery .next-btn {
+        display: block;
+        /*width: 21px;*/
+        height: 58px;
+        line-height: 58px;
+        margin-top: 10px;
+        font-family: consolas;
+        font-size: 20px;
+        background-color: rgba(0,0,0,.2);
+        text-align: center;
+        color: #fff;
+    }
+</style>
 <body>
 <!--header-s-->
 <include file="public/header" w="w1224"/>
@@ -34,26 +57,33 @@
         <div class="detail-img">
             <div class="product-gallery">
                 <div class="product-photo" id="photoBody">
+                    <div class="product-video">
+                        <if condition="$goods.video">
+                            <video id="video" src="{$goods.video}" controls="controls" preload="preload" onended="this.load();">
+                                您的浏览器不支持查看此视频，请升级浏览器到最新版本
+                            </video>
+                        </if>
+                    </div>
+                    <i class="close-video"></i>
+                    <i class="video-play"></i>
                     <!-- 商品大图介绍 start [[-->
                     <div class="product-img jqzoom">
                         <img id="zoomimg" src="{$goods.goods_id|goods_thum_images=400,400}" jqimg="{$goods.goods_id|goods_thum_images=800,800}">
                     </div>
                     <!-- 商品大图介绍 end ]]-->
                     <!-- 商品小图介绍 start [[-->
-                    <div class="product-small-img fn-clear"> <a href="javascript:;" class="next-left next-btn fl disabled"></a>
+                    <div class="product-small-img fn-clear">
+                        <a href="javascript:;" class="next-left next-btn fl disabled"><</a>
                         <div class="pic-hide-box fl">
-                            <ul class="small-pic" style="left:0;">
-                                <foreach name="goods_images_list" item="v" key="k" >
-                                    <li class="small-pic-li <if condition="$k eq 0">active</if>">
-                                    <a href="javascript:;">
-                                        <img src="{$v|get_sub_images=$v[goods_id],60,60}" data-img="{$v|get_sub_images=$v[goods_id],400,400}" data-big="{$v|get_sub_images=$v[goods_id],800,800}">
-                                        <i></i>
-                                    </a>
+                            <ul class="small-pic" id="small-pic" style="left:0;">
+                                <volist name="goods_images_list" id="img">
+                                    <li class="small-pic-li <if condition="$i eq 0">active</if>">
+                                    <a href="javascript:;"><img src="{$img|get_sub_images=$img[goods_id],60,60}" data-img="{$img|get_sub_images=$img[goods_id],400,400}" data-big="{$img|get_sub_images=$img[goods_id],800,800}"> <i></i></a>
                                     </li>
-                                </foreach>
+                                </volist>
                             </ul>
                         </div>
-                        <a href="javascript:;" class="next-right next-btn fl"></a> </div>
+                        <a href="javascript:;" class="next-right next-btn fl">></a> </div>
                     <!-- 商品小图介绍 end ]]-->
                 </div>
                 <!-- 收藏商品 start [[-->
@@ -112,7 +142,7 @@
                         <span class="ti" id="prom_detail"></span>
                     </div>
                 </div>
-                <div class="shop-price-cou">
+                <div class="shop-price-cou p">
                     <div class="shop-price-le">
                         <ul>
                             <li class="jaj"><span id="goods_price_title">商城价：</span></li>
@@ -124,7 +154,15 @@
                         </ul>
                         <ul>
                             <li class="jaj"><span id="market_price_title">市场价：</span></li>
-                            <li class="though-line"><span><em>￥</em><span id="market_price">{$goods.market_price}</span></span></li>
+                            <li class="though-line"><span><em>￥</em><span id="market_price">{$goods.market_price}</span></span>
+                                <span class="mobile-buy-cheap">
+                                    手机购买更便宜
+                                    <i>
+                                    <img class="small-qrcode-h" src="/template/pc/rainbow/static/images/qrcode.png" alt="" />
+                                    <img class="big-qrcode-h" src="/index.php?m=Home&c=Index&a=qr_code&data={$ShareLink}&head_pic={$head_pic}&back_img={$back_img}" alt="" />
+                                    </i>
+                                </span>
+                            </li>
                         </ul>
                         <ul id="activity_title_div" style="display: none">
                             <li class="jaj"><span id="activity_label"></span></li>
@@ -155,15 +193,12 @@
                                         <div class="text" style="width: 150px;"><div></div><b></b></div>
                                         <div onclick="$(this).parent().removeClass('hover')" class="close"></div>
                                     </div>
-                                    <span id="dispatching_msg" <if condition="$dispatching[status] neq 1">style="display: none;"</if>>可发货</span>
-                                    <select id="dispatching_select" <empty name="$dispatching[result]">style="display: none;"</empty>>
-                                    <volist name="$dispatching[result]" id="patching">
-                                        <option>{$patching.shipping_name} ￥{$patching.freight}</option>
-                                    </volist>
-                                    </select>
+                                    <span id="dispatching_msg" style="display: none;">可配送</span>
+                                    <span id="dispatching_desc" style="vertical-align: middle;position: relative;top: -4px;left: 9px;color: #666"></span>
                                 </div>
                             </li>
                         </ul>
+                        <script src="__PUBLIC__/js/locationJson.js"></script>
                         <script src="__STATIC__/js/location.js"></script>
                         <!-- 收货地址，物流运费 -end-->
                     </div>
@@ -195,7 +230,6 @@
                             <li class="lawir colo">
                                 <foreach name="v" item="v2" key="k2" >
                                     <input type="radio" hidden id="goods_spec_{$v2[item_id]}" name="goods_spec[{$k}]" value="{$v2[item_id]}"/>
-                                    <!--<a id="goods_spec_a_{$v2[item_id]}" onclick="switch_zooming('{$v2[src]}'); select_filter(this);" <if condition="!empty($v2['src'])">onclick="$('#zoomimg').attr('src','{$v2[src]}');"</if>>{$v2[item]}</a>-->
                                     <if condition="$v2[src] neq ''">
                                         <a id="goods_spec_a_{$v2[item_id]}" onclick="switch_zooming('{$v2[src]}');select_filter(this); $('#zoomimg').attr('src','{$v2[src]}')">
                                             <img src="{$v2[src]}" style="width: 40px;height: 40px;"/>
@@ -227,7 +261,6 @@
                     </ul>
                 </div>
                 <div class="standard p">
-                    <input type="hidden" name="goods_id" value="{$goods.goods_id}" />
                     <if condition="$goods[is_virtual] eq 1">
                         <input type="hidden" name="virtual_limit" id="virtual_limit" value="{$goods.virtual_limit}"/>
                         <a class="paybybill" href="javascript:;" onclick="virtual_buy();">立即购买</a>
@@ -318,6 +351,11 @@
                         </div>
                     </div>
                     <div class="detail-img-b">
+                        <if condition="$goods.video">
+                            <video controls="controls" id="detail_video" preload="preload" onended="this.load();">
+                                <source src="{$goods.video}" TYPE="video/mp4" />
+                            </video>
+                        </if>
                         {$goods.goods_content|htmlspecialchars_decode}
                     </div>
                 </div>
@@ -373,7 +411,7 @@
                                 <li class="te-cen">
                                     <div class="nchx_com">
                                         <p>您可以对已购的商品进行评价</p>
-                                        <a class="jfnuv" href="{:U('Home/User/comment')}">发表评论</a>
+                                        <a class="jfnuv" href="{:U('Home/Order/comment')}">发表评论</a>
                                         <!--<p class="xja"><span>详见</span><a class="de_cb" href="">积分规则</a></p>-->
                                     </div>
                                 </li>
@@ -506,13 +544,13 @@
                                                 <input type="hidden" name="username" value="{$username}" readonly/>
                                             </if>
                                         </div>
-                                        <textarea class="publish-des" placeholder="请在这里输入你要描述的信息" name="content"></textarea>
+                                        <textarea class="publish-des" placeholder="请在这里输入你要描述的信息" name="content" id="conten"></textarea>
                                         <p class="v-code">
                                             验证码:
                                             <input type="text" name="verify_code" maxlength="4"/>
                                             <img id="verify_code" width="80" height="40"  onclick="verify()">
                                         </p>
-                                        <input class="publish-btn" type="submit" value="提交" />
+                                        <input class="publish-btn" onclick="goodsConsultForm()" type="button" value="提交" />
                                     </div>
                                 </form>
                             </div>
@@ -548,6 +586,17 @@
 <script src="__STATIC__/js/lazyload.min.js" type="text/javascript" charset="utf-8"></script>
 <script type="text/javascript" src="__STATIC__/js/headerfooter.js" ></script>
 <script type="text/javascript">
+    if($('#video').length>0){ //判断是否有视频标签
+        $('#photoBody').addClass('videoshow-ac');
+    }
+    $('.video-play').click(function(event) { //点击关闭视频
+        $('#photoBody').addClass('videoshow-ac').removeClass('picshow-ac');
+        video.play();
+    });
+    $('.close-video').click(function(event) {  //点击播放视频
+        $('#photoBody').addClass('picshow-ac').removeClass('videoshow-ac');
+        video.pause();
+    });
     var commentType = 1;// 默认评论类型
     var spec_goods_price = {$spec_goods_price|default='null'};//规格库存价格
     $(document).ready(function () {
@@ -654,52 +703,69 @@
         tmpindex++;
         $('#see_and_see').empty().append(listr);
     }
+
     //缩略图切换
-    $('.small-pic-li').each(function (i, o) {
-        var lilength = $('.small-pic-li').length;
-        $(o).hover(function () {
-            $(o).siblings().removeClass('active');
-            $(o).addClass('active');
-            $('#zoomimg').attr('src', $(o).find('img').attr('data-img'));
-            $('#zoomimg').attr('jqimg', $(o).find('img').attr('data-big'));
+    $('.small-pic-li').mouseenter(function (){
+        if($('#video').length>0){
+            $('.close-video').trigger('click');
+        }
+        $(this).siblings().removeClass('active');
+        $(this).addClass('active');
+        $('#zoomimg').attr('src', $(this).find('img').attr('data-img'));
+        $('#zoomimg').attr('jqimg', $(this).find('img').attr('data-big'));
+    });
 
-            $('.next-btn').removeClass('disabled');
-            if (i == 0) {
-                $('.next-left').addClass('disabled');
-            }
-            if (i + 1 == lilength) {
-                $('.next-right').addClass('disabled');
-            }
+    //缩略图切换
+    function changeImg(){
+        var $picBox=$('#small-pic');
+        var $picList=$picBox.find('.small-pic-li');
+        var length=$picList.length;
+        $picBox.css('width',70*length);
+        if($('#video').length>0){ //判断是否有视频标签
+            $('#photoBody').addClass('videoshow-ac');
+        }
+        $('.video-play').click(function(event) { //点击关闭视频
+            $('#photoBody').addClass('videoshow-ac').removeClass('picshow-ac');
+            video.play();
         });
-    })
-
-    //前一张缩略图
-    $('.next-left').click(function () {
-        var newselect = $('.small-pic>.active').prev();
-        $('.small-pic>.active').removeClass('active');
-        $(newselect).addClass('active');
-        $('#zoomimg').attr('src', $(newselect).find('img').attr('data-img'));
-        $('#zoomimg').attr('jqimg', $(newselect).find('img').attr('data-big'));
-        var index = $('.small-pic>li').index(newselect);
-        if (index == 0) {
-            $('.next-left').addClass('disabled');
+        $('.close-video').click(function(event) {  //点击播放视频
+            $('#photoBody').addClass('picshow-ac').removeClass('videoshow-ac');
+            video.pause();
+        });
+        //缩略图切换
+        $picList.mouseenter(function(){
+            if($('#video').length>0){
+                $('.close-video').trigger('click');
+            }
+            $(this).addClass('active').siblings().removeClass('active');
+            $('#zoomimg').attr('src', $(this).find('img').attr('data-img'));
+            $('#zoomimg').attr('jqimg', $(this).find('img').attr('data-big'));
+        })
+        var i=0;
+        if(length<=5){
+            $('.product-gallery .next-btn').css('display','none');
+        }else{
+            //前一张缩略图
+            $('.next-left').click(function (){
+                i--;
+                if(i<0){
+                    i=0;
+                    return;
+                }
+                $picBox.animate({left:-i*70},500);
+            })
+            //后前一张缩略图
+            $('.next-right').click(function () {
+                i++;
+                if(i>length-5){
+                    i=length-5;
+                    return;
+                }
+                $picBox.animate({left:-i*70},500);
+            })
         }
-        $('.next-right').removeClass('disabled');
-    })
-
-    //后前一张缩略图
-    $('.next-right').click(function () {
-        var newselect = $('.small-pic>.active').next();
-        $('.small-pic>.active').removeClass('active');
-        $(newselect).addClass('active');
-        $('#zoomimg').attr('src', $(newselect).find('img').attr('data-img'));
-        $('#zoomimg').attr('jqimg', $(newselect).find('img').attr('data-big'));
-        var index = $('.small-pic>li').index(newselect);
-        if (index + 1 == $('.small-pic>li').length) {
-            $('.next-right').addClass('disabled');
-        }
-        $('.next-left').removeClass('disabled');
-    })
+    }
+    changeImg();
     $(function(){
         $("#area").click(function (e) {
             SelCity(this,e);
@@ -743,7 +809,7 @@
         }
         $('#store_count').text(maxnum-num); //更新库存数量
         $('#number').val(num);
-        initGoodsPrice();
+/*        initGoodsPrice();*/
     }
 
     //初始化商品价格库存
@@ -758,8 +824,17 @@
                 }
             });
             var spec_key = goods_spec_arr.sort(sortNumber).join('_');  //排序后组合成 key
-            var item_id = spec_goods_price[spec_key]['item_id'];
-            $('input[name=item_id]').val(item_id);
+            if (spec_goods_price[spec_key] != undefined){
+                var item_id = spec_goods_price[spec_key]['item_id'];
+                $('input[name=item_id]').val(item_id);
+            }else{
+                $("#goods_price").html("<em>￥</em>"+0); //变动价格显示
+                $('#spec_store_count').html(0);
+                $('input[name="shop_price"]').attr('value', 0);//商品价格
+                $('input[name="store_count"]').attr('value', 0);//商品库存
+                joinCart(false);
+                return false;
+            }
         }
         $.ajax({
             type: 'post',
@@ -779,6 +854,7 @@
                     $('input[name="activity_is_on"]').attr('value', data.result.goods.activity_is_on);//活动是否正在进行中
                     goods_activity_theme();
                 }
+                doInitRegion();
             }
         });
     }
@@ -790,7 +866,7 @@
         if(activity_is_on == 0){
             setNormalGoodsPrice();
         }else{
-            if(goods_prom_type == 0){
+            if(goods_prom_type == 0 || goods_prom_type == 6){
                 //普通商品
                 setNormalGoodsPrice();
             }else if(goods_prom_type == 1){
@@ -974,14 +1050,17 @@
         if(getCookie('user_id') == ''){
             layer.msg('请先登录！', {icon: 1});
         }else{
+            var goods_arr = new Array();
+            //单个收藏
+            goods_arr.push($('input[name="goods_id"]').val());
             $.ajax({
                 type:'post',
                 dataType:'json',
-                data:{goods_id:$('input[name="goods_id"]').val()},
+                data:{goods_ids:goods_arr},
                 url:"{:U('Home/Goods/collect_goods')}",
                 success:function(res){
                     if(res.status == 1){
-                        layer.msg('成功添加至收藏夹', {icon: 1});
+                        layer.msg(res.msg, {icon: 1});
                     }else{
                         layer.msg(res.msg, {icon: 3});
                     }
@@ -1041,6 +1120,15 @@
         var type = $('#type').val();
         getconsult(type,page)
     });
+    //提交
+    function goodsConsultForm() {
+        var conten = $.trim($('#conten').val());
+        if (conten.length > 500) {
+            layer.msg('咨询内容不得超过500字符！！', {icon: 3});
+            return false;
+        }
+        $('#consultForm').submit();
+    }
     /**
      * 获取商品咨询
      * @param type  //咨询类型

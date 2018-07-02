@@ -62,7 +62,7 @@ class MobileApp extends Base
             if (true !== $result) {        
                 return $this->error('上传文件出错：'.$result, url('MobileApp/index'));
             }
-            $savePath = 'public/upload/appfile/';
+            $savePath = UPLOAD_PATH.'appfile/';
             $saveName = 'android_'.$param['app_version'].'_'.date('ymd_His').'.'.pathinfo($file->getInfo('name'), PATHINFO_EXTENSION);
             $info = $file->move($savePath, $saveName);
             if (!$info) {

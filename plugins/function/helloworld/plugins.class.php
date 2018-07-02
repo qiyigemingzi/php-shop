@@ -12,12 +12,12 @@
  * Date: 2015-09-09
  */
 
-use Think\Model\RelationModel;
+use think\Model;
 /**
  * 插件需要执行的方法 逻辑定义  
  */
 
-class plugins extends RelationModel
+class plugins extends Model
 {    
     public $tableName = 'plugin'; // 插件表            
     public $app_path;

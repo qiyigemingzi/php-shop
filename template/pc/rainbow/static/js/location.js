@@ -37,11 +37,10 @@
 (jQuery);
 
 
-var iplocation = '';
-var provinceCityJson = '';
-ajaxGetRegion();
+var iplocation = locationJsonInfoDyr.ip_location;
+var provinceCityJson = locationJsonInfoDyr.city_location;
 
-function ajaxGetRegion()
+function doInitRegion()
 {
 	var province_id = getCookieByName('province_id'),city_id = getCookieByName('city_id'),district_id = getCookieByName('district_id');
 	if(province_id==null || city_id==null || district_id==null){
@@ -49,20 +48,7 @@ function ajaxGetRegion()
 		city_id = 2;
 		district_id = 3;
 	}
-	$.ajax({
-		type : "get",
-		dataType:'json',
-		url:"/index.php?m=Home&c=Goods&a=getRegion",
-		success: function(data){
-			if(data.status == 1){
-				iplocation = data.ip_location;
-				provinceCityJson = data.city_location;
-				$('ul.list1').Address({ proid: province_id, cityid: city_id, areaid: district_id });
-			}else{
-				console.log('why are you do this');
-			}
-		}
-	});
+	$('ul.list1').Address({ proid: province_id, cityid: city_id, areaid: district_id });
 }
 
 //是否可购买
@@ -83,7 +69,6 @@ function joinCart(able)
 
 //商品物流配送与运费
 function ajaxDispatching(region_id) {
-	var store_count = $("input[name='store_count']").val();
 	var goods_id = $("input[name='goods_id']").val();
 	if(typeof(goods_id) != 'undefined' && region_id!= ''){
 		$.ajax({
@@ -93,26 +78,20 @@ function ajaxDispatching(region_id) {
 			url: "/index.php?m=Home&c=Goods&a=dispatching",
 			success: function (data) {
 				if (data.status == 1) {
-					$('#dispatching_msg').show();
-					$('#dispatching_select').show();
-					$('#dispatching_msg').html(data.msg);
-					$('#dispatching_select option').remove();
-					$.each(data.result, function (n, value) {
-						$('#dispatching_select').append("<option>" + value.shipping_name + " ￥" + value.freight + "</option>");
-					});
-					if(store_count > 0){
-						joinCart(true);
+					$('#dispatching_msg').show().html(data.msg);
+					if(data.result.freight == 0){
+						$('#dispatching_desc').show().html('免运费');
 					}else{
-						joinCart(false);
+						$('#dispatching_desc').show().html("运费 ￥" + data.result.freight);
 					}
+					joinCart(true);
 				} else if (data.status == -1) {
-					$('#dispatching_msg').show();
-					$('#dispatching_msg').html(data.msg);
-					$('#dispatching_select').hide();
+					$('#dispatching_msg').show().html(data.msg);
+					$('#dispatching_desc').hide();
 					joinCart(false);
 				} else {
-					$('#dispatching_msg').hide();
-					$('#dispatching_select').hide();
+					$('#dispatching_msg').show().html(data.msg);
+					$('#dispatching_desc').hide();
 					joinCart(false);
 				}
 			}
@@ -260,7 +239,8 @@ function getAreaList(result) {
 					addrHtml = tProvince + tCity + tArea + tTown;
 					addrID = tID;
 				}
-				store_selector.find(".text div").html(address).attr("title", addrID);
+				// store_selector.find(".text div").html(address).attr("title", addrID);
+				store_selector.find(".text div").html(address).attr("title", tID);
 				addrIDContainer.find("div").html("地名ID为：" + addrID); //地名ID
 				delCookie('province_id');
 				delCookie('city_id');

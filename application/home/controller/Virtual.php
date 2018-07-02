@@ -8,6 +8,7 @@
  * 这不是一个自由软件！您只能在不用于商业目的的前提下对程序代码进行修改和使用 .
  * 不允许对程序代码以任何形式任何目的的再发布。
  * 如果商业用途务必到官方购买正版授权, 以免引起不必要的法律纠纷.
+ * 采用最新Thinkphp5助手函数特性实现单字母函数M D U等简写方式
  * ============================================================================
  * 2016-11-21
  */
@@ -128,7 +129,7 @@ class Virtual extends Base
     	$data['consignee'] = empty($this->user['nickname']) ? $this->user['realname'].$data['mobile'] : $this->user['nickname'];
     	$orderArr = array('user_id'=>$this->user_id,'mobile'=>$data['mobile'],'user_note'=>$data['user_note'],
     			'order_sn'=>$CartLogic->get_order_sn(),'goods_price'=>$goods_price,'consignee'=>$data['consignee'],
-    			'order_prom_type'=>5,'add_time'=>time(),
+    			'prom_type'=>5,'add_time'=>time(),
     			'order_amount'=>$goods_price,'total_amount'=>$goods_price,'shipping_time'=>$goods['virtual_indate']//有效期限
     	);
     	$order_id = M('order')->add($orderArr);
@@ -148,8 +149,13 @@ class Virtual extends Base
     	$data2['give_integral']      = $goods['give_integral']; // 购买商品赠送积分
     	$data2['prom_type']          = $goods['prom_type']; // 0 普通订单,1 限时抢购, 2 团购 , 3 促销优惠
     	$order_goods_id              = M("OrderGoods")->add($data2);
-    
+
     	if($order_goods_id){
+            $reduce = tpCache('shopping.reduce');
+            if($reduce== 1 || empty($reduce)){
+                $order = Db::name('order')->where(['order_id'=>$order_id])->find();
+                minus_stock($order);//下单减库存
+            }
 //     		if(file_exists(APP_PATH.'Common/Logic/DistributLogic.class.php'))
 //     		{
 //     			//分销开关全局
@@ -247,7 +253,7 @@ class Virtual extends Base
         if(!$orderobj) $this->error('没有获取到订单信息');
         // 添加属性  包括按钮显示属性 和 订单状态显示属性
         $order_info = $orderobj->append(['order_status_detail','virtual_order_button','order_goods'])->toArray();
-        if($order_info['order_prom_type'] != 5){   //普通订单
+        if($order_info['prom_type'] != 5){   //普通订单
             $this->redirect(U('Order/order_detail',['id'=>$order_id]));
         }
         //获取订单操作记录

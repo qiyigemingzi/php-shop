@@ -25,7 +25,7 @@
                 <!-- <a href="" class="box-close"></a> -->
                 <span class="box-title">添加地址</span>
             </div>
-            <form action="" method="post" onSubmit="return checkForm()">
+            <form action="" method="post" id="edit_address">
                 <table width="90%" border="0" cellspacing="0" cellpadding="0">
                     <tr>
                         <td align="right"><span class="xh">*</span>收货人：&nbsp;</td>
@@ -78,7 +78,7 @@
                     <tr>
                         <td class="pa-50-0">&nbsp;</td>
                         <td align="right">
-                            <button type="submit" class="box-ok ma-le--70"><span>保存收货地址</span></button>
+                            <button type="button" class="box-ok ma-le--70" onclick="checkForm()"><span>保存收货地址</span></button>
                         </td>
                     </tr>
                 </table>
@@ -89,7 +89,6 @@
 </div>
 <script src="__PUBLIC__/js/global.js"></script>
 <script src="__PUBLIC__/js/pc_common.js"></script>
-
 <script>
     function checkForm(){
         var consignee = $('input[name="consignee"]').val();
@@ -102,13 +101,13 @@
         if(consignee == ''){
             error += '收货人不能为空 <br/>';
         }
-        if(province==0){
+        if(!(province > 0)){
             error += '请选择省份 <br/>';
         }
-        if(city==0){
+        if(!(city > 0)){
             error += '请选择城市 <br/>';
         }
-        if(district==0){
+        if(!(district > 0)){
             error += '请选择区域 <br/>';
         }
         if(address == ''){
@@ -120,12 +119,10 @@
         }
 
         if(error){
-            //alert(error);
 			layer.alert(error, {icon: 2});
-		//	layer.msg('只想弱弱提示');
             return false;
         }
-        return true;
+        $('#edit_address').submit();
     }
 </script>
 </body>

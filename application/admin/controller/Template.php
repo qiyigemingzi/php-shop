@@ -7,7 +7,7 @@
  * ----------------------------------------------------------------------------
  * 这不是一个自由软件！您只能在不用于商业目的的前提下对程序代码进行修改和使用 .
  * 不允许对程序代码以任何形式任何目的的再发布。
- * 采用TP5助手函数可实现单字母函数M D U等,也可db::name方式,可双向兼容
+ * 采用最新Thinkphp5助手函数特性实现单字母函数M D U等简写方式
  * ============================================================================
  * Author: IT宇宙人     
  * Date: 2015-09-09
@@ -46,9 +46,19 @@ class Template extends Base {
      */
     public function changeTemplate(){        
         
-        $t = I('t','pc'); // pc or  mobile        
+        $t = I('t','pc'); // pc or  mobile       
+        $key = I('key/s',''); 
+        
+       $arr = scandir("./template/$t/");
+        foreach ($arr as $k => $val) {
+            if ($val == '.' || $val == '..' || strstr($val,'svn')|| strstr($val,'DS_Store'))
+                continue;
+            $template[] = $val;
+        }
+        if(!in_array($key, $template)) return $this->error("非法模板!");
+        
         $m = ($t == 'pc') ? 'home' : 'mobile';
-        $key = $this->request->param('key');
+        
         //$default_theme = tpCache("hidden.{$t}_default_theme"); // 获取原来的配置                
         //tpCache("hidden.{$t}_default_theme",$_GET['key']);
         //tpCache('hidden',array("{$t}_default_theme"=>$_GET['key']));                         

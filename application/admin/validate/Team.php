@@ -12,7 +12,7 @@ class Team extends Validate
         'team_price'                =>['require','regex'=>'([1-9]\d*(\.\d*[1-9])?)|(0\.\d*[1-9])','checkTeamPrice'],
         'needer'                    =>'require|number|gt:1|checkNeed',
         'goods_id'                  =>'require',
-        'bonus'                     =>['regex'=>'^(?=.*[1-9])\d+(\.\d{1,2})?$'],
+        'bonus'                     =>'checkBonus',
         'stock_limit'               =>'number|checkStockLimit',
         'buy_limit'                 =>'number|egt:0|lt:10000',
         'virtual_num'               =>'number',
@@ -32,7 +32,7 @@ class Team extends Validate
         'needer.require'            => '需要成团人数必须',
         'needer.gt'                 => '需要成团人数必须大于1人',
         'goods_id.require'          => '请选择参与拼团的商品',
-        'bonus.regex'               => '团长佣金格式错误',
+        'bonus.checkBonus'          => '团长佣金格式错误',
         'stock_limit.number'        => '抽奖限量格式错误',
         'buy_limit.number'          => '购买限制数格式错误',
         'buy_limit.egt'             => '购买限制数范围0~10000',
@@ -126,6 +126,15 @@ class Team extends Validate
         }else{
             return true;
         }
+    }
+    protected function checkBonus($value, $rule ,$data){
+        $regex = '^(?=.*[1-9])\d+(\.\d{1,2})?$';
+        if($data['team_type'] == 1 && !$this->regex($data['bonus'], $regex)){
+            return false;
+        }else{
+            return true;
+        }
+
     }
 
 }

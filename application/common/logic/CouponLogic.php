@@ -8,6 +8,7 @@
  * 这不是一个自由软件！您只能在不用于商业目的的前提下对程序代码进行修改和使用 .
  * 不允许对程序代码以任何形式任何目的的再发布。
  * 如果商业用途务必到官方购买正版授权, 以免引起不必要的法律纠纷.
+ * 采用最新Thinkphp5助手函数特性实现单字母函数M D U等简写方式
  * ============================================================================
  * Author: dyr
  * Date: 2016-08-09
@@ -52,7 +53,7 @@ class CouponLogic extends Model
         return false;
     }
     /**
-     * 获取用户可以使用的优惠券
+     * 获取用户可以使用的优惠券金额
      * @param $user_id|用户id
      * @param $coupon_id|优惠券id
      * @return int|mixed
@@ -157,7 +158,7 @@ class CouponLogic extends Model
                     //全店通用
                     if ($couponItem['use_type'] == 0) {
                         $tmp = $userCouponItem;
-                        $tmp['coupon'] = $couponItem;
+                        $tmp['coupon'] = $couponItem->append(['use_type_title'])->toArray();
                         $userCouponArr[] = $tmp;
                     }
                     //限定商品
@@ -165,7 +166,7 @@ class CouponLogic extends Model
                         foreach ($couponItem['goods_coupon'] as $goodsCoupon => $goodsCouponItem) {
                             if (in_array($goodsCouponItem['goods_id'], $goods_ids)) {
                                 $tmp = $userCouponItem;
-                                $tmp['coupon'] = array_merge($couponItem->toArray(), $goodsCouponItem->toArray());
+                                $tmp['coupon'] = array_merge($couponItem->append(['use_type_title'])->toArray(), $goodsCouponItem->toArray());
                                 $userCouponArr[] = $tmp;
                                 break;
                             }
@@ -176,7 +177,7 @@ class CouponLogic extends Model
                         foreach ($couponItem['goods_coupon'] as $goodsCoupon => $goodsCouponItem) {
                             if (in_array($goodsCouponItem['goods_category_id'], $goods_cat_id)) {
                                 $tmp = $userCouponItem;
-                                $tmp['coupon'] = array_merge($couponItem->toArray(), $goodsCouponItem->toArray());
+                                $tmp['coupon'] = array_merge($couponItem->append(['use_type_title'])->toArray(), $goodsCouponItem->toArray());
                                 $userCouponArr[] = $tmp;
                                 break;
                             }
@@ -226,5 +227,59 @@ class CouponLogic extends Model
         } else {
             return ['status' => 0, 'msg' => '兑换失败', 'result' => ''];
         }
+    }
+
+    /**
+     * 获取店铺商品可领取优惠券
+     * @param array $goods_ids|商品id数组
+     * @param array $goods_category_ids|商品分类数组
+     * @return array
+     */
+    public function getStoreGoodsCoupon($goods_ids = [], $goods_category_ids = [])
+    {
+        //查询店铺下所有的优惠券
+        $storeCoupon = Db::name('coupon')->select();
+        $newStoreCoupon = $goodsCouponIds = [];//存放提取的优惠券|存放提取的优惠券id
+        foreach ($storeCoupon as $couponKey => $couponVal) {
+            //提取（免费领取，还有剩余发放数量，处于发放时间）优惠券，
+            if ((($couponVal['createnum'] - $couponVal['send_num']) > 0 || $couponVal['createnum'] == 0)
+                && $couponVal['type'] == 2 && $couponVal['send_start_time'] < time() && $couponVal['send_end_time'] > time()
+                && $couponVal['status'] == 1
+            ) {
+                $newStoreCoupon[] = $couponVal;//存放提取的优惠券
+                //提取（指定商品或者商品分类类型）优惠券id
+                if ($couponVal['use_type'] == 1 || $couponVal['use_type'] == 2) {
+                    $goodsCouponIds[] = $couponVal['id'];//存放提取的优惠券id
+                }
+            }
+        }
+        if ($goodsCouponIds) {
+            //查询（指定商品或者商品分类）优惠券记录
+            $goodsCouponList = Db::name('goods_coupon')->where('coupon_id', 'IN', $goodsCouponIds)->select();
+            if ($goodsCouponList) {
+                $newGoodsCouponIds = [];//存放指定商品Id和商品分类Id的优惠券ID
+                foreach ($goodsCouponList as $gcKey => $gcVal) {
+                    //验证并提取（指定商品或者商品分类）优惠券id
+                    if (in_array($gcVal['goods_id'], $goods_ids) || in_array($gcVal['goods_category_id'], $goods_category_ids)) {
+                        if (!in_array($gcVal['coupon_id'], $newGoodsCouponIds)) {
+                            array_push($newGoodsCouponIds, $gcVal['coupon_id']);
+                        }
+                    }
+                }
+                if ($newGoodsCouponIds) {
+                    $tmp = [];
+                    //过滤不存在的指定商品或者商品分类类型的优惠券
+                    foreach ($newStoreCoupon as $newCouponKey => $newCouponVal) {
+                        if (($newCouponVal['use_type'] == 1 || $newCouponVal['use_type'] == 2) && !in_array($newCouponVal['id'], $newGoodsCouponIds)) {
+                            continue;
+                        }
+                        $tmp[] = $newCouponVal;
+                    }
+                    unset($newStoreCoupon);
+                    $newStoreCoupon = $tmp;
+                }
+            }
+        }
+        return $newStoreCoupon;
     }
 }

@@ -7,7 +7,7 @@
  * ----------------------------------------------------------------------------
  * 这不是一个自由软件！您只能在不用于商业目的的前提下对程序代码进行修改和使用 .
  * 不允许对程序代码以任何形式任何目的的再发布。
- * 采用TP5助手函数可实现单字母函数M D U等,也可db::name方式,可双向兼容
+ * 采用最新Thinkphp5助手函数特性实现单字母函数M D U等简写方式
  * ============================================================================
  * Date: 2015-12-11
  */
@@ -26,7 +26,7 @@ class Coupon extends Base {
      */
     public function index(){
         //获取优惠券列表
-        
+
     	$count =  M('coupon')->count();
     	$Page = new Page($count,10);
         $show = $Page->show();
@@ -42,49 +42,6 @@ class Coupon extends Base {
      * 添加编辑一个优惠券类型
      */
     public function coupon_info(){
-        if (IS_POST) {
-            $data = I('post.');
-            $data['send_start_time'] = strtotime($data['send_start_time']);
-            $data['send_end_time'] = strtotime($data['send_end_time']);
-            $data['use_end_time'] = strtotime($data['use_end_time']);
-            $data['use_start_time'] = strtotime($data['use_start_time']);
-            $couponValidate = Loader::validate('Coupon');
-            if (!$couponValidate->batch()->check($data)) {
-                $this->ajaxReturn(['status' => 0, 'msg' => '操作失败', 'result' => $couponValidate->getError()]);
-            }
-            if (empty($data['id'])) {
-                $data['add_time'] = time();
-                $row = Db::name('coupon')->insertGetId($data);
-                //指定商品
-                if($data['use_type'] == 1){
-                    foreach ($data['goods_id'] as $v) {
-                        Db::name('goods_coupon')->add(['coupon_id'=>$row,'goods_id'=>$v]);
-                    }
-                }
-                //指定商品分类id
-                if($data['use_type'] == 2){
-                    Db::name('goods_coupon')->add(['coupon_id'=>$row,'goods_category_id'=>$data['cat_id3']]);
-                }
-            } else {
-                $row = M('coupon')->where(array('id' => $data['id']))->save($data);
-                Db::name('goods_coupon')->where('coupon_id',$data['id'])->delete();//先删除后添加
-                //指定商品
-                if($data['use_type'] == 1){
-                    foreach ($data['goods_id'] as $v) {
-                        Db::name('goods_coupon')->add(['coupon_id'=>$data['id'],'goods_id'=>$v]);
-                    }
-                }
-                //指定商品分类id
-                if($data['use_type'] == 2){
-                    Db::name('goods_coupon')->add(['coupon_id'=>$data['id'],'goods_category_id'=>$data['cat_id3']]);
-                }
-            }
-            if ($row !== false) {
-                $this->ajaxReturn(['status' => 1, 'msg' => '编辑代金券成功', 'result' => '']);
-            } else {
-                $this->ajaxReturn(['status' => 0, 'msg' => '编辑代金券失败', 'result' => '']);
-            }
-        }
         $cid = I('get.id/d');
         if ($cid) {
             $coupon = M('coupon')->where(array('id' => $cid))->find();
@@ -118,6 +75,54 @@ class Coupon extends Base {
         return $this->fetch();
     }
 
+    /**
+     * 添加编辑优惠券
+     */
+    public function addEditCoupon()
+    {
+        $data = I('post.');
+        $data['send_start_time'] = strtotime($data['send_start_time']);
+        $data['send_end_time'] = strtotime($data['send_end_time']);
+        $data['use_end_time'] = strtotime($data['use_end_time']);
+        $data['use_start_time'] = strtotime($data['use_start_time']);
+        $couponValidate = Loader::validate('Coupon');
+        if (!$couponValidate->batch()->check($data)) {
+            $this->ajaxReturn(['status' => 0, 'msg' => '操作失败', 'result' => $couponValidate->getError()]);
+        }
+        if (empty($data['id'])) {
+            $data['add_time'] = time();
+            $row = Db::name('coupon')->insertGetId($data);
+            //指定商品
+            if ($data['use_type'] == 1) {
+                foreach ($data['goods_id'] as $v) {
+                    Db::name('goods_coupon')->add(['coupon_id' => $row, 'goods_id' => $v,'goods_category_id'=>0]);
+                }
+            }
+            //指定商品分类id
+            if ($data['use_type'] == 2) {
+                Db::name('goods_coupon')->add(['coupon_id' => $row, 'goods_category_id' => $data['cat_id3']]);
+            }
+        } else {
+            $row = M('coupon')->where(array('id' => $data['id']))->save($data);
+            Db::name('goods_coupon')->where(['coupon_id'=>$data['id']])->delete();//先删除后添加
+            //指定商品
+            if ($data['use_type'] == 1) {
+                foreach ($data['goods_id'] as $value) {
+                    Db::name('goods_coupon')->add(['coupon_id' => $data['id'], 'goods_id' => $value]);
+                }
+            }
+            //指定商品分类id
+            if ($data['use_type'] == 2) {
+                Db::name('goods_coupon')->add(['coupon_id' => $data['id'], 'goods_category_id' => $data['cat_id3']]);
+            }
+        }
+        if ($row !== false) {
+            $this->ajaxReturn(['status' => 1, 'msg' => '编辑代金券成功', 'result' => '']);
+        } else {
+            $this->ajaxReturn(['status' => 0, 'msg' => '编辑代金券失败', 'result' => '']);
+        }
+    }
+
     /*
     * 优惠券发放
     */
@@ -135,6 +140,7 @@ class Coupon extends Base {
             $num  = I('post.num/d');
             if($num>$remain && $data['createnum']>0) $this->error($data['name'].'发放量不够了');
             if(!$num > 0) $this->error("发放数量不能小于0");
+            if($data['status'] == 2) $this->error("优惠券已设置为失效");
             $add['cid'] = $cid;
             $add['type'] = $type;
             $add['send_time'] = time();

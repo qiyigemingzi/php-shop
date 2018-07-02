@@ -17,7 +17,7 @@
             	    )
                ),             		
               'admin/index'=>array(
-                'name' =>'系统管理',
+                'name' =>'TPshop系统管理',
                 'action'=>array(
                      'index'=>'欢迎页面',                     
          	       )
@@ -178,16 +178,16 @@
                			'finance'=>'财务统计',
                		)
                ),
-//               'admin/distribut'=>array(
-//               		'name' =>'分销管理',
-//               		'action'=>array(
-//               		       'tree'=>'分销关系',
-//               			'set'=>'分销设置',
-//                        'withdrawals'=>'提现申请记录',
-//                         'remittance'=>'汇款记录',
-//                         'rebate_log'=>'分成记录',
-//               		)
-//               ),
+               'admin/distribut'=>array(
+               		'name' =>'分销管理',
+               		'action'=>array(
+               		       'tree'=>'分销关系',
+               			'set'=>'分销设置',
+                        'withdrawals'=>'提现申请记录',
+                         'remittance'=>'汇款记录',
+                         'rebate_log'=>'分成记录',
+               		)
+               ),        
 
     );
 ?>

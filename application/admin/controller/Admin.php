@@ -7,7 +7,7 @@
  * ----------------------------------------------------------------------------
  * 这不是一个自由软件！您只能在不用于商业目的的前提下对程序代码进行修改和使用 .
  * 不允许对程序代码以任何形式任何目的的再发布。
- * 采用TP5助手函数可实现单字母函数M D U等,也可db::name方式,可双向兼容
+ * 采用最新Thinkphp5助手函数特性实现单字母函数M D U等简写方式
  * ============================================================================
  * Author: 当燃      
  * Date: 2015-09-09
@@ -15,6 +15,8 @@
 
 namespace app\admin\controller;
 
+use app\common\logic\AdminLogic;
+use app\common\logic\ModuleLogic;
 use think\Page;
 use think\Verify;
 use think\Db;
@@ -127,51 +129,41 @@ class Admin extends Base {
     }
     
     
-    /*
+    /**
      * 管理员登陆
      */
-    public function login(){
-        if(session('?admin_id') && session('admin_id')>0){
-             $this->error("您已登录",U('Admin/Index/index'));
-        }
-      
-        if(IS_POST){
+    public function login()
+    {
+        if (IS_POST) {
+            $code = I('post.vertify');
+            $username = I('post.username/s');
+            $password = I('post.password/s');
+
             $verify = new Verify();
-            if (!$verify->check(I('post.vertify'), "admin_login")) {
-            	exit(json_encode(array('status'=>0,'msg'=>'验证码错误')));
+            if (!$verify->check($code, "admin_login")) {
+                $this->ajaxReturn(['status' => 0, 'msg' => '验证码错误']);
             }
-            $condition['user_name'] = I('post.username/s');
-            $condition['password'] = I('post.password/s');
-            if(!empty($condition['user_name']) && !empty($condition['password'])){
-                $condition['password'] = encrypt($condition['password']);
-               	$admin_info = M('admin')->join(PREFIX.'admin_role', PREFIX.'admin.role_id='.PREFIX.'admin_role.role_id','INNER')->where($condition)->find();
-                if(is_array($admin_info)){
-                    session('admin_id',$admin_info['admin_id']);
-                    session('act_list',$admin_info['act_list']);
-                    M('admin')->where("admin_id = ".$admin_info['admin_id'])->save(array('last_login'=>time(),'last_ip'=>  request()->ip()));
-                    session('last_login_time',$admin_info['last_login']);
-                    session('last_login_ip',$admin_info['last_ip']);
-                    adminLog('后台登录');
-                    $url = session('from_url') ? session('from_url') : U('Admin/Index/index');
-                    exit(json_encode(array('status'=>1,'url'=>$url)));
-                }else{
-                    exit(json_encode(array('status'=>0,'msg'=>'账号密码不正确')));
-                }
-            }else{
-                exit(json_encode(array('status'=>0,'msg'=>'请填写账号密码')));
-            }
+
+            $adminLogic = new AdminLogic;
+            $return = $adminLogic->login($username, $password);
+            $this->ajaxReturn($return);
         }
-        
-       return $this->fetch();
+
+        if (session('?admin_id') && session('admin_id') > 0) {
+            $this->error("您已登录", U('Admin/Index/index'));
+        }
+
+        return $this->fetch();
     }
     
     /**
      * 退出登陆
      */
-    public function logout(){
-        session_unset();
-        session_destroy();
-		session::clear();
+    public function logout()
+    {
+        $adminLogic = new AdminLogic;
+        $adminLogic->logout(session('admin_id'));
+
         $this->success("退出成功",U('Admin/Admin/login'));
     }
     
@@ -183,7 +175,7 @@ class Admin extends Base {
         $config = array(
             'fontSize' => 30,
             'length' => 4,
-            'useCurve' => true,
+            'useCurve' => false,
             'useNoise' => false,
         	'reset' => false
         );    
@@ -213,10 +205,8 @@ class Admin extends Base {
 			}
 			$modules[$val['group']][] = $val;
 		}
-		//权限组
-		$group = array('system'=>'系统设置','content'=>'内容管理','goods'=>'商品中心','member'=>'会员中心',
-				'order'=>'订单中心','marketing'=>'营销推广','tools'=>'插件工具','count'=>'统计报表'
-		);
+		//admin权限组
+        $group = (new ModuleLogic)->getPrivilege(0);
 		$this->assign('group',$group);
 		$this->assign('modules',$modules);
     	return $this->fetch();
@@ -357,6 +347,11 @@ class Admin extends Base {
 		if ($data['act'] == 'del' && $data['suppliers_id'] > 0) {
 			$r = $suppliers_model->where('suppliers_id', $data['suppliers_id'])->delete();
 			M('admin')->where(array('suppliers_id' => $data['suppliers_id']))->save(array('suppliers_id' => 0));
+			if($r){
+				respose(1);
+			}else{
+				respose('删除失败');
+			}
 		}
 
 		if ($r !== false) {

@@ -7,7 +7,7 @@
  * ----------------------------------------------------------------------------
  * 这不是一个自由软件！您只能在不用于商业目的的前提下对程序代码进行修改和使用 .
  * 不允许对程序代码以任何形式任何目的的再发布。
- * 采用TP5助手函数可实现单字母函数M D U等,也可db::name方式,可双向兼容
+ * 采用最新Thinkphp5助手函数特性实现单字母函数M D U等简写方式
  * ============================================================================
  * Author: IT宇宙人     
  * Date: 2015-09-09
@@ -47,12 +47,18 @@ class Goods extends Base {
             if(IS_GET)
             {
                 $goods_category_info = D('GoodsCategory')->where('id='.I('GET.id',0))->find();
-                $level_cat = $GoodsLogic->find_parent_cat($goods_category_info['id']); // 获取分类默认选中的下拉框
+                $this->assign('goods_category_info',$goods_category_info);
                 
-                $cat_list = M('goods_category')->where("parent_id = 0")->select(); // 已经改成联动菜单                
-                $this->assign('level_cat',$level_cat);                
-                $this->assign('cat_list',$cat_list);                 
-                $this->assign('goods_category_info',$goods_category_info);      
+                $all_type = M('goods_category')->where("level<3")->getField('id,name,parent_id');//上级分类数据集，限制3级分类，那么只拿前两级作为上级选择
+                if(!empty($all_type)){
+                	$parent_id = empty($goods_category_info) ? I('parent_id',0) : $goods_category_info['parent_id'];
+                	$all_type = $GoodsLogic->getCatTree($all_type);
+                	$cat_select = $GoodsLogic->exportTree($all_type,0,$parent_id);
+                	$this->assign('cat_select',$cat_select);
+                }
+                
+                //$cat_list = M('goods_category')->where("parent_id = 0")->select(); 
+                //$this->assign('cat_list',$cat_list);         
                 return $this->fetch('_category');
                 exit;
             }
@@ -76,80 +82,28 @@ class Goods extends Base {
                     );
                     $this->ajaxReturn($return_arr);
                 } else {
-                     
                     $GoodsCategory->data(input('post.'),true); // 收集数据
-                    $GoodsCategory->parent_id = I('parent_id_1');
-                    input('parent_id_2') && ($GoodsCategory->parent_id = input('parent_id_2'));
-                    //编辑判断
-                    if($type == 2){
-                        $children_where = array(
-                            'parent_id_path'=>array('like','%_'.I('id')."_%")
-                        );
-                        $children = M('goods_category')->where($children_where)->max('level');
-                        if (I('parent_id_1')) {
-                            $parent_level = M('goods_category')->where(array('id' => I('parent_id_1')))->getField('level', false);
-                            if (($parent_level + $children) > 4) {
-                                $return_arr = array(
-                                    'status' => -1,
-                                    'msg'   => $parent_level.'商品分类最多为三级'.$children,
-                                    'data'  => '',
-                                );
-                                $this->ajaxReturn($return_arr);
-                            }
-                        }
-                        if (I('parent_id_2')) {
-                            $parent_level = M('goods_category')->where(array('id' => I('parent_id_2')))->getField('level', false);
-                            if (($parent_level + $children) > 4) {
-                                $return_arr = array(
-                                    'status' => -1,
-                                    'msg'   => '商品分类最多为三级',
-                                    'data'  => '',
-                                );
-                                $this->ajaxReturn($return_arr);
-                            }
-                        }
-                    }
+                    $GoodsCategory->parent_id = I('parent_id');
                     
                     //查找同级分类是否有重复分类
                     $par_id = ($GoodsCategory->parent_id > 0) ? $GoodsCategory->parent_id : 0;
-                    $same_cate = M('GoodsCategory')->where(['parent_id'=>$par_id , 'name'=>$GoodsCategory['name']])->find();
+                    $sameCateWhere = ['parent_id'=>$par_id , 'name'=>$GoodsCategory['name']];
+                    $GoodsCategory->id && $sameCateWhere['id'] = array('<>' , $GoodsCategory->id);
+                    $same_cate = M('GoodsCategory')->where($sameCateWhere)->find();
                     if($same_cate){
-                        $return_arr = array(
-                            'status' => 0,
-                            'msg' => '同级已有相同分类存在',
-                            'data' => '',
-                        );
+                        $return_arr = array('status' => 0,'msg' => '同级已有相同分类存在','data' => '');
                         $this->ajaxReturn($return_arr);
                     }
                     
                     if ($GoodsCategory->id > 0 && $GoodsCategory->parent_id == $GoodsCategory->id) {
                         //  编辑
-                        $return_arr = array(
-                            'status' => 0,
-                            'msg' => '上级分类不能为自己',
-                            'data' => '',
-                        );
+                        $return_arr = array('status' => 0,'msg' => '上级分类不能为自己','data' => '',);
                         $this->ajaxReturn($return_arr);
-                    }
-                    
-                    if($GoodsCategory->id > 0 && $GoodsCategory->parent_id == $GoodsCategory->id)
-                    {
-                        //  编辑
-                        $return_arr = array(
-                            'status' => -1,
-                            'msg'   => '上级分类不能为自己',
-                            'data'  => '',
-                        );
-                        $this->ajaxReturn($return_arr);                        
                     }
                     if($GoodsCategory->commission_rate > 100)
                     {
                         //  编辑
-                        $return_arr = array(
-                            'status' => -1,
-                            'msg'   => '分佣比例不得超过100%',
-                            'data'  => '',
-                        );
+                        $return_arr = array('status' => -1,'msg'   => '分佣比例不得超过100%','data'  => '');
                         $this->ajaxReturn($return_arr);                        
                     }   
                    
@@ -343,8 +297,6 @@ class Goods extends Base {
 
             I('extend_cat_id_2') && ($Goods->extend_cat_id = I('extend_cat_id_2'));
             I('extend_cat_id_3') && ($Goods->extend_cat_id = I('extend_cat_id_3'));
-            $Goods->shipping_area_ids = implode(',', I('shipping_area_ids/a', []));
-            $Goods->shipping_area_ids = $Goods->shipping_area_ids ? $Goods->shipping_area_ids : '';
             $Goods->spec_type = $Goods->goods_type;
             $price_ladder = array();
             if ($Goods->ladder_amount[0] > 0) {
@@ -357,7 +309,7 @@ class Goods extends Base {
                 if ($price_ladder[$price_ladder_max - 1]['price'] >= $Goods->shop_price) {
                     $return_arr = array(
                         'msg' => '价格阶梯最大金额不能大于商品原价！',
-                        'status' => -0,
+                        'status' => 0,
                         'data' => array('url' => $return_url)
                     );
                     $this->ajaxReturn($return_arr);
@@ -365,7 +317,7 @@ class Goods extends Base {
                 if ($price_ladder[0]['amount'] <= 0 || $price_ladder[0]['price'] <= 0) {
                     $return_arr = array(
                         'msg' => '您没有输入有效的价格阶梯！',
-                        'status' => -0,
+                        'status' => 0,
                         'data' => array('url' => $return_url)
                     );
                     $this->ajaxReturn($return_arr);
@@ -374,8 +326,13 @@ class Goods extends Base {
             } else {
                 $Goods->price_ladder = '';
             }
-
+			
+            $spec_item = I('item/a');
             if ($type == 2) {
+            	$goods_stock = M('goods')->where(array('goods_id'=>$goods_id))->getField('store_count');
+            	if(empty($spec_item) && $goods_stock != I('store_count')){
+            		update_stock_log(session('admin_id'),I('store_count')-$goods_stock,array('goods_id'=>$goods_id,'goods_name'=>I('goods_name')));
+            	}
                 $Goods->isUpdate(true)->save(); // 写入数据到数据库
                 // 修改商品后购物车的商品价格也修改一下
                 M('cart')->where("goods_id = $goods_id and spec_key = ''")->save(array(
@@ -386,6 +343,9 @@ class Goods extends Base {
             } else {
                 $Goods->save(); // 写入数据到数据库
                 $goods_id = $insert_id = $Goods->getLastInsID();
+                if(empty($spec_item)){
+                	update_stock_log(session('admin_id'),I('store_count'),array('goods_id'=>$goods_id,'goods_name'=>I('goods_name')));//库存日志
+                }
             }
             $Goods->afterSave($goods_id);
             $GoodsLogic->saveGoodsAttr($goods_id, I('goods_type')); // 处理商品 属性
@@ -397,22 +357,18 @@ class Goods extends Base {
             $this->ajaxReturn($return_arr);
         }
 
-        $goodsInfo = M('Goods')->where('goods_id=' . I('GET.id', 0))->find();
+        $goodsInfo = Db::name('Goods')->where('goods_id=' . I('GET.id', 0))->find();
         if ($goodsInfo['price_ladder']) {
             $goodsInfo['price_ladder'] = unserialize($goodsInfo['price_ladder']);
         }
         $level_cat = $GoodsLogic->find_parent_cat($goodsInfo['cat_id']); // 获取分类默认选中的下拉框
         $level_cat2 = $GoodsLogic->find_parent_cat($goodsInfo['extend_cat_id']); // 获取分类默认选中的下拉框
-        $cat_list = M('goods_category')->where("parent_id = 0")->select(); // 已经改成联动菜单
-        $brandList = $GoodsLogic->getSortBrands();
-        $goodsType = M("GoodsType")->select();
-        $suppliersList = M("suppliers")->select();
-        $plugin_shipping = M('plugin')->where(array('type' => array('eq', 'shipping')))->select();//插件物流
-        $shipping_area = D('Shipping_area')->getShippingArea();//配送区域
-        $goods_shipping_area_ids = explode(',', $goodsInfo['shipping_area_ids']);
-        $this->assign('goods_shipping_area_ids', $goods_shipping_area_ids);
-        $this->assign('shipping_area', $shipping_area);
-        $this->assign('plugin_shipping', $plugin_shipping);
+        $cat_list = Db::name('goods_category')->where("parent_id = 0")->select(); // 已经改成联动菜单
+        $brandList = $GoodsLogic->getSortBrands($goodsInfo['cat_id']);   //获取三级分类下的全部品牌
+        $goodsType = Db::name("GoodsType")->select();
+        $suppliersList = Db::name("suppliers")->select();
+        $freight_template = Db::name('freight_template')->where('')->select();
+        $this->assign('freight_template',$freight_template);
         $this->assign('suppliersList', $suppliersList);
         $this->assign('level_cat', $level_cat);
         $this->assign('level_cat2', $level_cat2);
@@ -423,8 +379,14 @@ class Goods extends Base {
         $goodsImages = M("GoodsImages")->where('goods_id =' . I('GET.id', 0))->select();
         $this->assign('goodsImages', $goodsImages);  // 商品相册
         return $this->fetch('_goods');
-    } 
-          
+    }
+
+    public  function getCategoryBindList(){
+        $cart_id = I('cart_id/d',0);
+        $GoodsLogic = new GoodsLogic();
+        $brandList = $GoodsLogic->getSortBrands($cart_id);
+        $this->ajaxReturn(['status'=>1,'result'=>$brandList]);
+    }
     /**
      * 商品类型  用于设置商品的属性
      */
@@ -604,6 +566,10 @@ class Goods extends Base {
             $groupBuy_goods_ids = implode(',',$groupBuy_goods);
             $this->ajaxReturn(['status' => -1,'msg' =>"ID为【{$groupBuy_goods_ids}】的商品有团购,不得删除!",'data'  =>'']);
         }
+        
+        //删除用户收藏商品记录
+        M('GoodsCollect')->whereIn('goods_id',$goods_ids)->delete();
+        
         // 删除此商品        
         M("Goods")->whereIn('goods_id',$goods_ids)->delete();  //商品表
         M("cart")->whereIn('goods_id',$goods_ids)->delete();  // 购物车
@@ -676,14 +642,13 @@ class Goods extends Base {
     /**
      * 品牌列表
      */
-    public function brandList(){  
-        $model = M("Brand"); 
+    public function brandList(){
         $where = "";
         $keyword = I('keyword');
         $where = $keyword ? " name like '%$keyword%' " : "";
-        $count = $model->where($where)->count();
+        $count = Db::name("Brand")->where($where)->count();
         $Page = $pager = new Page($count,10);        
-        $brandList = $model->where($where)->order("`sort` asc")->limit($Page->firstRow.','.$Page->listRows)->select();
+        $brandList = Db::name("Brand")->where($where)->order("sort desc")->limit($Page->firstRow.','.$Page->listRows)->select();
         $show  = $Page->show(); 
         $cat_list = M('goods_category')->where("parent_id = 0")->getField('id,name'); // 已经改成联动菜单
         $this->assign('cat_list',$cat_list);       
@@ -707,9 +672,9 @@ class Goods extends Base {
                     $this->ajaxReturn($return);
                 }
                 if($id){
-                	M("Brand")->update($data);
+                	Db::name("Brand")->update($data);
                 }else{
-                	M("Brand")->insert($data);
+                    Db::name("Brand")->insert($data);
                 }
                 $this->ajaxReturn(['status'=>1,'msg'=>'操作成功','result'=>'']);
             }           

@@ -85,6 +85,7 @@ class Virtual extends MobileBase
     	$paymentList = convert_arr_key($paymentList, 'code');
     	foreach($paymentList as $key => $val)
     	{
+            unset($paymentList['cod']);  //去掉货到付款
     	    $val['config_value'] = unserialize($val['config_value']);
     	    if($val['config_value']['is_bank'] == 2)
     	    {
@@ -94,10 +95,7 @@ class Virtual extends MobileBase
     	    if(($key == 'weixin' && !is_weixin()) || ($key == 'alipayMobile' && is_weixin())){
     	        unset($paymentList[$key]);
     	    }
-    	} 
-    	
-    	//halt($paymentList);
-    	
+    	}
     	$bank_img = include APP_PATH . 'home/bank.php'; // 银行对应图片
     	$this->assign('paymentList',$paymentList);
     	$this->assign('bank_img',$bank_img);
@@ -130,7 +128,7 @@ class Virtual extends MobileBase
     	$data['consignee'] = empty($this->user['nickname']) ? $this->user['realname'].$data['mobile'] : $this->user['nickname'];
     	$orderArr = array('user_id'=>$this->user_id,'mobile'=>$data['mobile'],'user_note'=>$data['user_note'],
     			'order_sn'=>$CartLogic->get_order_sn(),'goods_price'=>$goods_price,'consignee'=>$data['consignee'],
-    			'order_prom_type'=>5,'add_time'=>time(),
+    			'prom_type'=>5,'add_time'=>time(),
     			'order_amount'=>$goods_price,'total_amount'=>$goods_price,'shipping_time'=>$goods['virtual_indate']//有效期限
     	);
     	$order_id = M('order')->add($orderArr);
@@ -150,8 +148,13 @@ class Virtual extends MobileBase
     	$data2['give_integral']      = $goods['give_integral']; // 购买商品赠送积分
     	$data2['prom_type']          = $goods['prom_type']; // 0 普通订单,1 限时抢购, 2 团购 , 3 促销优惠
     	$order_goods_id              = M("OrderGoods")->add($data2);
-    
+
     	if($order_goods_id){
+            $reduce = tpCache('shopping.reduce');
+            if($reduce== 1 || empty($reduce)){
+                $order = Db::name('order')->where(['order_id'=>$order_id])->find();
+                minus_stock($order);//下单减库存
+            }
 //     		if(file_exists(APP_PATH.'Common/Logic/DistributLogic.class.php'))
 //     		{
 //     			//分销开关全局
@@ -252,7 +255,7 @@ class Virtual extends MobileBase
         if(!$orderobj) $this->error('没有获取到订单信息');
         // 添加属性  包括按钮显示属性 和 订单状态显示属性
         $order_info = $orderobj->append(['order_status_detail','virtual_order_button','order_goods'])->toArray();
-        if($order_info['order_prom_type'] != 5){   //普通订单
+        if($order_info['prom_type'] != 5){   //普通订单
             $this->redirect(U('Order/order_detail',['id'=>$order_id]));
         }
         //获取订单操作记录

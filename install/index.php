@@ -228,6 +228,10 @@ switch ($step) {
             $sqlFormat = sql_split($sqldata, $dbPrefix);
             //创建写入sql数据库文件到库中 结束
 
+			mysqli_query($conn,"set global wait_timeout=2147480");
+			mysqli_query($conn,"set global interactive_timeout=2147480");
+			mysqli_query($conn,"set global max_allowed_packet=104857600");			
+			
             /**
              * 执行SQL语句
              */
@@ -264,7 +268,13 @@ switch ($step) {
 			if($_POST['demo'] != 'demo')
 			{				
 				$result = mysqli_query($conn,"show tables");      
-				$tables=$result->fetch_all(MYSQLI_NUM);//参数MYSQL_ASSOC、MYSQLI_NUM、MYSQLI_BOTH规定产生数组类型
+				$tables = array();
+				//$tables=$result->fetch_all(MYSQLI_NUM);//参数MYSQL_ASSOC、MYSQLI_NUM、MYSQLI_BOTH规定产生数组类型											
+				while($row = mysqli_fetch_array($result)) {
+					$tables[] = $row;
+				}	 			
+				
+				
 				$bl_table = array('tp_admin','tp_config','tp_region','tp_system_module','tp_admin_role','tp_system_menu','tp_article_cat','tp_wx_user');
 				foreach($bl_table as $k => $v)
 				{

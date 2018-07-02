@@ -745,6 +745,23 @@ class WxPayUnifiedOrder extends WxPayDataBase
 	{
 		return array_key_exists('openid', $this->values);
 	}
+
+    // 场景信息 json数据
+    public function SetSceneInfo($value)
+    {
+        $this->values['scene_info'] = $value;
+    }
+
+    // 场景信息
+    public function GetSceneInfo($value)
+    {
+        return $this->values['scene_info'];
+    }
+
+    public function IsSceneInfo()
+    {
+        return array_key_exists('scene_info', $this->values);
+    }
 }
 
 /**

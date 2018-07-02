@@ -15,9 +15,10 @@
 
 namespace app\admin\logic;
 
-use think\Model;
 use think\Db;
-class OrderLogic extends Model
+use app\common\logic\WechatLogic;
+
+class OrderLogic
 {
     /**
      * @param array $condition  搜索条件
@@ -29,36 +30,6 @@ class OrderLogic extends Model
         $res = M('order')->where($condition)->limit("$start,$page_size")->order($order)->select();
         return $res;
     }
-
-    /**
-     * 获取订单商品详情
-     * @param $order_id
-     * @param string $is_send
-     * @return mixed
-     */
-    public function getOrderGoods($order_id,$is_send =''){
-        if($is_send){
-            $where=" and o.is_send < $is_send";
-        }
-        $sql = "SELECT g.*,o.*,(o.goods_num * o.member_goods_price) AS goods_total FROM __PREFIX__order_goods o ".
-            "LEFT JOIN __PREFIX__goods g ON o.goods_id = g.goods_id WHERE o.order_id = $order_id ".$where;
-        $res = DB::query($sql);
-        return $res;
-    }
-
-
-    /*
-     * 获取订单信息
-     */
-    public function getOrderInfo($order_id)
-    {
-        //  订单总金额查询语句		
-        $order = M('order')->where("order_id = $order_id")->find();
-        $order['address2'] = $this->getAddressName($order['province'],$order['city'],$order['district']);
-        $order['address2'] = $order['address2'].$order['address'];		
-        return $order;
-    }
-
     /*
      * 根据商品型号获取商品
      */
@@ -139,26 +110,37 @@ class OrderLogic extends Model
     	$os = $order['order_status'];//订单状态
     	$ss = $order['shipping_status'];//发货状态
     	$ps = $order['pay_status'];//支付状态
+		$pt = $order['prom_type'];//订单类型：0默认1抢购2团购3优惠4预售5虚拟6拼团
         $btn = array();
         if($order['pay_code'] == 'cod') {
         	if($os == 0 && $ss == 0){
-        		$btn['confirm'] = '确认';
+				if($pt != 6){
+					$btn['confirm'] = '确认';
+				}
         	}elseif($os == 1 && ($ss == 0 || $ss == 2)){
         		$btn['delivery'] = '去发货';
-        		$btn['cancel'] = '取消确认';
+				if($pt != 6){
+					$btn['cancel'] = '取消确认';
+				}
         	}elseif($ss == 1 && $os == 1 && $ps == 0){
         		$btn['pay'] = '付款';
         	}elseif($ps == 1 && $ss == 1 && $os == 1){
-        		$btn['pay_cancel'] = '设为未付款';
+				if($pt != 6){
+					$btn['pay_cancel'] = '设为未付款';
+				}
         	}
         }else{
         	if($ps == 0 && $os == 0 || $ps == 2){
         		$btn['pay'] = '付款';
         	}elseif($os == 0 && $ps == 1){
-        		$btn['pay_cancel'] = '设为未付款';
-        		$btn['confirm'] = '确认';
+				if($pt != 6){
+					$btn['pay_cancel'] = '设为未付款';
+					$btn['confirm'] = '确认';
+				}
         	}elseif($os == 1 && $ps == 1 && ($ss == 0 || $ss == 2)){
-        		$btn['cancel'] = '取消确认';
+				if($pt != 6){
+					$btn['cancel'] = '取消确认';
+				}
         		$btn['delivery'] = '去发货';
         	}
         } 
@@ -254,18 +236,23 @@ class OrderLogic extends Model
     	//分销设置
     	M('rebate_log')->where("order_id = {$order['order_id']}")->save(array('status'=>0));
     }
-    
+
     /**
      *	处理发货单
      * @param array $data  查询数量
+     * @return array
+     * @throws \think\Exception
      */
     public function deliveryHandle($data){
-		$order = $this->getOrderInfo($data['order_id']);
-		$orderGoods = $this->getOrderGoods($data['order_id']);
+        $orderModel = new \app\common\model\Order();
+        $orderObj = $orderModel::get(['order_id'=>$data['order_id']]);
+        $order =$orderObj->append(['full_address','orderGoods'])->toArray();
+        $orderGoods= $order['orderGoods'];
 		$selectgoods = $data['goods'];
         if($data['shipping'] == 1){
-            return $this->updateOrderShipping($data,$order);
-            exit;
+            if (!$this->updateOrderShipping($data,$order)){
+                return array('status'=>0,'msg'=>'操作失败！！');
+            }
         }
 		$data['order_sn'] = $order['order_sn'];
 		$data['delivery_sn'] = $this->get_delivery_sn();
@@ -281,7 +268,17 @@ class OrderLogic extends Model
 		$data['address'] = $order['address'];
 		$data['shipping_price'] = $order['shipping_price'];
 		$data['create_time'] = time();
-		$did = M('delivery_doc')->add($data);
+		
+    	if($data['send_type'] == 0 || $data['send_type'] == 3){
+			$did = M('delivery_doc')->add($data);
+		}else{
+			$result = $this->submitOrderExpress($data,$orderGoods);
+			if($result['status'] == 1){
+				$did = $result['did'];
+			}else{
+				return array('status'=>0,'msg'=>$result['msg']);
+			}
+		}
 		$is_delivery = 0;
 		foreach ($orderGoods as $k=>$v){
 			if($v['is_send'] >= 1){
@@ -294,18 +291,20 @@ class OrderLogic extends Model
 				$is_delivery++;
 			}
 		}
-		$updata['shipping_time'] = time();
+		$update['shipping_time'] = time();
+		$update['shipping_code'] = $data['shipping_code'];
+		$update['shipping_name'] = $data['shipping_name'];
 		if($is_delivery == count($orderGoods)){
-			$updata['shipping_status'] = 1;
+			$update['shipping_status'] = 1;
 		}else{
-			$updata['shipping_status'] = 2;
+			$update['shipping_status'] = 2;
 		}
-		M('order')->where("order_id=".$data['order_id'])->save($updata);//改变订单状态
+		M('order')->where("order_id=".$data['order_id'])->save($update);//改变订单状态
 		$s = $this->orderActionLog($order['order_id'],'delivery',$data['note']);//操作日志
 		
 		//商家发货, 发送短信给客户
 		$res = checkEnableSendSms("5");
-		if($res && $res['status'] ==1){
+		if ($res && $res['status'] ==1) {
 		    $user_id = $data['user_id'];
 		    $users = M('users')->where('user_id', $user_id)->getField('user_id , nickname , mobile' , true);
 		    if($users){
@@ -315,8 +314,16 @@ class OrderLogic extends Model
 		        $resp = sendSms("5", $sender, $params,'');
 		    }
 		}
-		
-		return $s && $r;
+
+        // 发送微信模板消息通知
+        $wechat = new WechatLogic;
+        $wechat->sendTemplateMsgOnDeliver($data);
+        
+		if($s && $r){
+			return array('status'=>1,'printhtml'=>isset($result['printhtml']) ? $result['printhtml'] : '');
+		}else{
+			return array('status'=>0,'msg'=>'发货失败');
+		}
     }
 
     /**
@@ -444,5 +451,18 @@ class OrderLogic extends Model
     		}
     	}
     	return $return_goods['refund_money'];
+    }
+
+    //订单发货在线下单、电子面单
+    public function submitOrderExpress($data,$orderGoods){
+		return array('status'=>0,'msg'=>'请联系TPshop官网客服购买高级版支持此功能');
+    }
+    
+    //识别单号
+    public function distinguishExpress(){
+    	require_once(PLUGIN_PATH . 'kdniao/kdniao.php');
+    	$kdniao = new \kdniao();
+    	$data['LogisticCode'] = I('invoice_no');
+    	$res = $kdniao->getOrderTracesByJson(json_encode($data));
     }
 }

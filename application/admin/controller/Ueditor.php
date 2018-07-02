@@ -5,11 +5,9 @@
  * 版权所有 2015-2027 深圳搜豹网络科技有限公司，并保留所有权利。
  * 网站地址: http://www.tp-shop.cn
  * ----------------------------------------------------------------------------
- * 这不是一个自由软件！您只能在不用于商业目的的前提下对程序代码进行修改和使用 .
- * 不允许对程序代码以任何形式任何目的的再发布。
- * 如果商业用途务必到官方购买正版授权, 以免引起不必要的法律纠纷.
+ * 商业用途务必到官方购买正版授权, 使用盗版将严厉追究您的法律责任。
  * ============================================================================
- * Author: 当燃
+ * Author: 当燃      
  * Date: 2015-09-17
  */
 
@@ -17,7 +15,10 @@ namespace app\admin\controller;
 
 use common\util\File;
 use think\log;
+use think\Image;
 use think\Request;
+use app\common\logic\EditorLogic;
+
 /**
  * Class UeditorController
  * @package Admin\Controller
@@ -30,21 +31,22 @@ class Ueditor extends Base
     public function __construct()
     {
         parent::__construct();
-
+        
         //header('Access-Control-Allow-Origin: http://www.baidu.com'); //设置http://www.baidu.com允许跨域访问
         //header('Access-Control-Allow-Headers: X-Requested-With,X_Requested_With'); //设置允许的跨域header
-
+        
         date_default_timezone_set("Asia/Shanghai");
 
-        $this->savePath = I('savepath','temp').'/';
+        $savePath = I('savepath') ?: I('savePath');
+        $this->savePath = $savePath ? $savePath . '/' : 'temp/';
 
         error_reporting(E_ERROR | E_WARNING);
-
+        
         header("Content-Type: text/html; charset=utf-8");
     }
-
+    
 	public function index(){
-
+		
         $CONFIG2 = json_decode(preg_replace("/\/\*[\s\S]+?\*\//", "", file_get_contents("./public/plugins/Ueditor/php/config.json")), true);
         $action = $_GET['action'];
 
@@ -54,8 +56,8 @@ class Ueditor extends Base
                 break;
             /* 上传图片 */
             case 'uploadimage':
-		        $fieldName = $CONFIG2['imageFieldName'];
-		        $result = $this->upFile($fieldName);
+		        //$fieldName = $CONFIG2['imageFieldName'];
+		        $result = $this->imageUp();
 		        break;
             /* 上传涂鸦 */
             case 'uploadscrawl':
@@ -107,7 +109,7 @@ class Ueditor extends Base
 			    /* 抓取远程图片 */
 			    $list = array();
 			    isset($_POST[$fieldName]) ? $source = $_POST[$fieldName] : $source = $_GET[$fieldName];
-
+				
 			    foreach($source as $imgUrl){
 			        $info = json_decode($this->saveRemote($config,$imgUrl),true);
 			        array_push($list, array(
@@ -145,68 +147,71 @@ class Ueditor extends Base
             echo $result;
         }
 	}
-
+	
 	//上传文件
-	private function upFile($fieldName){
+	private function upFile($fieldName)
+    {
 		$file = request()->file('file');
 		if(empty($file)){
 			$file = request()->file('upfile');
 		}
-		$result = true;
-		if (true !== $result || empty($file)) {
-			$state = "ERROR" . $result;
+		if (empty($file)) {
+			$state = "ERROR";
             return json_encode(['state' =>$state]);
-		}else{
-			// 移动到框架应用根目录/public/uploads/ 目录下
-			$this->savePath = $this->savePath.date('Y').'/'.date('m-d').'/';
-			// 使用自定义的文件保存规则
-			$info = $file->rule(function ($file) {
-				return  md5(mt_rand());
-			})->move('public/upload/'.$this->savePath);
-		}
+		} elseif (strtolower(pathinfo($file->getInfo('name'), PATHINFO_EXTENSION)) == 'php') {
+            return json_encode(['state' =>'ERROR'.'后缀不允许']);
+        }
+
+        // 移动到框架应用根目录/public/uploads/ 目录下
+        $this->savePath = $this->savePath.date('Y').'/'.date('m-d').'/';
+        // 使用自定义的文件保存规则
+        $info = $file->rule(function ($file) {
+            return  md5(mt_rand());
+        })->move(UPLOAD_PATH.$this->savePath);
 
 		if($info){
 			$data = array(
 				'state' => 'SUCCESS',
-				'url' => '/public/upload/'.$this->savePath.$info->getSaveName(),
+				'url' => '/'.UPLOAD_PATH.$this->savePath.$info->getSaveName(),
 				'title' => $info->getFilename(),
 				'original' => $info->getFilename(),
 				'type' => '.' . $info->getExtension(),
 				'size' => $info->getSize(),
 			);
 			//图片加水印
-		    if($this->savePath=='goods/'){
-        		$imgresource = ".".$data['url'];
-        		$image = \think\Image::open($imgresource);
-        		$water = tpCache('water');
-        		//$image->open($imgresource);
-        		$return_data['mark_type'] = $water['mark_type'];
-        		if($water['is_mark']==1 && $image->width()>$water['mark_width'] && $image->height()>$water['mark_height']){
-        			if($water['mark_type'] == 'text'){
-        				//$image->text($water['mark_txt'],'./hgzb.ttf',20,'#000000',9)->save($imgresource);
-        				$ttf = './hgzb.ttf';
-        				if (file_exists($ttf)) {
-        					$size = $water['mark_txt_size'] ? $water['mark_txt_size'] : 30;
-        					$color = $water['mark_txt_color'] ?: '#000000';
-        					if (!preg_match('/^#[0-9a-fA-F]{6}$/', $color)) {
-        						$color = '#000000';
-        					}
-        					$transparency = intval((100 - $water['mark_degree']) * (127/100));
-        					$color .= dechex($transparency);
-        					$image->open($imgresource)->text($water['mark_txt'], $ttf, $size, $color, $water['sel'])->save($imgresource);
-        					$return_data['mark_txt'] = $water['mark_txt'];
-        				}
-        			}else{
-        				//$image->water(".".$water['mark_img'],9,$water['mark_degree'])->save($imgresource);
-        				$waterPath = "." . $water['mark_img'];
-        				$quality = $water['mark_quality'] ? $water['mark_quality'] : 80;
-        				$waterTempPath = dirname($waterPath).'/temp_'.basename($waterPath);
-        				$image->open($waterPath)->save($waterTempPath, null, $quality);
-        				$image->open($imgresource)->water($waterTempPath, $water['sel'], $water['mark_degree'])->save($imgresource);
-        				@unlink($waterTempPath);
-        			}
-        		}
-        	}
+            //图片应该不会走这个函数(走imageUp)，为了避免还有调用，先屏蔽。 by lhb
+//			if($this->savePath=='goods/'){
+//        		$imgresource = ".".$data['url'];
+//        		$image = \think\Image::open($imgresource);
+//        		$water = tpCache('water');
+//        		//$image->open($imgresource);
+//        		$return_data['mark_type'] = $water['mark_type'];
+//        		if($water['is_mark']==1 && $image->width()>$water['mark_width'] && $image->height()>$water['mark_height']){
+//        			if($water['mark_type'] == 'text'){
+//        				//$image->text($water['mark_txt'],'./hgzb.ttf',20,'#000000',9)->save($imgresource);
+//        				$ttf = './hgzb.ttf';
+//        				if (file_exists($ttf)) {
+//        					$size = $water['mark_txt_size'] ? $water['mark_txt_size'] : 30;
+//        					$color = $water['mark_txt_color'] ?: '#000000';
+//        					if (!preg_match('/^#[0-9a-fA-F]{6}$/', $color)) {
+//        						$color = '#000000';
+//        					}
+//        					$transparency = intval((100 - $water['mark_degree']) * (127/100));
+//        					$color .= dechex($transparency);
+//        					$image->open($imgresource)->text($water['mark_txt'], $ttf, $size, $color, $water['sel'])->save($imgresource);
+//        					$return_data['mark_txt'] = $water['mark_txt'];
+//        				}
+//        			}else{
+//        				//$image->water(".".$water['mark_img'],9,$water['mark_degree'])->save($imgresource);
+//        				$waterPath = "." . $water['mark_img'];
+//        				$quality = $water['mark_quality'] ? $water['mark_quality'] : 80;
+//        				$waterTempPath = dirname($waterPath).'/temp_'.basename($waterPath);
+//        				$image->open($waterPath)->save($waterTempPath, null, $quality);
+//        				$image->open($imgresource)->water($waterTempPath, $water['sel'], $water['mark_degree'])->save($imgresource);
+//        				@unlink($waterTempPath);
+//        			}
+//        		}
+//        	}
 		}else{
 			$data = array('state' => 'ERROR'.$file->getError());
 		}
@@ -214,8 +219,13 @@ class Ueditor extends Base
 	}
 
     //列出图片
-	private function fileList($allowFiles,$listSize,$get){
-		$dirname = './public/upload/';
+	private function fileList($allowFiles,$listSize,$get)
+    {
+	    $savePath = '';
+	    if ($this->savePath && $this->savePath != 'temp/') {
+	        $savePath = $this->savePath;
+        }
+		$dirname = './'.UPLOAD_PATH.$savePath;
 		$allowFiles = substr(str_replace(".","|",join("",$allowFiles)),1);
 		/* 获取参数 */
 		$size = isset($get['size']) ? htmlspecialchars($get['size']) : $listSize;
@@ -259,7 +269,7 @@ class Ueditor extends Base
 	    if(!is_dir($path)) return null;
 	    if(substr($path,strlen($path)-1) != '/') $path .= '/';
 	    $handle = opendir($path);
-
+			
 	    while(false !== ($file = readdir($handle))){
 	        if($file != '.' && $file != '..'){
 	            $path2 = $path.$file;
@@ -274,7 +284,7 @@ class Ueditor extends Base
 		            }
 	            }
 	        }
-	    }
+	    }		
 	    return $files;
     }
 
@@ -319,7 +329,7 @@ class Ueditor extends Base
 	    ob_end_clean();
 	    preg_match("/[\/]([^\/]*)[\.]?[^\.\/]*$/",$imgUrl,$m);
 
-	    $dirname = './public/upload/remote/';
+	    $dirname = UPLOAD_PATH.'remote/';
 	    $file['oriName'] = $m ? $m[1] : "";
 	    $file['filesize'] = strlen($img);
 	    $file['ext'] = strtolower(strrchr($config['oriName'],'.'));
@@ -364,7 +374,7 @@ class Ueditor extends Base
 			    'size' => $file['filesize'],
 		    );
 	    }
-
+		
 	    return json_encode($data);
 	}
 
@@ -376,7 +386,7 @@ class Ueditor extends Base
 	    $base64Data = $_POST[$fieldName];
 	    $img = base64_decode($base64Data);
 
-	    $dirname = './public/upload/scrawl/';
+	    $dirname = UPLOAD_PATH.'scrawl/';
 	    $file['filesize'] = strlen($img);
 	    $file['oriName'] = $config['oriName'];
 	    $file['ext'] = strtolower(strrchr($config['oriName'],'.'));
@@ -410,7 +420,7 @@ class Ueditor extends Base
             $data=array(
 		        'state' => '写入文件内容错误',
 		    );
-	    }else{ //移动成功
+	    }else{ //移动成功	       
 	        $data=array(
 			    'state' => 'SUCCESS',
 			    'url' => substr($file['fullName'],1),
@@ -420,7 +430,7 @@ class Ueditor extends Base
 			    'size' => $file['filesize'],
 		    );
 	    }
-
+		
 	    return json_encode($data);
 	}
 
@@ -428,103 +438,48 @@ class Ueditor extends Base
      * @function imageUp
      */
     public function imageUp()
-    {
+    {       
         // 上传图片框中的描述表单名称，
         $pictitle = I('pictitle');
         $dir = I('dir');
-        $title = htmlspecialchars($pictitle , ENT_QUOTES);
+        $title = htmlspecialchars($pictitle , ENT_QUOTES);        
         $path = htmlspecialchars($dir, ENT_QUOTES);
         //$input_file ['upfile'] = $info['Filedata'];  一个是上传插件里面来的, 另外一个是 文章编辑器里面来的
         // 获取表单上传文件
         $file = request()->file('file');
-        if(empty($file))
-            $file = request()->file('upfile');
+        $return_url = '';
+        $editor = new EditorLogic;
 
-		$result = $this->validate(
-				['file' => $file],
-				['file'=>'image|fileSize:40000000|fileExt:jpg,jpeg,gif,png'],
-				['file.image' => '上传文件必须为图片','file.fileSize' => '上传文件过大','file.fileExt'=>'上传文件后缀名必须为jpg,jpeg,gif,png']
-		);
+        if (empty($file)) {
+            $file = request()->file('upfile');
+        }
+        $result = $this->validate(
+            ['file' => $file],
+            ['file'=>'image|fileSize:40000000|fileExt:jpg,jpeg,gif,png'],
+            ['file.image' => '上传文件必须为图片','file.fileSize' => '上传文件过大','file.fileExt'=>'上传文件后缀名必须为jpg,jpeg,gif,png']
+           );
         if (true !== $result || !$file) {
             $state = "ERROR" . $result;
         } else {
-            $savePath = $this->savePath.date('Y').'/'.date('m-d').'/';
-            $ossConfig = tpCache('oss');
-            $ossSupportPath = ['goods', 'water'];
-            if (in_array(I('savepath'), $ossSupportPath) && $ossConfig['oss_switch']) {
-                //商品图片可选择存放在oss
-                $object = 'public/upload/'.$savePath.md5(time()).'.'.pathinfo($file->getInfo('name'), PATHINFO_EXTENSION);
-                $ossClient = new \app\common\logic\OssLogic;
-                $return_url = $ossClient->uploadFile($file->getRealPath(), $object);
-                if (!$return_url) {
-                    $state = "ERROR" . $ossClient->getError();
-                    $return_url = '';
-                } else {
-                    $state = "SUCCESS";
-                }
-                @unlink($file->getRealPath());
-            } else {
-                // 移动到框架应用根目录/public/uploads/ 目录下
-                $info = $file->rule(function ($file) {
-                return  md5(mt_rand()); // 使用自定义的文件保存规则
-                })->move('public/upload/'.$savePath);
-                if ($info) {
-                    $state = "SUCCESS";
-                } else {
-                    $state = "ERROR" . $file->getError();
-                }
-                $return_url = '/public/upload/'.$savePath.$info->getSaveName();
-            }
-            $return_data['url'] = $return_url;
+            $return = $editor->saveUploadImage($file, $this->savePath);
+            $state = $return['state'];
+            $return_data['url'] = $return['url'];
         }
 
-        if($state == 'SUCCESS'){
-        	if($this->savePath=='goods/'){
-        		$imgresource = ".".$return_url;
-        		$image = \think\Image::open($imgresource);
-        		$water = tpCache('water');
-        		//$image->open($imgresource);
-        		$return_data['mark_type'] = $water['mark_type'];
-        		if($water['is_mark']==1 && $image->width()>$water['mark_width'] && $image->height()>$water['mark_height']){
-        			if($water['mark_type'] == 'text'){
-        				//$image->text($water['mark_txt'],'./hgzb.ttf',20,'#000000',9)->save($imgresource);
-        				$ttf = './hgzb.ttf';
-        				if (file_exists($ttf)) {
-        					$size = $water['mark_txt_size'] ? $water['mark_txt_size'] : 30;
-        					$color = $water['mark_txt_color'] ?: '#000000';
-        					if (!preg_match('/^#[0-9a-fA-F]{6}$/', $color)) {
-        						$color = '#000000';
-        					}
-        					$transparency = intval((100 - $water['mark_degree']) * (127/100));
-        					$color .= dechex($transparency);
-        					$image->open($imgresource)->text($water['mark_txt'], $ttf, $size, $color, $water['sel'])->save($imgresource);
-        					$return_data['mark_txt'] = $water['mark_txt'];
-        				}
-        			}else{
-        				//$image->water(".".$water['mark_img'],9,$water['mark_degree'])->save($imgresource);
-        				$waterPath = "." . $water['mark_img'];
-        				$quality = $water['mark_quality'] ? $water['mark_quality'] : 80;
-        				$waterTempPath = dirname($waterPath).'/temp_'.basename($waterPath);
-        				$image->open($waterPath)->save($waterTempPath, null, $quality);
-        				$image->open($imgresource)->water($waterTempPath, $water['sel'], $water['mark_degree'])->save($imgresource);
-        				@unlink($waterTempPath);
-        			}
-        		}
-        	}
-        }
         $return_data['title'] = $title;
         $return_data['original'] = ''; // 这里好像没啥用 暂时注释起来
         $return_data['state'] = $state;
         $return_data['path'] = $path;
-        $this->ajaxReturn($return_data,'json');
-    }
 
+        $this->ajaxReturn($return_data);
+    }
+    
     /**
      * app文件上传
      */
     public function appFileUp()
-    {
-        $path = 'public/upload/appfile/';
+    {      
+        $path = UPLOAD_PATH.'appfile/';
         if (!file_exists($path)) {
             mkdir($path);
         }
@@ -533,33 +488,91 @@ class Ueditor extends Base
         // 获取表单上传文件
         $file = request()->file('Filedata');
         if (empty($file)) {
-            $file = request()->file('upfile');
+            $file = request()->file('upfile');    
         }
-
+        
         $result = $this->validate(
-            ['file2' => $file],
+            ['file2' => $file], 
             ['file2'=>'fileSize:30000000|fileExt:apk,ipa,pxl,deb'],
-            ['file2.fileSize' => '上传文件过大', 'file2.fileExt' => '上传文件后缀不正确']
+            ['file2.fileSize' => '上传文件过大', 'file2.fileExt' => '上传文件后缀不正确']                    
            );
-        if (true !== $result || empty($file)) {
+        if (true !== $result || empty($file)) {            
             $state = "ERROR" . $result;
         } else {
-            $info = $file->rule(function ($file) {
+            $info = $file->rule(function ($file) {    
                 return date('YmdHis_').input('Filename'); // 使用自定义的文件保存规则
             })->move($path);
+            if ($info) {
+                $state = "SUCCESS";                         
+            } else {
+                $state = "ERROR" . $file->getError();
+            }
+            $return_data['url'] = $path.$info->getSaveName();            
+        }
+        
+        $return_data['title'] = 'app文件';
+        $return_data['original'] = ''; // 这里好像没啥用 暂时注释起来
+        $return_data['state'] = $state;
+        $return_data['path'] = $path;        
+
+        $this->ajaxReturn($return_data);
+    }
+
+    /**
+     * 微信公众号图片素材列表
+     * @param $listSize int 拉取多少
+     * @param $get array get数组
+     * @return string
+     */
+    public function wechatImageList($listSize, $get)
+    {
+        $size = isset($get['size']) ? intval($get['size']) : $listSize;
+        $start = isset($get['start']) ? intval($get['start']) : 0;
+
+        $logic = new \app\common\logic\WechatLogic;
+        return $logic->getPluginImages($size, $start);
+    }
+
+    /**
+     * 上传视频
+     */
+    public function videoUp()
+    {
+        $pictitle = I('pictitle');
+        $dir = I('dir');
+        $title = htmlspecialchars($pictitle , ENT_QUOTES);
+        $path = htmlspecialchars($dir, ENT_QUOTES);
+        // 获取表单上传文件
+        $file = request()->file('file');
+        if (empty($file)) {
+            $file = request()->file('upfile');
+        }
+        $result = $this->validate(
+            ['file' => $file],
+            ['file'=>'fileSize:40000000|fileExt:mp4,3gp,flv,avi,wmv'],
+            ['file.fileSize' => '上传文件过大','file.fileExt'=>'上传文件后缀名必须为mp4,3gp,flv,avi,wmv']
+        );
+        if (true !== $result || !$file) {
+            $state = "ERROR" . $result;
+        } else {
+            // 移动到框架应用根目录/public/uploads/ 目录下
+            $new_path = $this->savePath.date('Y').'/'.date('m-d').'/';
+            // 使用自定义的文件保存规则
+            $info = $file->rule(function ($file) {
+                return  md5(mt_rand());
+            })->move(UPLOAD_PATH.$new_path);
             if ($info) {
                 $state = "SUCCESS";
             } else {
                 $state = "ERROR" . $file->getError();
             }
-            $return_data['url'] = $path.$info->getSaveName();
+            $return_data['url'] = '/'.UPLOAD_PATH.$new_path.$info->getSaveName();
         }
 
-        $return_data['title'] = 'app文件';
+        $return_data['title'] = $title;
         $return_data['original'] = ''; // 这里好像没啥用 暂时注释起来
         $return_data['state'] = $state;
         $return_data['path'] = $path;
-
         $this->ajaxReturn($return_data);
     }
 }

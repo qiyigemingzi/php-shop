@@ -15,6 +15,7 @@ namespace app\common\model;
 use app\common\logic\FlashSaleLogic;
 use app\common\logic\GroupBuyLogic;
 use think\Model;
+use app\common\logic\PromGoodsLogic;
 class Cart extends Model {
     //自定义初始化
     protected static function init()
@@ -49,7 +50,7 @@ class Cart extends Model {
      */
     public function getGoodsFeeAttr($value, $data)
     {
-        return $data['goods_num'] * $data['member_goods_price'];
+        return  round($data['goods_num'] * $data['member_goods_price'], 2);
     }
     /**
      * 商品总额
@@ -59,7 +60,7 @@ class Cart extends Model {
      */
     public function getTotalFeeAttr($value, $data)
     {
-        return $data['goods_num'] * $data['goods_price'];
+        return round($data['goods_num'] * $data['goods_price'], 2);
     }
     /**
      * 商品总额优惠
@@ -91,6 +92,9 @@ class Cart extends Model {
             } else if ($data['prom_type'] == 2) {
                 $groupBuyLogic = new GroupBuyLogic($goods, $spec_goods_price);
                 $limitNum = $groupBuyLogic->getPromotionSurplus();//团购剩余库存
+            }else if ($data['prom_type'] == 3) {
+                $promoGoodsLogic = new PromGoodsLogic($goods, $spec_goods_price);
+                $limitNum = $promoGoodsLogic->getPromoGoodsResidueGoodsNum($data['user_id']);
             } else {
                 $limitNum = $spec_goods_price['store_count'];
             }
@@ -102,6 +106,9 @@ class Cart extends Model {
             } else if ($data['prom_type'] == 2) {
                 $groupBuyLogic = new GroupBuyLogic($goods, null);
                 $limitNum = $groupBuyLogic->getPromotionSurplus();//团购剩余库存
+            }else if ($data['prom_type'] == 3) {
+                $promoGoodsLogic = new PromGoodsLogic($goods, null);
+                $limitNum = $promoGoodsLogic->getPromoGoodsResidueGoodsNum($data['user_id']);
             } else {
                 $limitNum = $goods['store_count'];
             }

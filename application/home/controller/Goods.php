@@ -7,11 +7,12 @@
  * ----------------------------------------------------------------------------
  * 这不是一个自由软件！您只能在不用于商业目的的前提下对程序代码进行修改和使用 .
  * 不允许对程序代码以任何形式任何目的的再发布。
- * 采用TP5助手函数可实现单字母函数M D U等,也可db::name方式,可双向兼容
+ * 采用最新Thinkphp5助手函数特性实现单字母函数M D U等简写方式
  * ============================================================================
  * $Author: IT宇宙人 2015-08-10 $
  */
 namespace app\home\controller; 
+use app\common\logic\FreightLogic;
 use app\common\logic\GoodsPromFactory;
 use app\common\logic\SearchWordLogic;
 use app\common\logic\GoodsLogic;
@@ -39,10 +40,6 @@ class Goods extends Base {
         if(empty($goods) || ($goods['is_on_sale'] == 0) || ($goods['is_virtual']==1 && $goods['virtual_indate'] <= time())){
         	$this->error('该商品已经下架',U('Index/index'));
         }
-//        if (!empty($goods['prom_id']) && $goodsPromFactory->checkPromType($goods['prom_type'])) {
-//            $goodsPromLogic = $goodsPromFactory->makeModule($goods, null);//这里会自动更新商品活动状态，所以商品需要重新查询
-//            $goods = $goodsPromLogic->getGoodsInfo();//上面更新商品信息后需要查询
-//        }
         if (cookie('user_id')) {
             $goodsLogic->add_visit_log(cookie('user_id'), $goods);
         }
@@ -58,11 +55,6 @@ class Goods extends Base {
         M('Goods')->where("goods_id", $goods_id)->save(array('click_count'=>$goods['click_count']+1 )); //统计点击数
         $commentStatistics = $goodsLogic->commentStatistics($goods_id);// 获取某个商品的评论统计
         $point_rate = tpCache('shopping.point_rate');
-        $region_id = Cookie::get('district_id');
-        if ($region_id) {
-            $dispatching = $goodsLogic->getGoodsDispatching($goods['goods_id'], $region_id);
-            $this->assign('dispatching', $dispatching);
-        }
         $this->assign('freight_free', $freight_free);// 全场满多少免运费
         $this->assign('spec_goods_price', json_encode($spec_goods_price,true)); // 规格 对应 价格 库存表
         $this->assign('navigate_goods',navigate_goods($goods_id,1));// 面包屑导航
@@ -74,6 +66,9 @@ class Goods extends Base {
         $this->assign('siblings_cate',$goodsLogic->get_siblings_cate($goods['cat_id']));//相关分类
         $this->assign('look_see',$goodsLogic->get_look_see($goods));//看了又看      
         $this->assign('goods',$goods->toArray());
+        //构建手机端URL
+        $ShareLink = urlencode("http://{$_SERVER['HTTP_HOST']}/index.php?m=Mobile&c=Goods&a=goodsInfo&id={$goods['goods_id']}");
+        $this->assign('ShareLink',$ShareLink);
         $this->assign('point_rate',$point_rate);
         return $this->fetch();
     }
@@ -194,7 +189,7 @@ class Goods extends Base {
         $page = new Page($count,20);
         if($count > 0)
         {
-            $goods_list = M('goods')->where("goods_id","in", implode(',', $filter_goods_id))->order("$sort $sort_asc")->limit($page->firstRow.','.$page->listRows)->select();
+            $goods_list = M('goods')->where("goods_id","in", implode(',', $filter_goods_id))->order([$sort=>$sort_asc])->limit($page->firstRow.','.$page->listRows)->select();
             $filter_goods_id2 = get_arr_column($goods_list, 'goods_id');
             if($filter_goods_id2)
             $goods_images = M('goods_images')->where("goods_id", "in", implode(',', $filter_goods_id2))->cache(true)->select();
@@ -237,14 +232,25 @@ class Goods extends Base {
      * 商品物流配送和运费
      */
     public function dispatching()
-    {        
+    {
         $goods_id = I('goods_id/d');//143
         $region_id = I('region_id/d');//28242
-        $goods_logic = new GoodsLogic();
-        $dispatching_data = $goods_logic->getGoodsDispatching($goods_id,$region_id);
+        $Goods = new \app\common\model\Goods();
+        $goods = $Goods->cache(true)->where('goods_id',$goods_id)->find();
+        $freightLogic = new FreightLogic();
+        $freightLogic->setGoodsModel($goods);
+        $freightLogic->setRegionId($region_id);
+        $freightLogic->setGoodsNum(1);
+        $isShipping = $freightLogic->checkShipping();
+        if($isShipping){
+            $freightLogic->doCalculation();
+            $freight = $freightLogic->getFreight();
+            $dispatching_data = ['status'=>1,'msg'=>'可配送','result'=>['freight'=>$freight]];
+        }else{
+            $dispatching_data = ['status'=>0,'msg'=>'该地区不支持配送','result'=>''];
+        }
         $this->ajaxReturn($dispatching_data);
     }
-
     /**
      * 商品搜索列表页
      */
@@ -316,7 +322,7 @@ class Goods extends Base {
         $count = count($filter_goods_id);
         $page = new Page($count, 20);
         if ($count > 0) {
-            $goods_list = M('goods')->where(['is_on_sale' => 1, 'goods_id' => ['in', implode(',', $filter_goods_id)]])->order("$sort $sort_asc")->limit($page->firstRow . ',' . $page->listRows)->select();
+            $goods_list = M('goods')->where(['is_on_sale' => 1, 'goods_id' => ['in', implode(',', $filter_goods_id)]])->order([$sort=>$sort_asc])->limit($page->firstRow . ',' . $page->listRows)->select();
             $filter_goods_id2 = get_arr_column($goods_list, 'goods_id');
             if ($filter_goods_id2)
                 $goods_images = M('goods_images')->where("goods_id", "in", implode(',', $filter_goods_id2))->select();
@@ -400,7 +406,9 @@ class Goods extends Base {
         $store_id = I("store_id/d", '0'); // 商品id
         $consult_type = I("consult_type", '1'); // 商品咨询类型
         $username = I("username", 'TPshop用户'); // 网友咨询
-        $content = I("content"); // 咨询内容
+        $content = trim(I("content",'')); // 咨询内容
+        if(strlen($content) >500)
+            $this->error("咨询内容不得超过500字符！！");
         $verify = new Verify();
         if (!$verify->check(I('post.verify_code'), 'consult')) {
             $this->error("验证码错误");
@@ -419,15 +427,19 @@ class Goods extends Base {
     }
     
     /**
-     * 用户收藏某一件商品
-     * @param type $goods_id
+     * 用户收藏商品
      */
-    public function collect_goods()
-    {
-        $goods_id = I('goods_id/d');
-        $goodsLogic = new GoodsLogic();        
-        $result = $goodsLogic->collect_goods(cookie('user_id'),$goods_id);
-        exit(json_encode($result));
+    public function collect_goods(){
+        $goods_ids = I('goods_ids/a',[]);
+        if(empty($goods_ids)){
+            $this->ajaxReturn(['status'=>0,'msg'=>'请至少选择一个商品','result'=>'']);
+        }
+        $goodsLogic = new GoodsLogic();
+        $result = [];
+        foreach($goods_ids as $key=>$val){
+            $result[] = $goodsLogic->collect_goods(cookie('user_id'), $val);
+        }
+        $this->ajaxReturn(['status'=>1,'msg'=>'已添加至我的收藏','result'=>$result]);
     }
     
     /**

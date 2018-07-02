@@ -8,7 +8,7 @@
  * ----------------------------------------------------------------------------
  * 这不是一个自由软件！您只能在不用于商业目的的前提下对程序代码进行修改和使用 .
  * 不允许对程序代码以任何形式任何目的的再发布。
- * 采用TP5助手函数可实现单字母函数M D U等,也可db::name方式,可双向兼容
+ * 采用最新Thinkphp5助手函数特性实现单字母函数M D U等简写方式
  * ============================================================================
  * Author: 当燃
  * Date: 2015-09-09
@@ -16,11 +16,16 @@
 
 namespace app\admin\controller;
 use app\admin\logic\UpgradeLogic;
+use app\common\logic\Saas;
 use think\Controller;
 use think\Db;
 use think\response\Json;
 use think\Session;
 class Base extends Controller {
+
+    public $begin;
+    public $end;
+    public $page_size = 0;
 
     /**
      * 析构函数
@@ -36,27 +41,28 @@ class Base extends Controller {
         //用户中心面包屑导航
         $navigate_admin = navigate_admin();
         $this->assign('navigate_admin',$navigate_admin);
-        tpversion();        
-   }    
+        tpversion();
+   }
     
-    /*
+    /**
      * 初始化操作
      */
-    public function _initialize() 
+    public function _initialize()
     {
-        //过滤不需要登陆的行为
-        if(in_array(ACTION_NAME,array('login','logout','vertify'))){
-        	//return;
-        }else{
-        	if(session('admin_id') > 0 ){
-        		$this->check_priv();//检查管理员菜单操作权限
-        	}else{
-        		$this->error('请先登录',U('Admin/Admin/login'),1);
-        	}
+        Saas::instance()->checkSso();
+
+        //过滤不需要登陆的行为 
+        if (!in_array(ACTION_NAME, array('login', 'vertify'))) {
+            if (session('admin_id') > 0) {
+                $this->check_priv();//检查管理员菜单操作权限
+            }else {
+                (ACTION_NAME == 'index') && $this->redirect( U('Admin/Admin/login'));
+                $this->error('请先登录', U('Admin/Admin/login'), null, 1);
+            }
         }
         $this->public_assign();
     }
-    
+
     /**
      * 保存公告变量到 smarty中 比如 导航 
      */
@@ -68,6 +74,18 @@ class Base extends Controller {
        {
           $tpshop_config[$v['inc_type'].'_'.$v['name']] = $v['value'];
        }
+        if(I('start_time')){
+            $begin =$begin = I('start_time');
+            $end = I('end_time');
+        }else{
+            $begin = date('Y-m-d', strtotime("-3 month"));//30天前
+            $end = date('Y-m-d', strtotime('+1 days'));
+        }
+        $this->assign('start_time',$begin);
+        $this->assign('end_time',$end);
+        $this->begin = strtotime($begin);
+        $this->end = strtotime($end)+86399;
+        $this->page_size = C('PAGESIZE');
        $this->assign('tpshop_config', $tpshop_config);       
     }
     
@@ -77,7 +95,7 @@ class Base extends Controller {
     	$act = ACTION_NAME;
         $act_list = session('act_list');
 		//无需验证的操作
-		$uneed_check = array('login','logout','vertifyHandle','vertify','imageUp','upload','login_task');
+		$uneed_check = array('login','logout','vertifyHandle','vertify','imageUp','upload','videoUp','delupload','login_task');
     	if($ctl == 'Index' || $act_list == 'all'){
     		//后台首页控制器无需验证,超级管理员无需验证
     		return true;
@@ -86,6 +104,7 @@ class Base extends Controller {
     		return true;
     	}else{
     		$right = M('system_menu')->where("id", "in", $act_list)->cache(true)->getField('right',true);
+            $role_right = '';
     		foreach ($right as $val){
     			$role_right .= $val.',';
     		}

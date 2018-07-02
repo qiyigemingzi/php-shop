@@ -27,7 +27,6 @@ class Invoice extends Base {
      */
 
     public function _initialize() {
-        
         parent::_initialize();
         C('TOKEN_ON', false); // 关闭表单令牌验证
     }
@@ -35,7 +34,6 @@ class Invoice extends Base {
     /*
      * 发票列表
      */
-
     public function index() {
        header("Content-type: text/html; charset=utf-8");
 exit("请联系TPshop官网客服购买高级版支持此功能");
@@ -50,15 +48,11 @@ exit("请联系TPshop官网客服购买高级版支持此功能");
 exit("请联系TPshop官网客服购买高级版支持此功能");
     }
     
-    
      //开票时间
     function changetime(){
-        
      header("Content-type: text/html; charset=utf-8");
 exit("请联系TPshop官网客服购买高级版支持此功能");
-
     }
-    
     
     public function export_invoice()
     {

@@ -7,7 +7,7 @@
  * ----------------------------------------------------------------------------
  * 这不是一个自由软件！您只能在不用于商业目的的前提下对程序代码进行修改和使用 .
  * 不允许对程序代码以任何形式任何目的的再发布。
- * 采用TP5助手函数可实现单字母函数M D U等,也可db::name方式,可双向兼容
+ * 采用最新Thinkphp5助手函数特性实现单字母函数M D U等简写方式
  * ============================================================================
  * Author: 当燃      
  * Date: 2015-09-09
@@ -211,6 +211,8 @@ class User extends Base {
         if($uid){
             $row = M('users')->where(array('user_id'=>$uid))->delete();
             if($row !== false){
+                //把关联的第三方账号删除
+                M('OauthUsers')->where(array('user_id'=>$uid))->delete();
                 $this->ajaxReturn(array('status' => 1, 'msg' => '删除成功', 'data' => ''));
             }else{
                 $this->ajaxReturn(array('status' => 0, 'msg' => '删除失败', 'data' => ''));
@@ -363,6 +365,8 @@ class User extends Base {
             } else {
                 $r = D('user_level')->where('level_id=' . $data['level_id'])->save($data);
                 if ($r !== false) {
+                    $discount = $data['discount']/100;
+                    D('users')->where(['level'=>$data['level_id']])->save(['discount'=>$discount]);
                     $return = ['status' => 1, 'msg' => '编辑成功', 'result' => $userLevelValidate->getError()];
                 } else {
                     $return = ['status' => 0, 'msg' => '编辑失败，数据库未响应', 'result' => ''];
@@ -385,24 +389,13 @@ class User extends Base {
      */
     public function search_user()
     {
-        $search_key = trim(I('search_key'));        
-        if(strstr($search_key,'@'))    
-        {
-            $list = M('users')->where(" email like '%$search_key%' ")->select();        
-            foreach($list as $key => $val)
-            {
-                echo "<option value='{$val['user_id']}'>{$val['email']}</option>";
-            }                        
+        $search_key = trim(I('search_key'));
+        if ($search_key == '') $this->ajaxReturn(['status'=>-1,'msg'=>'请按要求输入！！']);
+        $list = M('users')->where(['nickname'=>['like',"%$search_key%"]])->select();
+        if ($list){
+            $this->ajaxReturn(['status'=>1,'msg'=>'获取成功','result'=>$list]);
         }
-        else
-        {
-            $list = M('users')->where(" mobile like '%$search_key%' ")->select();        
-            foreach($list as $key => $val)
-            {
-                echo "<option value='{$val['user_id']}'>{$val['mobile']}</option>";
-            }            
-        } 
-        exit;
+        $this->ajaxReturn(['status'=>-1,'msg'=>'未查询到相应数据！！']);
     }
     
     /**
@@ -528,6 +521,7 @@ class User extends Base {
     public function withdrawals()
     {
     	$this->get_withdrawals_list();
+        $this->assign('withdraw_status',C('WITHDRAW_STATUS'));  
         return $this->fetch();
     }
     
@@ -543,12 +537,11 @@ class User extends Base {
     	$this->assign('end_time',$create_time3[1]);
     	$where['w.create_time'] =  array(array('gt', strtotime(strtotime($create_time3[0])), array('lt', strtotime($create_time3[1]))));
     	$status = empty($status) ? I('status') : $status;
-    	if(empty($status) || $status === '0'){
-    		$where['w.status'] =  array('lt',1);
-    	}
-    	if($status === '0' || $status > 0) {
-    		$where['w.status'] = $status;
-    	}
+        if($status !== ''){
+            $where['w.status'] = $status;
+        }else{
+            $where['w.status'] = ['lt',2];
+        }
     	$user_id && $where['u.user_id'] = $user_id;
     	$realname && $where['w.realname'] = array('like','%'.$realname.'%');
     	$bank_card && $where['w.bank_card'] = array('like','%'.$bank_card.'%');
@@ -599,9 +592,13 @@ class User extends Base {
      */
     public function delWithdrawals()
     {
-        $model = M("withdrawals");
-        $model->where('id ='.$_GET['id'])->delete();
-        $return_arr = array('status' => 1,'msg' => '操作成功','data'  =>'',);   //$return_arr = array('status' => -1,'msg' => '删除失败','data'  =>'',);
+        $id = I('del_id/d');
+        $res = Db::name("withdrawals")->where(['id'=>$id])->delete();
+        if($res !== false){
+            $return_arr = ['status' => 1,'msg' => '操作成功','data'  =>'',];
+        }else{
+            $return_arr = ['status' => -1,'msg' => '删除失败','data'  =>'',];
+        }
         $this->ajaxReturn($return_arr);
     }
 
@@ -610,16 +607,16 @@ class User extends Base {
      */
     public  function editWithdrawals(){        
        $id = I('id');
-       $model = M("withdrawals");
-       $withdrawals = $model->find($id);
-       $user = M('users')->where("user_id = {$withdrawals[user_id]}")->find();     
+       $withdrawals = Db::name("withdrawals")->find($id);
+       $user = M('users')->where(['user_id' => $withdrawals['user_id']])->find();
        if($user['nickname'])        
            $withdrawals['user_name'] = $user['nickname'];
        elseif($user['email'])        
            $withdrawals['user_name'] = $user['email'];
        elseif($user['mobile'])        
-           $withdrawals['user_name'] = $user['mobile'];            
-       
+           $withdrawals['user_name'] = $user['mobile'];
+        $status = $withdrawals['status'];
+        $withdrawals['status_code'] = C('WITHDRAW_STATUS')["$status"];
        $this->assign('user',$user);
        $this->assign('data',$withdrawals);
        return $this->fetch();
@@ -629,13 +626,14 @@ class User extends Base {
      *  处理会员提现申请
      */
     public function withdrawals_update(){
-    	$id = I('id/a');
+    	$id_arr = I('id/a');
         $data['status']=$status = I('status');
     	$data['remark'] = I('remark');
         if($status == 1) $data['check_time'] = time();
         if($status != 1) $data['refuse_time'] = time();
-        $r = M('withdrawals')->where('id in ('.implode(',', $id).')')->update($data);
-    	if($r){
+        $ids = implode(',',$id_arr);
+        $r = Db::name('withdrawals')->whereIn('id',$ids)->update($data);
+    	if($r !== false){
     		$this->ajaxReturn(array('status'=>1,'msg'=>"操作成功"),'JSON');
     	}else{
     		$this->ajaxReturn(array('status'=>0,'msg'=>"操作失败"),'JSON');

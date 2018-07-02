@@ -7,7 +7,6 @@
 		<meta name="description" content="{$tpshop_config['shop_info_store_desc']}" />
 		<link rel="stylesheet" type="text/css" href="__STATIC__/css/tpshop.css" />
 		<link rel="stylesheet" type="text/css" href="__STATIC__/css/myaccount.css" />
-		<link rel="shortcut  icon" type="image/x-icon" href="{$tpshop_config['shop_info_store_logo']}" media="screen"  />
 		<script src="__STATIC__/js/jquery-1.11.3.min.js" type="text/javascript" charset="utf-8"></script>
 	</head>
 	<body class="bg-f5">
@@ -54,15 +53,15 @@
 			    			</div>
 			    			<div class="mu-afte fl">
 			    				<ul class="mu-a1">
-			    					<li class="">
-			                           <a href="">
-			                               <i class="icon-card"></i>
-			                               <span>会员折扣</span>
-			                               <em class="mu-unit">&nbsp;折</em>
-			                               <em class="mu-num">{$user['discount']*10}</em>
-			                               <i class="icon-ar"></i>
-			                            </a>
-			                        </li>
+									<li class="" hidden>
+										<a href="">
+											<i class="icon-card"></i>
+											<span>会员折扣</span>
+											<em class="mu-unit">&nbsp;折</em>
+											<em class="mu-num">{$user['discount']*10}</em>
+											<i class="icon-ar"></i>
+										</a>
+									</li>
 			                        <li class="">
 			                            <a href="{:U('Home/User/recharge')}">
 			                               <i class="icon-balance"></i>
@@ -72,17 +71,17 @@
 			                               <i class="icon-ar"></i>
 			                            </a>
 			                        </li>
+									<li>
+										<a href="{:U('Home/User/account')}">
+											<i class="icon-point"></i>
+											<span>可用积分</span>
+											<em class="mu-unit">&nbsp;分</em>
+											<em class="mu-num">{$user.pay_points}</em>
+											<i class="icon-ar"></i>
+										</a>
+									</li>
 			    				</ul>
 			    				<ul class="mu-a2">
-			    					<li>
-			                            <a href="{:U('Home/User/account')}">
-			                               <i class="icon-point"></i>
-			                               <span>可用积分</span>
-			                               <em class="mu-unit">&nbsp;分</em>
-			                               <em class="mu-num">{$user.pay_points}</em>
-			                               <i class="icon-ar"></i>
-			                            </a>
-			                        </li>
 			                        <li>
 			                            <a href="{:U('Home/User/coupon')}">
 			                               <i class="icon-coupon"></i>
@@ -92,6 +91,17 @@
 			                               <i class="icon-ar"></i>
 			                            </a>
 			                        </li>
+									<if condition="$tpshop_config['basic_rechargevip_on_off'] eq 1" >
+									<li class="">
+										<a href="{:U('Home/User/rechargevip')}">
+											<i class="icon-card"></i>
+											<span>VIP充值</span>
+											<em class="mu-unit"></em>
+											<em class="mu-num"></em>
+											<i class="icon-ar"></i>
+										</a>
+									</li>
+									</if>
 			    				</ul>
 			    			</div>
 			    		</div>
@@ -103,7 +113,7 @@
 			                       <!--<i class="u-sep"></i>-->
 			                       <!--<a class="u-view-pre" href="">预售单<span class="hide">(待付款 <em>0</em>)</span></a>-->
 			    				</div>
-								<tpshop sql="select * from `__PREFIX__order` where user_id = $user[user_id] and order_prom_type < 5 order by order_id desc limit 1" result_name="order_list"></tpshop>
+								<tpshop sql="select * from `__PREFIX__order` where user_id = $user[user_id] and prom_type < 5 order by order_id desc limit 1" result_name="order_list"></tpshop>
 								<empty name="order_list">
 									<div class="car-none-pl">
 										<i class="account-acco1"></i>您最近没有待处理订单，<a href="/">快去逛逛吧~</a>
@@ -120,7 +130,7 @@
 													<div class="fl_ttmm">
 														<span class="time-num">下单时间：<em class="num">{$list.add_time|date='Y-m-d H:i:s',###}</em></span>
 														<span class="time-num">订单编号：<em class="num">{$list.order_sn}</em></span>
-														<!--<span class="time-num">卖家：<a href="tencent://message/?uin={$store_list[$list[store_id]][store_qq]}&Site=微商城&Menu=yes"><em class="num">{$store_list[$list[store_id]][store_name]}<i class="ear"></i></em></a></span>-->
+														<!--<span class="time-num">卖家：<a href="tencent://message/?uin={$store_list[$list[store_id]][store_qq]}&Site=TPshop商城&Menu=yes"><em class="num">{$store_list[$list[store_id]][store_name]}<i class="ear"></i></em></a></span>-->
 														<div class="paysoon">
 														<if condition="$list.pay_btn eq 1">
 															<a class="ps_lj" href="{:U('/Home/Cart/cart4',array('order_id'=>$list[order_id]))}"  target="_blank">立即支付</a>
@@ -148,7 +158,7 @@
 													<td class="sx1">
 														<div class="shop-if-dif">
 															<div class="shop-difimg">
-																<img src="{$goods.goods_id|goods_thum_images=100,100}"/>
+																<img src="{$goods.goods_id|goods_thum_images=100,100}"  style="float: left;width: 100px;height: 100px;"/>
 															</div>
 															<div class="shop_name"><a href="{:U('Home/Goods/goodsInfo',array('id'=>$goods[goods_id]))}">{$goods.goods_name}</a></div>
 														</div>
@@ -183,7 +193,7 @@
 																</if>
                                                             </p>
                                                             <p>
-																<if condition="$list.order_prom_type eq 5">
+																<if condition="$list.prom_type eq 5">
 																	<a href="{:U('Order/virtual_order',array('order_id'=>$list['order_id']))}">查看详情</a>
 																<else/>
 																	<a href="{:U('Home/Order/order_detail',array('id'=>$list['order_id']))}">查看详情</a>
@@ -196,7 +206,7 @@
 													<td class="sx6">
 														<div class="rbac">
 															<if condition="($list[return_btn] eq 1) and ($goods[is_send] lt 2)">
-																<p><a href="{:U('Home/Order/return_goods',array('order_id'=>$list['order_id'],'order_sn'=>$list['order_sn'],'goods_id'=>$goods['goods_id'],'spec_key'=>$goods['spec_key'],'goods_num'=>$goods['goods_num']))}">退货/退款</a></p>
+																<p><a href="{:U('Home/Order/return_goods',array('rec_id'=>$goods['rec_id']))}">退货/退款</a></p>
 															</if>
 															<p class=""><a href="{:U('Home/Goods/goodsInfo',array('id'=>$goods['goods_id']))}">再次购买</a></p>
 															<if condition="($list[comment_btn] eq 1) and ($goods[is_comment] eq 0)">
@@ -243,7 +253,7 @@
 					                       <a class="u-view-all" href="{:U('Home/User/coupon')}">查看更多</a>
 					    				</div>
 					    				<div class="shop-sc-t">
-											<tpshop sql="select l.*,c.condition,c.money from __PREFIX__coupon_list l INNER JOIN __PREFIX__coupon c on c.id = l.cid where l.uid = $user[user_id] and  l.use_time = 0 and c.use_end_time gt $template_now_time  order by l.id desc limit 2" item="v">
+											<foreach name="$coupon" item="v">
                                                     <div class="coupon-bgimg">
                                                         <a href="/">
                                                             <div class="cp-jal">
@@ -255,7 +265,7 @@
                                                             </div>
                                                         </a>
                                                     </div>
-											</tpshop>
+											</foreach>
 					    				</div>
 			    					</div>
 			    				</div>

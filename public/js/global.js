@@ -70,26 +70,6 @@ function get_area(t){
     });
 }
 
-function get_area2(t){
-    var parent_id = $(t).val();
-    if(!parent_id > 0){
-        return;
-    }
-    $('#twon').empty().css('display','none');
-    var url = '/index.php?m=Home&c=Api&a=getRegion&level=3&parent_id='+ parent_id;
-    $.ajax({
-        type : "GET",
-        url  : url,
-        error: function(request) {
-            alert("服务器繁忙, 请联系管理员!");
-            return;
-        },
-        success: function(v) {
-            v = '<option>选择区域</option>'+ v;
-            $('#district').empty().html(v);
-        }
-    });
-}
 // 获取最后一级乡镇
 function get_twon(obj){
     var parent_id = $(obj).val();
@@ -154,6 +134,19 @@ function checkMobile(tel) {
     };
 }
 
+/**
+ * 固定电话号码判断
+ * @param tel
+ * @returns {boolean}
+ */
+function checkTelphone(tel){
+    var reg = /^((0\d{2,3})-)(\d{7,8})(-(\d{3,}))?$/;
+    if(reg.test(tel)){
+        return true;
+    }else{
+        return false;
+    }
+}
 /*
  * 上传图片 后台专用
  * @access  public
@@ -162,12 +155,16 @@ function checkMobile(tel) {
  * @path  string 指定上传保存文件夹,默认存在public/upload/temp/目录
  * @callback string  回调函数(单张图片返回保存路径字符串，多张则为路径数组 )
  */
-function GetUploadify(num,elementid,path,callback)
+function GetUploadify(num,elementid,path,callback,fileType)
 {	   	
-	var upurl ='/index.php?m=Admin&c=Uploadify&a=upload&num='+num+'&input='+elementid+'&path='+path+'&func='+callback;
+	var upurl ='/index.php?m=Admin&c=Uploadify&a=upload&num='+num+'&input='+elementid+'&path='+path+'&func='+callback+'&fileType='+fileType;
+    var title = '上传图片';
+    if(fileType == 'Flash'){
+        title = '上传视频';
+    }
     layer.open({
         type: 2,
-        title: '上传图片',
+        title: title,
         shadeClose: true,
         shade: false,
         maxmin: true, //开启最大化最小化按钮
@@ -251,17 +248,16 @@ function GetRTime(end_time){
  * 获取多级联动的商品分类
  */
 function get_category(id,next,select_id){
-    var url = '/index.php?m=Home&c=api&a=get_category&parent_id='+ id;
     $.ajax({
         type : "GET",
-        url  : url,
-        error: function(request) {
-            alert("服务器繁忙, 请联系管理员!");
-            return;
-        },
-        success: function(v) {
-			v = "<option value='0'>请选择商品分类</option>" + v;
-            $('#'+next).empty().html(v);
+        url  : '/index.php?m=Home&c=api&a=get_category&parent_id='+ id,
+        dataType:'json',
+        success: function(data) {
+			var html = "<option value='0'>请选择商品分类</option>";
+            for (var i=0 ;i<data.result.length;i++){
+                html+= "<option value='"+data.result[i].id+"'>"+data.result[i].name+"</option>";
+            }
+            $('#'+next).empty().html(html);
 			(select_id > 0) && $('#'+next).val(select_id);//默认选中
         }
     });
@@ -308,15 +304,39 @@ function delCookie(name){
 * 使用这个方法必须先导入 jqueryUrlGet.js
 */
 function set_first_leader()
-{
-	   // 获取地址栏 分销推广链接id 将推荐人id 存入cookie
-	  var get_parameters = $.urlGet(); //获取URL的Get参数		  
-	  var first_leader = parseInt(get_parameters['first_leader']); //取得first_leader的值
-	  if(first_leader > 0)
-	  {   // 将推荐人id 存入cookie			
-		  setCookies('first_leader', first_leader);
-	  }	
+{ 
+	 //获取地址栏 分销推广链接id 将推荐人id 存入cookie
+	 var first_leader = GetUrlParams("first_leader");
+	 if(!(first_leader > 0)){
+		 first_leader = GetFirstLeaderByMode('first_leader/');
+    	 if(first_leader == -1){
+    		 first_leader = GetFirstLeaderByMode('first_leader=');
+    	 } 
+	 }
+	 // 将推荐人id 存入cookie	
+	 if(first_leader > 0){
+		 setCookies('first_leader', first_leader);
+	 }
 }
+
+function GetFirstLeaderByMode(mode){
+  	 var req_url = window.location.href;
+ 	 var regexp = /[0-9]*/;
+  	 var split_str = req_url.split(mode); 
+  	 if(split_str.length < 2){
+  		 return -1;
+  	 }
+  	 var match_result = split_str[1].match(regexp)
+  	 return match_result[0];
+}
+
+function GetUrlParams(name)
+{
+     var reg = new RegExp("(^|&)"+ name +"=([^&]*)(&|$)");
+     var r = window.location.search.substr(1).match(reg);
+     if(r!=null)return  unescape(r[2]); return null;
+}
+
 
 function layConfirm(msg , callback){
 	layer.confirm(msg, {

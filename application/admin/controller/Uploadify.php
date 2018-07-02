@@ -5,9 +5,7 @@
  * 版权所有 2015-2027 深圳搜豹网络科技有限公司，并保留所有权利。
  * 网站地址: http://www.tp-shop.cn
  * ----------------------------------------------------------------------------
- * 这不是一个自由软件！您只能在不用于商业目的的前提下对程序代码进行修改和使用 .
- * 不允许对程序代码以任何形式任何目的的再发布。
- * 采用TP5助手函数可实现单字母函数M D U等,也可db::name方式,可双向兼容
+ * 商业用途务必到官方购买正版授权, 使用盗版将严厉追究您的法律责任。
  * ============================================================================
  * Author: 当燃      
  * Date: 2015-09-22
@@ -21,46 +19,59 @@ class Uploadify extends Base{
         $func = I('func');
         $path = I('path','temp');
 		$image_upload_limit_size = config('image_upload_limit_size');
+        $fileType = I('fileType','Images');  //上传文件类型，视频，图片
+        if($fileType == 'Flash'){
+            $upload = U('Admin/Ueditor/videoUp',array('savepath'=>$path,'pictitle'=>'banner','dir'=>'video'));
+            $type = 'mp4,3gp,flv,avi,wmv';
+        }else{
+            $upload = U('Admin/Ueditor/imageUp',array('savepath'=>$path,'pictitle'=>'banner','dir'=>'images'));
+            $type = 'jpg,png,gif,jpeg';
+        }
         $info = array(
         	'num'=> I('num/d'),
-            'title' => '',       	
-            'upload' =>U('Admin/Ueditor/imageUp',array('savepath'=>$path,'pictitle'=>'banner','dir'=>'images')),
+        	'fileType'=> $fileType,
+            'title' => '',
+            'upload' =>$upload,
         	'fileList'=>U('Admin/Uploadify/fileList',array('path'=>$path)),
             'size' => $image_upload_limit_size/(1024 * 1024).'M',
-            'type' =>'jpg,png,gif,jpeg',
+            'type' =>$type,
             'input' => I('input'),
             'func' => empty($func) ? 'undefined' : $func,
         );
         $this->assign('info',$info);
         return $this->fetch();
     }
-    
-    /*
-              删除上传的图片
+
+
+    /**
+     * 删除上传的图片,视频
      */
     public function delupload(){
-        $action = I('action','del');                
+        $action = I('action','del');
         $filename= I('filename');
         $filename= empty($filename) ? I('url') : $filename;
         $filename= str_replace('../','',$filename);
         $filename= trim($filename,'.');
         $filename= trim($filename,'/');
         if($action=='del' && !empty($filename) && file_exists($filename)){
-            $size = getimagesize($filename);
-            $filetype = explode('/',$size['mime']);
-            if($filetype[0]!='image'){
+            $filetype = strtolower(strstr($filename,'.'));
+            $phpfile = strtolower(strstr($filename,'.php'));  //排除PHP文件
+            $erasable_type = C('erasable_type');  //可删除文件
+            if(!in_array($filetype,$erasable_type) || $phpfile){
                 exit;
             }
             if(unlink($filename)){
-            	echo 1;
+                $this->deleteWechatImage(I('url'));
+                echo 1;
             }else{
-            	echo 0;
-            }  
+                echo 0;
+            }
             exit;
         }
     }
     
-    public function fileList(){
+    public function fileList()
+    {
     	/* 判断类型 */
     	$type = I('type','Images');
     	switch ($type){
@@ -72,7 +83,7 @@ class Uploadify extends Base{
     		/* 列出文件 */
     		default : $allowFiles = '.+';
     	}
-    	
+
     	$path = UPLOAD_PATH.I('path','temp');
     	//echo file_exists($path);echo $path;echo '--';echo $allowFiles;echo '--';echo $key;exit;
     	$listSize = 100000;
@@ -141,60 +152,79 @@ class Uploadify extends Base{
     	}
     	return $files;
     }
-    
-    public function preview(){
-	    
-	    // 此页面用来协助 IE6/7 预览图片，因为 IE 6/7 不支持 base64
+
+	public function preview(){
+
+		// 此页面用来协助 IE6/7 预览图片，因为 IE 6/7 不支持 base64
 		$DIR = 'preview';
 		// Create target dir
 		if (!file_exists($DIR)) {
-		    @mkdir($DIR);
+			@mkdir($DIR);
 		}
-		
+
 		$cleanupTargetDir = true; // Remove old files
 		$maxFileAge = 5 * 3600; // Temp file age in seconds
-		
+
 		if ($cleanupTargetDir) {
-		    if (!is_dir($DIR) || !$dir = opendir($DIR)) {
-		        die('{"jsonrpc" : "2.0", "error" : {"code": 100, "message": "Failed to open temp directory."}, "id" : "id"}');
-		    }
-		
-		    while (($file = readdir($dir)) !== false) {
-		        $tmpfilePath = $DIR . DIRECTORY_SEPARATOR . $file;		
-		        // Remove temp file if it is older than the max age and is not the current file
-		        if (@filemtime($tmpfilePath) < time() - $maxFileAge) {
-		            @unlink($tmpfilePath);
-		        }
-		    }
-		    closedir($dir);
+			if (!is_dir($DIR) || !$dir = opendir($DIR)) {
+				die('{"jsonrpc" : "2.0", "error" : {"code": 100, "message": "Failed to open temp directory."}, "id" : "id"}');
+			}
+
+			while (($file = readdir($dir)) !== false) {
+				$tmpfilePath = $DIR . DIRECTORY_SEPARATOR . $file;
+				// Remove temp file if it is older than the max age and is not the current file
+				if (@filemtime($tmpfilePath) < time() - $maxFileAge) {
+					@unlink($tmpfilePath);
+				}
+			}
+			closedir($dir);
 		}
-		
+
 		$src = file_get_contents('php://input');
-		if (preg_match("#^data:image/(\w+);base64,(.*)$#", $src, $matches)) {		
-		    $previewUrl = sprintf(
-		        "%s://%s%s",
-		        isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] != 'off' ? 'https' : 'http',
-		        $_SERVER['HTTP_HOST'],$_SERVER['REQUEST_URI']
-		    );
-		    $previewUrl = str_replace("preview.php", "", $previewUrl);
-		    $base64 = $matches[2];
-		    $type = $matches[1];
-		    if ($type === 'jpeg') {
-		        $type = 'jpg';
-		    }
-		
-		    $filename = md5($base64).".$type";
-		    $filePath = $DIR.DIRECTORY_SEPARATOR.$filename;
-		
-		    if (file_exists($filePath)) {
-		        die('{"jsonrpc" : "2.0", "result" : "'.$previewUrl.'preview/'.$filename.'", "id" : "id"}');
-		    } else {
-		        $data = base64_decode($base64);
-		        file_put_contents($filePath, $data);
-		        die('{"jsonrpc" : "2.0", "result" : "'.$previewUrl.'preview/'.$filename.'", "id" : "id"}');
-		    }
+		if (preg_match("#^data:image/(\w+);base64,(.*)$#", $src, $matches)) {
+			$previewUrl = sprintf(
+					"%s://%s%s",
+					isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] != 'off' ? 'https' : 'http',
+					$_SERVER['HTTP_HOST'],$_SERVER['REQUEST_URI']
+			);
+			$previewUrl = str_replace("preview.php", "", $previewUrl);
+			$base64 = $matches[2];
+			$type = $matches[1];
+			if ($type === 'jpeg') {
+				$type = 'jpg';
+			}
+
+			$filename = md5($base64).".$type";
+			$filePath = $DIR.DIRECTORY_SEPARATOR.$filename;
+
+			if (file_exists($filePath)) {
+				die('{"jsonrpc" : "2.0", "result" : "'.$previewUrl.'preview/'.$filename.'", "id" : "id"}');
+			} else {
+				$data = base64_decode($base64);
+				$filePathLower = strtolower($filePath);
+				if (strstr($filePathLower, '../') || strstr($filePathLower, '..\\') || strstr($filePathLower, '.php')) {
+					die('{"jsonrpc" : "2.0", "error" : {"code": 100, "message": "文件上传格式错误 error ！"}}');
+				}
+				file_put_contents($filePath, $data);
+				die('{"jsonrpc" : "2.0", "result" : "'.$previewUrl.'preview/'.$filename.'", "id" : "id"}');
+			}
 		} else {
-		    die('{"jsonrpc" : "2.0", "error" : {"code": 100, "message": "un recoginized source"}}');
+			die('{"jsonrpc" : "2.0", "error" : {"code": 100, "message": "un recoginized source"}}');
 		}
+	}
+
+    public function wechatImageList($listSize, $get)
+    {
+        $size = isset($get['size']) ? intval($get['size']) : $listSize;
+        $start = isset($get['start']) ? intval($get['start']) : 0;
+
+        $logic = new \app\common\logic\WechatLogic;
+        return $logic->getPluginImages($size, $start);
+    }
+
+    public function deleteWechatImage($file_path)
+    {
+        $logic = new \app\common\logic\WechatLogic;
+        $logic->deleteImage($file_path);
     }
 }

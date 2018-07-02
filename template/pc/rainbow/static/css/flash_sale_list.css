@@ -232,10 +232,6 @@ em, i, u {
   color: #333;
 }
 .timecount_container_skew {
-  -webkit-transform: skew(45deg);
-  -moz-transform: skew(45deg);
-  -ms-transform: skew(45deg);
-  transform: skew(45deg);
 }
 .timecount_container .seckilling {
   font-size: 28px;
@@ -244,6 +240,7 @@ em, i, u {
 }
 .timecount_container .time_container {
   font-size: 16px;
+  z-index:99;		
 }
 .timecount_container i {
   background-image: url(../images/sprite_flash.png);

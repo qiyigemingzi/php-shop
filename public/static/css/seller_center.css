@@ -493,7 +493,7 @@ a:focus, a:active { text-decoration: none;}
 .ncsc-default-table tbody th { background-color: #FAFAFA; border: solid #E6E6E6; border-width: 1px 0; padding: 4px 0;}
 .ncsc-default-table tbody th span { display: inline-block; vertical-align: middle; margin-right: 30px;}
 .ncsc-default-table tbody th span.goods-name { text-overflow: ellipsis; white-space: nowrap; width: 240px; height: 20px; overflow: hidden;}
-.ncsc-default-table tbody td { color: #999; background-color: #FFF; text-align: center; padding: 10px 0;}
+.ncsc-default-table tbody td { color: #999; background-color: #FFF; text-align: center; padding: 10px 0;word-break: break-all;}
 .ncsc-default-table tbody td strong { color: #666;}
 .ncsc-default-table td .pic-thumb { line-height: 0; background-color: #FFF; text-align: center; vertical-align: middle; display: table-cell; *display: block; width: 32px; height: 32px; border: solid 1px #F5F5F5; overflow: hidden;}
 .ncsc-default-table td .pic-thumb img { max-width: 32px; max-height: 32px; margin-top:expression(32-this.height/2); *margin-top:expression(16-this.height/2)/*IE6,7*/;}

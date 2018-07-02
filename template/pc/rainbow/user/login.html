@@ -8,13 +8,14 @@
     <link rel="stylesheet" type="text/css" href="__STATIC__/css/myaccount.css" />
     <script src="__STATIC__/js/jquery-1.11.3.min.js" type="text/javascript" charset="utf-8"></script>
     <script src="__PUBLIC__/static/js/layer/layer.js" type="text/javascript"></script>
+    <link rel="shortcut icon" type="image/x-icon" href="{$tpshop_config.shop_info_store_ico|default='/public/static/images/logo/storeico_default.png'}" media="screen"/>
 </head>
 <body>
 <div class="loginsum_cm">
     <div class="w1224 p">
         <div class="login-dl">
             <a href="/index.php" title="首页">
-                <img src="{$tpshop_config['shop_info_store_logo']}"/>
+                <img src="{$tpshop_config.shop_info_store_user_logo|default='/public/static/images/logo/pc_home_logo_default.png'}"/>
             </a>
         </div>
         <div class="login-welcome">
@@ -53,12 +54,12 @@
                             <img src="/index.php?m=Home&c=User&a=verify" id="verify_code_img" onclick="verify()"/>
                         </div>
                         <div class="sum_reme_for p">
-                          <!--  <div class="autplog">
+                           <div class="autplog">
                                 <label>
                                     <input type="hidden" name="referurl" id="referurl" value="{$referurl}">
                                     <input type="checkbox" class="u-ckb J-auto-rmb"  name="autologin" value="1">自动登录
                                 </label>
-                            </div>-->
+                            </div>
                             <div class="foget_pwt">
                                 <a href="{:U('Home/User/forget_pwd')}">忘记密码？</a>
                             </div>
@@ -199,6 +200,16 @@
     function verify(){
         $('#verify_code_img').attr('src','/index.php?m=Home&c=User&a=verify&r='+Math.random());
     }
+
+    //回车提交
+    $(document).keyup(function(event){
+        if(event.keyCode ==13){
+            var isFocus=$("#verify_code").is(":focus");
+            if(true==isFocus){
+                checkSubmit();
+            }
+        }
+    });
 </script>
 </body>
 </html>

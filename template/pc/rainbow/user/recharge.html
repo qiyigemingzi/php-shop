@@ -207,14 +207,7 @@
 										<ul>
 											<li><a href="javascript:void(0);">{$vo.ctime|date='Y-m-d H:i:s',###}</a></li>
 											<li><a href="javascript:void(0);">{$vo.account}</a></li>
-											<li>
-												<a href="javascript:void(0);">
-													<if condition="$vo[pay_status] eq 0">待支付
-														<else/>
-														已支付
-													</if>
-												</a>
-											</li>
+											<li><a href="javascript:void(0);">{$status[$vo.pay_status]}</a></li>
 											<li><a href="javascript:void(0);">{$vo.pay_name}</a></li>
 										</ul>
 									</div>
@@ -228,13 +221,13 @@
                                     <p class="ncyekjl">--暂无记录--</p>
                                 </empty>
                                 <!--无记录时-e-->
-								<foreach name="lists" item="vv">
+								<foreach name="lists" item="account">
 									<div class="card-list c_contan accbala-list">
 										<ul>
-											<li><a href="javascript:void(0);">{$vv.change_time|date='Y-m-d H:i:s',###}</a></li>
-											<li><a href="javascript:void(0);">{$vv.user_money}</a></li>
-											<li><a href="javascript:void(0);">{$vv.order_sn|default="--"}</a></li>
-											<li><a href="javascript:void(0);">{$vv.desc}</a></li>
+											<li><a href="javascript:void(0);">{$account.change_time|date='Y-m-d H:i:s',###}</a></li>
+											<li><a href="javascript:void(0);">{$account.user_money}</a></li>
+											<li><a href="javascript:void(0);">{$account.order_sn|default="--"}</a></li>
+											<li><a href="javascript:void(0);">{$account.desc}</a></li>
 										</ul>
 									</div>
 								</foreach>
@@ -248,13 +241,14 @@
                                     <p class="ncyekjl">--暂无记录--</p>
                                 </empty>
                                 <!--无记录时-e-->
-                                <foreach name="lists" item="vv">
+                                <foreach name="lists" item="withdrawals">
                                     <div class="card-list c_contan accbala-list">
                                         <ul>
-                                            <li><a href="javascript:void(0);">{$vv.create_time|date='Y-m-d H:i:s',###}</a></li>
-                                            <li><a href="javascript:void(0);">{$vv.money}</a></li>
-                                            <li><a href="javascript:void(0);">{$vv.id}</a></li>
-                                            <li><a href="javascript:void(0);">{$vv.remark}</a></li>
+                                            <li><a href="javascript:void(0);">{$withdrawals.create_time|date='Y-m-d H:i:s',###}</a></li>
+                                            <li><a href="javascript:void(0);">{$withdrawals.money}</a></li>
+                                            <li><a href="javascript:void(0);">{$withdrawals.id}</a></li>
+                                            <li><a href="javascript:void(0);">{$withdrawals.remark}</a></li>
+                                            <li><a href="javascript:void(0);">{$status[$withdrawals.status]}</a></li>
                                         </ul>
                                     </div>
                                 </foreach>
@@ -441,7 +435,5 @@
                 $(obj).parent().siblings('input[name="pay_radio"]').trigger('click');
             }
 		</script>
-    {:dump($recharge_list);}
-    {:dump($consume_list);}
 	</body>
 </html>

@@ -8,7 +8,7 @@
  * 这不是一个自由软件！您只能在不用于商业目的的前提下对程序代码进行修改和使用 .
  * 不允许对程序代码以任何形式任何目的的再发布。
  * 个人学习免费, 如果商业用途务必到TPshop官网购买授权.
- * 采用TP5助手函数可实现单字母函数M D U等,也可db::name方式,可双向兼容
+ * 采用最新Thinkphp5助手函数特性实现单字母函数M D U等简写方式
  * ============================================================================
  * $Author: IT宇宙人 2015-08-10 $
  */ 
@@ -63,6 +63,13 @@ class Base extends Controller {
        $this->assign('tpshop_config', $tpshop_config);
         $user = session('user');
         $this->assign('username',$user['nickname']);
+
+        //PC端首页"手机端、APP二维码"
+        $store_logo = tpCache('shop_info.shop_info_store_logo');
+        $store_logo ? $head_pic = $store_logo: $head_pic ='/public/static/images/logo/pc_home_logo_default.png';
+        $mobile_url = "http://{$_SERVER['HTTP_HOST']}".U('Mobile/index/app_down');
+        $this->assign('head_pic', "http://{$_SERVER['HTTP_HOST']}/".$head_pic);
+        $this->assign('mobile_url', $mobile_url);
     }
 
     /*

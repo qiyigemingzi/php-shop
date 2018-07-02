@@ -7,7 +7,7 @@
  * ----------------------------------------------------------------------------
  * 这不是一个自由软件！您只能在不用于商业目的的前提下对程序代码进行修改和使用 .
  * 不允许对程序代码以任何形式任何目的的再发布。
- * 采用TP5助手函数可实现单字母函数M D U等,也可db::name方式,可双向兼容
+ * 采用最新Thinkphp5助手函数特性实现单字母函数M D U等简写方式
  * ============================================================================
  * 2015-11-21
  */
@@ -16,7 +16,10 @@ use app\common\logic\MessageLogic;
 use app\common\logic\OrderLogic;
 use app\common\logic\UsersLogic;
 use app\common\logic\CartLogic;
+use app\common\model\GoodsCollect;
+use app\common\model\GoodsVisit;
 use think\Page;
+use think\Session;
 use think\Verify;
 use think\Db;
 class User extends Base{
@@ -28,8 +31,11 @@ class User extends Base{
         parent::_initialize();
         if(session('?user'))
         {
-        	$user = session('user');
-            $user = M('users')->where("user_id", $user['user_id'])->find();
+            $session_user = session('user');
+            $select_user = Db::name('users')->where("user_id", $session_user['user_id'])->find();
+            $oauth_users = Db::name('oauth_users')->where(['user_id'=>$session_user['user_id']])->find();
+            empty($oauth_users) && $oauth_users = [];
+            $user =  array_merge($select_user,$oauth_users);
             session('user',$user);  //覆盖session 中的 user               
         	$this->user = $user;
         	$this->user_id = $user['user_id'];
@@ -62,8 +68,10 @@ class User extends Base{
         $logic = new UsersLogic();
         $user = $logic->get_info($this->user_id);
         $user = $user['result'];
-        $level = M('user_level')->select();
+        $level = Db::name('user_level')->select();
         $level = convert_arr_key($level,'level_id');
+        $coupon = $logic ->get_coupon($this->user_id,'','','',$p=2);
+        $this->assign('coupon',$coupon['result']);
         $this->assign('level',$level);
         $this->assign('user',$user);
         return $this->fetch();
@@ -87,11 +95,11 @@ class User extends Base{
      */
     public function account(){
         $user = session('user');
-        //获取账户资金记录
+        $type = I('type');
+        $order_sn = I('order_sn');
         $logic = new UsersLogic();
-        $data = $logic->get_account_log($this->user_id,I('get.type'));
+        $data = $logic->get_account_log($this->user_id,$type,$order_sn);
         $account_log = $data['result'];
-
         $this->assign('user',$user);
         $this->assign('account_log',$account_log);
         $this->assign('page',$data['show']);
@@ -127,7 +135,8 @@ class User extends Base{
         if($this->user_id > 0){
             $this->redirect('Home/User/index');
         }
-        $referurl = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : U("Home/User/index");
+        $redirect_url = Session::get('redirect_url');
+        $referurl = $redirect_url ? $redirect_url : U("Home/User/index");
         $this->assign('referurl',$referurl);
         return $this->fetch();
     }
@@ -157,7 +166,7 @@ class User extends Base{
     	$res = $logic->login($username,$password);
 
     	if($res['status'] == 1){
-    		$res['url'] =  urldecode(I('post.referurl'));
+    		$res['url'] =  htmlspecialchars_decode(I('post.referurl'));
     		session('user',$res['result']);
     		setcookie('user_id',$res['result']['user_id'],null,'/');
     		setcookie('is_distribut',$res['result']['is_distribut'],null,'/');
@@ -197,11 +206,11 @@ class User extends Base{
                     //手机功能没关闭
                     $check_code = $logic->check_validate_code($code, $username, 'phone', $session_id, $scene);
                     if($check_code['status'] != 1){
-                        $this->error($check_code['msg']);
+                        $this->ajaxReturn($check_code);
                     }
                 }else{
                     if(!$this->verifyHandle('user_reg')){
-                        $this->error('图像验证码错误');
+                        $this->ajaxReturn(['status'=>-1,'msg'=>'图像验证码错误']);
                     };
                 }
             }
@@ -210,11 +219,11 @@ class User extends Base{
                     //邮件功能未关闭
                     $check_code = $logic->check_validate_code($code, $username);
                     if($check_code['status'] != 1){
-                        $this->error($check_code['msg']);
+                        $this->ajaxReturn($check_code);
                     }
                 }else{
                     if(!$this->verifyHandle('user_reg')){
-                        $this->error('图像验证码错误');
+                        $this->ajaxReturn(['status'=>-1,'msg'=>'图像验证码错误']);
                     };
                 }
             }
@@ -270,7 +279,7 @@ class User extends Base{
             echo "<script>parent.{$call_back}('success');</script>";
             exit(); // 成功 回调closeWindow方法 并返回新增的id
         }
-        $p = M('region')->where(array('parent_id'=>0,'level'=> 1))->select();
+        $p = Db::name('region')->where(array('parent_id'=>0,'level'=> 1))->select();
         $this->assign('province',$p);
         return $this->fetch('edit_address');
 
@@ -282,7 +291,7 @@ class User extends Base{
     public function edit_address(){
         header("Content-type:text/html;charset=utf-8");
         $id = I('get.id/d');
-        $address = M('user_address')->where(array('address_id'=>$id,'user_id'=> $this->user_id))->find();
+        $address = Db::name('user_address')->where(array('address_id'=>$id,'user_id'=> $this->user_id))->find();
         if(IS_POST){
             $logic = new UsersLogic();
             $data = $logic->add_address($this->user_id,$id,I('post.'));
@@ -294,11 +303,11 @@ class User extends Base{
             exit(); // 成功 回调closeWindow方法 并返回新增的id
         }
         //获取省份
-        $p = M('region')->where(array('parent_id'=>0,'level'=> 1))->select();
-        $c = M('region')->where(array('parent_id'=>$address['province'],'level'=> 2))->select();
-        $d = M('region')->where(array('parent_id'=>$address['city'],'level'=> 3))->select();
+        $p = Db::name('region')->where(array('parent_id'=>0,'level'=> 1))->select();
+        $c = Db::name('region')->where(array('parent_id'=>$address['province'],'level'=> 2))->select();
+        $d = Db::name('region')->where(array('parent_id'=>$address['city'],'level'=> 3))->select();
         if($address['twon']){
-        	$e = M('region')->where(array('parent_id'=>$address['district'],'level'=>4))->select();
+        	$e = Db::name('region')->where(array('parent_id'=>$address['district'],'level'=>4))->select();
         	$this->assign('twon',$e);
         }
 
@@ -314,8 +323,8 @@ class User extends Base{
      */
     public function set_default(){
         $id = I('get.id/d');
-        M('user_address')->where(array('user_id'=>$this->user_id))->save(array('is_default'=>0));
-        $row = M('user_address')->where(array('user_id'=>$this->user_id,'address_id'=>$id))->save(array('is_default'=>1));
+        Db::name('user_address')->where(array('user_id'=>$this->user_id))->save(array('is_default'=>0));
+        $row = Db::name('user_address')->where(array('user_id'=>$this->user_id,'address_id'=>$id))->save(array('is_default'=>1));
         if(!$row)
             $this->error('操作失败');
         $this->success("操作成功");
@@ -327,13 +336,13 @@ class User extends Base{
     public function del_address(){
         $id = I('get.id/d');
         
-        $address = M('user_address')->where("address_id", $id)->find();
-        $row = M('user_address')->where(array('user_id'=>$this->user_id,'address_id'=>$id))->delete();                
+        $address = Db::name('user_address')->where("address_id", $id)->find();
+        $row = Db::name('user_address')->where(array('user_id'=>$this->user_id,'address_id'=>$id))->delete();                
         // 如果删除的是默认收货地址 则要把第一个地址设置为默认收货地址
         if($address['is_default'] == 1)
         {
-            $address2 = M('user_address')->where("user_id", $this->user_id)->find();
-            $address2 && M('user_address')->where("address_id", $address2['address_id'])->save(array('is_default'=>1));
+            $address2 = Db::name('user_address')->where("user_id", $this->user_id)->find();
+            $address2 && Db::name('user_address')->where("address_id", $address2['address_id'])->save(array('is_default'=>1));
         }        
         if(!$row)
             $this->error('操作失败',U('User/address_list'));
@@ -391,11 +400,11 @@ class User extends Base{
             exit;
         }
         //  获取省份
-        $province = M('region')->where(array('parent_id'=>0,'level'=>1))->select();
+        $province = Db::name('region')->where(array('parent_id'=>0,'level'=>1))->select();
         //  获取订单城市
-        $city =  M('region')->where(array('parent_id'=>$user_info['province'],'level'=>2))->select();
+        $city =  Db::name('region')->where(array('parent_id'=>$user_info['province'],'level'=>2))->select();
         //获取订单地区
-        $area =  M('region')->where(array('parent_id'=>$user_info['city'],'level'=>3))->select();
+        $area =  Db::name('region')->where(array('parent_id'=>$user_info['city'],'level'=>3))->select();
 
         $this->assign('province',$province);
         $this->assign('city',$city);
@@ -444,26 +453,24 @@ class User extends Base{
     }
 
 
-    /*
-    * 手机验证
-    */
+    /**
+     * 手机验证
+     * @return mixed
+     */
     public function mobile_validate()
     {
-        $userLogic = new UsersLogic();
-        $user_info = $userLogic->get_info($this->user_id); //获取用户信息
-        $user_info = $user_info['result'];
+        $user_info = $this->user;
         $config = tpCache('sms');
         $sms_time_out = $config['sms_time_out'];
-        $step = I('get.step', 1);
+        $this->assign('time', $sms_time_out);
         if (IS_POST) {
-            $mobile = I('post.mobile');
             $old_mobile = I('post.old_mobile');
             $code = I('post.code');
             $scene = I('post.scene', 6);
             $session_id = I('unique_id', session_id());
 
             $logic = new UsersLogic();
-            $res = $logic->check_validate_code($code, $mobile, 'phone', $session_id, $scene);
+            $res = $logic->check_validate_code($code, $old_mobile, 'phone', $session_id, $scene);
 
             if (!$res && $res['status'] != 1) $this->error($res['msg']);
 
@@ -471,22 +478,45 @@ class User extends Base{
             if ($user_info['mobile_validated'] == 1 && $old_mobile != $user_info['mobile'])
                 $this->error('原手机号码错误');
             //验证手机和验证码
-
             if ($res['status'] == 1) {
-                //验证有效期
-                if (!$userLogic->update_email_mobile($mobile, $this->user_id, 2))
-                    $this->error('手机已存在');
-                $this->success('绑定成功', U('Home/User/index'));
-                exit;
+                return $this->fetch('set_mobile');
             } else {
                 $this->error($res['msg']);
             }
-
         }
-        $this->assign('time', $sms_time_out);
-        $this->assign('step', $step);
         $this->assign('user_info', $user_info);
+        if (empty($user_info['mobile'])){
+            return $this->fetch('set_mobile');
+        }
         return $this->fetch();
+    }
+
+    /**
+     * 设置新手机
+     * @return mixed
+     */
+    public function set_mobile()
+    {
+        $userLogic = new UsersLogic();
+        $mobile = I('post.mobile');
+        $code = I('post.code');
+        $scene = I('post.scene', 6);
+        $session_id = I('unique_id', session_id());
+        $logic = new UsersLogic();
+        $res = $logic->check_validate_code($code, $mobile, 'phone', $session_id, $scene);
+        //验证手机和验证码
+        if ($res['status'] == 1) {
+            //验证有效期
+            if (!$userLogic->update_email_mobile($mobile, $this->user_id, 2)){
+                $this->ajaxReturn(['status'=>-1,'msg'=>'手机已存在']);
+            }else{
+                $this->ajaxReturn(['status'=>1,'msg'=>'修改成功']);
+            }
+            exit;
+        } else {
+            $this->ajaxReturn(['status'=>-1,'msg'=>$res['msg']]);
+        }
+
     }
 
     /*
@@ -508,7 +538,7 @@ class User extends Base{
         $id = I('get.id/d');
         if(!$id)
             $this->error("缺少ID参数");
-        $row = M('goods_collect')->where(array('collect_id'=>$id,'user_id'=>$this->user_id))->delete();
+        $row = Db::name('goods_collect')->where(array('collect_id'=>$id,'user_id'=>$this->user_id))->delete();
         if(!$row)
             $this->error("删除失败");
         $this->success('删除成功');
@@ -582,8 +612,8 @@ class User extends Base{
     		}
     		if($check['is_check']==1){
     			//$user = get_user_info($check['sender'],1);
-                $user = M('users')->where("mobile|email", '=', $check['sender'])->find();
-    			M('users')->where("user_id", $user['user_id'])->save(array('password'=>encrypt($password)));
+                $user = Db::name('users')->where("mobile|email", '=', $check['sender'])->find();
+    			Db::name('users')->where("user_id", $user['user_id'])->save(array('password'=>encrypt($password)));
     			session('validate_code',null);
                 $this->redirect('Home/User/finished');
     		}else{
@@ -709,7 +739,7 @@ class User extends Base{
     public function bind_auth()
     {
  
-        $list = M('plugin')->cache(true)->where(array('type' => 'login', 'status' => 1))->select();
+        $list = Db::name('plugin')->cache(true)->where(array('type' => 'login', 'status' => 1))->select();
         if ($list) {
             foreach ($list as $val) {
                 $val['is_bind'] = 0;
@@ -731,7 +761,7 @@ class User extends Base{
     public function bind_remove()
     {
         $oauth = I('oauth'); 
-        $row = M('OauthUsers')->where(array('user_id' => $this->user_id , 'oauth'=>$oauth))->delete();
+        $row = Db::name('oauth_users')->where(array('user_id' => $this->user_id , 'oauth'=>$oauth))->delete();
         if ($row) {
             $this->success('解除绑定成功', U('Home/User/bind_auth'));
         } else {
@@ -752,7 +782,7 @@ class User extends Base{
     public function check_username(){
     	$username = I('post.username');
     	if(!empty($username)){
-    		$count = M('users')->where("email", $username)->whereOr('mobile', $username)->count();
+    		$count = Db::name('users')->where("email", $username)->whereOr('mobile', $username)->count();
     		exit(json_encode(intval($count)));
     	}else{
     		exit(json_encode(0));
@@ -797,7 +827,7 @@ class User extends Base{
         $config = array(
             'fontSize' => 40,
             'length' => 4,
-            'useCurve' => true,
+            'useCurve' => false,
             'useNoise' => false,
         );
         $Verify = new Verify($config);
@@ -829,17 +859,23 @@ class User extends Base{
     		$data = I('post.');
     		$data['user_id'] = $this->user_id;    		    		
     		$data['create_time'] = time();                
-                $distribut_min = tpCache('basic.min'); // 最少提现额度
-                if($data['money'] < $distribut_min)
-                {
-                    $this->ajaxReturn(['status'=>0,'msg'=>'每次最少提现额度'.$distribut_min]);
-                        exit;
-                }
-                if($data['money'] > $this->user['user_money'])
-                {
-                    $this->ajaxReturn(['status'=>0,'msg'=>"你最多可提现{$this->user['user_money']}账户余额."]);
-                        exit;
-                }
+            $distribut_min = tpCache('basic.min'); // 最少提现额度
+            $distribut_need = tpCache('basic.need'); // 满多少才能提现
+            if($this->user['user_money'] < $distribut_need)
+            {
+                $this->ajaxReturn(['status'=>0,'msg'=>'账户余额最少达到'.$distribut_need.'多少才能提现']);
+                exit;
+            }
+            if($data['money'] < $distribut_min)
+            {
+                $this->ajaxReturn(['status'=>0,'msg'=>'每次最少提现额度'.$distribut_min]);
+                    exit;
+            }
+            if($data['money'] > $this->user['user_money'])
+            {
+                $this->ajaxReturn(['status'=>0,'msg'=>"你最多可提现{$this->user['user_money']}账户余额."]);
+                    exit;
+            }
             if(encrypt($data['paypwd']) != $this->user['paypwd']){
                 $this->ajaxReturn(['status'=>0,'msg'=>"支付密码错误"]);
             }
@@ -852,11 +888,6 @@ class User extends Base{
                 exit;
     		}
     	}
-
-       /* $Userlogic = new UsersLogic();
-        $result= $Userlogic->get_withdrawals_log($this->user_id);  //用户资金变动记录
-        $this->assign('show',$result['show']);// 赋值分页输出
-        $this->assign('list',$result['result']); // 下线*/
         return $this->fetch();
     }
     
@@ -877,7 +908,7 @@ class User extends Base{
    			}
    		}
    		
-	   	$paymentList = M('Plugin')->where("`type`='payment' and code!='cod' and status = 1 and  scene in(0,2)")->select();
+	   	$paymentList = Db::name('Plugin')->where("`type`='payment' and code!='cod' and status = 1 and  scene in(0,2)")->select();
 	   	$paymentList = convert_arr_key($paymentList, 'code');	   	
 	   	foreach($paymentList as $key => $val)
 	   	{
@@ -895,10 +926,12 @@ class User extends Base{
        $type = I('type');
        $Userlogic = new UsersLogic();
        if($type == 1){
-           $result=$Userlogic->get_account_log($this->user_id);  //用户资金变动记录
+           $result = $Userlogic->get_account_log($this->user_id);  //用户资金变动记录
        }else if($type == 2){
+           $this->assign('status', C('WITHDRAW_STATUS'));
            $result=$Userlogic->get_withdrawals_log($this->user_id);  //提现记录
        }else{
+           $this->assign('status', C('RECHARGE_STATUS'));
            $result=$Userlogic->get_recharge_log($this->user_id);  //充值记录
        }
         $this->assign('page', $result['show']);
@@ -965,7 +998,7 @@ class User extends Base{
             session('payPriorUrl',U('Mobile/Cart/cart2'));
         }
         if ($user['mobile'] == '')
-            $this->error('请先绑定手机', U('User/userinfo',['action'=>'mobile']));
+            $this->error('请先绑定手机', U('User/mobile_validate',['source'=>'paypwd']));
         $step = I('step', 1);
         if ($step > 1) {
             $check = session('validate_code');
@@ -1021,7 +1054,7 @@ class User extends Base{
     public function del_visit_log(){
 
         $visit_id = I('visit_id/d' , 0);
-        $row = M('goods_visit')->where(['visit_id'=>$visit_id])->delete();
+        $row = Db::name('goods_visit')->where(['visit_id'=>$visit_id])->delete();
         if($row>0){
             $this->ajaxReturn(['status'=>1 , 'msg'=> '删除成功']);
         }else{
@@ -1040,9 +1073,9 @@ class User extends Base{
         $cat_id = I('cat_id', 0);
         $map['user_id'] = $this->user_id;
         if ($cat_id > 0) $map['a.cat_id'] = $cat_id;
-        $count = M('goods_visit a')->where($map)->count();
+        $count = Db::name('goods_visit a')->where($map)->count();
         $Page = new Page($count, 20);
-        $visit_list = M('goods_visit a')->field("a.*,g.goods_name,g.shop_price")
+        $visit_list = Db::name('goods_visit a')->field("a.*,g.goods_name,g.shop_price")
             ->join('__GOODS__ g', 'a.goods_id = g.goods_id', 'LEFT')
             ->where($map)
             ->limit($Page->firstRow . ',' . $Page->listRows)
@@ -1068,11 +1101,11 @@ class User extends Base{
                 } else {
                     $val['date'] = '更早以前';
                 }
-                $cat_ids[] = $val['cat_id'];
                 $visit_log[$val['date']][] = $val;
             }
-            $cateArr = M('goods_category')->where(array('id' => array('in', array_unique($cat_ids))))->getField('id,name');
-            $cates = M('goods_visit a')->field('cat_id,COUNT(cat_id) as csum')->where($map)->group('cat_id')->select();
+            $cates = Db::name('goods_visit a')->field('cat_id,COUNT(cat_id) as csum')->where($map)->group('cat_id')->select();
+            $cat_ids = get_arr_column($cates,'cat_id');
+            $cateArr = Db::name('goods_category')->whereIN('id', array_unique($cat_ids))->getField('id,name'); //收藏商品对应分类名称
             foreach ($cates as $k => $v) {
                 if (isset($cateArr[$v['cat_id']])) $cates[$k]['name'] = $cateArr[$v['cat_id']];
                 $visit_total += $v['csum'];
@@ -1084,4 +1117,99 @@ class User extends Base{
         $this->assign('visit_log', $visit_log); //浏览记录
         return $this->fetch();
     }
+
+    public function myCollect()
+    {
+        $item = input('item', 12);
+        $goodsCollectModel = new GoodsCollect();
+        $user_id = $this->user_id;
+        $goodsList = $goodsCollectModel->with('goods')->where('user_id', $user_id)->limit($item)->order('collect_id', 'desc')->select();
+        foreach($goodsList as $key=>$goods){
+            $goodsList[$key]['url'] = $goods->url;
+            $goodsList[$key]['imgUrl'] = goods_thum_images($goods['goods_id'], 160, 160);
+        }
+        if ($goodsList) {
+            $this->ajaxReturn(['status' => 1, 'msg' => '获取成功', 'result' => $goodsList]);
+        } else {
+            $this->ajaxReturn(['status' => 0, 'msg' => '没有记录', 'result' => '']);
+        }
+    }
+
+    /**
+     * 历史记录
+     */
+    public function historyLog(){
+        $item = input('item', 12);
+        $goodsCollectModel = new GoodsVisit();
+        $user_id = $this->user_id;
+        $goodsList = $goodsCollectModel->with('goods')->where('user_id', $user_id)->limit($item)->order('visit_id', 'desc')->select();
+        foreach($goodsList as $key=>$goods){
+            $goodsList[$key]['url'] = $goods->url;
+            $goodsList[$key]['imgUrl'] = goods_thum_images($goods['goods_id'], 160, 160);
+        }
+        if ($goodsList) {
+            $this->ajaxReturn(['status' => 1, 'msg' => '获取成功', 'result' => $goodsList]);
+        } else {
+            $this->ajaxReturn(['status' => 0, 'msg' => '没有记录', 'result' => '']);
+        }
+    }
+
+    /**
+     * vip充值
+     */
+    public function rechargevip(){
+        if (IS_POST) {
+            $user = session('user');
+            $map['user_id'] = $user['user_id'];
+            $map['buy_vip'] = 1;
+            $map['pay_status'] = 1;
+            $info = Db::name('recharge')->where($map)->order('order_id desc')->find();
+            if (($info['pay_time'] + 86400 * 365) > time() && $user['is_vip'] == 1) {
+            	$this->error('您已是VIP且未过期，无需重复充值办理该业务！');
+            }
+
+            $data['user_id']    = $this->user_id;
+            $data['nickname']   = $user['nickname'];
+            $data['account']    = I('account');
+            $data['order_sn']   = 'recharge' . get_rand_str(10, 0, 1);
+            $data['buy_vip']    = 1;
+            $data['ctime']  = time();
+            $order_id = Db::name('recharge')->add($data);
+            if ($order_id) {
+                $url = U('Home/Payment/getPay', array('pay_radio' => $_REQUEST['pay_radio'], 'order_id' => $order_id));
+                $this->redirect($url);
+            } else {
+                $this->error('提交失败,参数有误!');
+            }
+        }
+        $paymentList = Db::name('Plugin')->cache(true)->where("`type`='payment' and code!='cod' and status = 1 and scene in(0,2)")->select();
+        $paymentList = convert_arr_key($paymentList, 'code');
+        foreach ($paymentList as $key => $val) {
+            $val['config_value'] = unserialize($val['config_value']);
+            if ($val['config_value']['is_bank'] == 2) {
+                $bankCodeList[$val['code']] = unserialize($val['bank_code']);
+            }
+        }
+        $bank_img = include APP_PATH . 'home/bank.php'; // 银行对应图片
+        $this->assign('paymentList', $paymentList);
+        $this->assign('bank_img', $bank_img);
+        $this->assign('bankCodeList', $bankCodeList);
+        return $this->fetch();
+    }
+
+    /**
+     * 设置默认收货地址
+     */
+    public function setAddressDefault()
+    {
+        $id = input('id/d');
+        Db::name('user_address')->where(['user_id'=>$this->user_id])->update(['is_default' => 0]);
+        $row = Db::name('user_address')->where(array('user_id' => $this->user_id, 'address_id' => $id))->update(array('is_default' => 1));
+        if ($row !== false){
+            $this->ajaxReturn(['status'=>1,'msg'=>'设置成功','result'=>'']);
+        }else{
+            $this->ajaxReturn(['status'=>0,'msg'=>'设置失败','result'=>$row]);
+        }
+    }
+
 }

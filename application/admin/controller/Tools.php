@@ -7,7 +7,7 @@
  * ----------------------------------------------------------------------------
  * 这不是一个自由软件！您只能在不用于商业目的的前提下对程序代码进行修改和使用 .
  * 不允许对程序代码以任何形式任何目的的再发布。
- * 采用TP5助手函数可实现单字母函数M D U等,也可db::name方式,可双向兼容
+ * 采用最新Thinkphp5助手函数特性实现单字母函数M D U等简写方式
  * ============================================================================
  * Author: 当燃      
  * 
@@ -272,7 +272,7 @@ class Tools extends Base {
 			$this->error('请先上传sql文件');
 		}
 		// 移动到框架应用根目录/public/uploads/ 目录下
-		$path = ROOT_PATH . 'public/upload/sqldata' ;
+		$path = UPLOAD_PATH.'sqldata' ;
 		$info = $file->validate(['size'=>200000000,'ext'=>'sql,gz'])->move($path, $_FILES['sqlfile']['name']);
 		if ($info) {
 			//上传成功 获取上传文件信息

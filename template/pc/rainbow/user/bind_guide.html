@@ -12,8 +12,8 @@
 <div class="relation-user-wrap">
     <div class="relation-tips">联合登录</div>
     <ul class="relation-lists1">
-        <li class="relation-ac">已有微商城账号，请绑定</li>
-        <li>没有微商城账号，请完善资料</li>
+        <li class="relation-ac">已有TPshop商城账号，请绑定</li>
+        <li>没有TPshop商城账号，请完善资料</li>
     </ul>
     <ul class="relation-lists2">
         <li class="relation-ac">
@@ -30,7 +30,7 @@
             	<input type="hidden" name="form_type" value="account"/>
                 <div class="user-login-input">
                     <label>商 城 账 号</label>
-                    <input type="text" name="mobile" id="mobile" placeholder="邮箱/已验证手机" />
+                    <input type="text" name="mobile" id="mobile" placeholder="已验证手机" />
                 </div>
                 <div class="user-login-input">
                     <label>输 入 密 码</label>
@@ -86,7 +86,7 @@
                 <div class="form-agreen">
                     <input type="checkbox"  value="1"/>
                     我已阅读并同意
-                    <a class="itxt" href="{:U('Home/Article/detail',['article_id'=>1415])}" target="_blank">《微商城用户注册协议》</a>
+                    <a class="itxt" href="{:U('Home/Article/detail',['article_id'=>1415])}" target="_blank">《TPshop商城用户注册协议》</a>
                 </div>
                 <input class="btn-register" type="button" onclick="checkSubmit(2)" value="立即绑定"  />
             </form>
@@ -224,7 +224,7 @@
                 	if(res.status == 1)
         			{
         				$('#count_down').attr("disabled","disabled");
-        				intAs = {$tpshop_config['sms_sms_time_out']}; // 手机短信超时时间
+        				intAs = {$tpshop_config['sms_sms_time_out']|default=60}; // 手机短信超时时间
                         jsInnerTimeout('count_down',intAs);
                         layer.alert(res.msg, {icon: 1});
         			}else{

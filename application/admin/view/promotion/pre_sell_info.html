@@ -1,170 +1,186 @@
-<include file="public/min-header" />
-<link href="__PUBLIC__/plugins/daterangepicker/daterangepicker-bs3.css" rel="stylesheet" type="text/css" />
-<script src="__PUBLIC__/plugins/daterangepicker/moment.min.js" type="text/javascript"></script>
-<script src="__PUBLIC__/plugins/daterangepicker/daterangepicker.js" type="text/javascript"></script>
-<div class="wrapper">
-    <include file="public/breadcrumb"/>
-    <section class="content ">
-        <!-- Main content -->
-        <div class="container-fluid">
-            <div class="pull-right">
-                <a href="javascript:history.go(-1)" data-toggle="tooltip" title="" class="btn btn-default" data-original-title="返回"><i class="fa fa-reply"></i></a>
-            	<a href="javascript:;" class="btn btn-default" data-url="http://www.tp-shop.cn/Doc/Index/article/id/1017/developer/user.html" onclick="get_help(this)"><i class="fa fa-question-circle"></i> 帮助</a>
-            </div>
-            <div class="panel panel-default">
-                <div class="panel-heading">
-                    <h3 class="panel-title"><i class="fa fa-list"></i> 编辑预售商品</h3>
-                </div>
-                <div class="panel-body ">   
-                    <!--表单数据-->
-                    <form method="post" id="handleposition" action="">
-                        <input name="shut_down" id="shut_down" value="0" type="hidden">
-                        <!--通用信息-->
-                    <div class="tab-content col-md-10">                 	  
-                        <div class="tab-pane active" id="tab_tongyong">                           
-                            <table class="table table-bordered">
-                                <tbody>
-                                <tr>
-                                    <td class="col-sm-2">预售商品：</td>
-                                    <td class="col-sm-6">
-                                    	<div class="col-xs-9">
-                             				<input type="text" id="goods_name" name="goods_name" class="form-control" value="{$info.goods_name}">
-                             			</div>
-                             			<div class="col-xs-3">
-                             				<input type="hidden" id="goods_id" name="goods_id" value="{$info.goods_id}">
-                             				<input  class="btn btn-primary <notempty name='info'><if condition="strtotime($info['start_time']) lt time()">disabled</if></notempty>" type="button" onclick="selectGoods()" value="选择商品">
-                             			</div>
-                                    </td>
-                                    <td class="col-sm-4">请选择商品</td>
-                                </tr>
-                                <tr>
-                                    <td>活动开始时间：</td>
-                                    <td>
-                                        <input type="text" class="form-control" id="start_time" name="start_time" value="{$info.start_time}">
-                                    </td>
-                                    <td class="col-sm-4">活动开始时间</td>
-                                </tr>
-                                <tr>
-                                    <td>活动结束时间：</td>
-                                    <td>
-                                        <input type="text" class="form-control" id="end_time" name="end_time" value="{$info.end_time}">
-                                    </td>
-                                    <td class="col-sm-4">活动结束时间</td>
-                                </tr>
-                                <tr>
-                                    <td>定金：</td>
-                                    <td>
-                                        <input <notempty name='info'><if condition="strtotime($info['start_time']) lt time()">readonly='readonly'</if></notempty>  style="width: 100px;" type="text" class="form-control" id="deposit" name="deposit" value="{$info.deposit}" onblur="deposit_limit(this);"  onpaste="this.value=this.value.replace(/[^\d.]/g,'')" onkeyup="this.value=this.value.replace(/[^\d.]/g,'')"/>
-                                    </td>
-                                    <td class="col-sm-4">定金为0时，表示用户直接支付当前的预售价格不需要支付尾款，此时尾款支付时间不可设置，预售活动结束后，系统会根据最新的预售价格返还用户已支付的差额。商品开始预售后，不能更改订金金额</td>
-                                </tr>
-                                <tr>
-                                	<td>预售库存:</td>
-                                	<td><input style="width: 100px;" type="text" name="restrict_amount" id="restrict_amount" class="form-control" value="{$info.restrict_amount}" onpaste="this.value=this.value.replace(/[^\d.]/g,'')" onkeyup="this.value=this.value.replace(/[^\d.]/g,'')"/></td>
-                                	<td class="col-sm-4">达到此数量，预售活动自动结束。不能为0！</td>
-                                </tr>
-                                <tr id="retainage_start_tr">
-                                    <td>尾款支付开始时间：</td>
-                                    <td>
-                                        <input type="text" class="form-control" id="retainage_start" name="retainage_start" value="{$info.retainage_start}" <if condition="($info['deposit'] eq 0) OR ($info['end_time'] lt time())">disabled='disabled'</if> >
-                                    </td>
-                                    <td class="col-sm-4">尾款开始支付时间不得早于预售活动结束时间</td>
-                                </tr>
-                                <tr id="retainage_end_tr">
-                                    <td>尾款支付结束时间：</td>
-                                    <td>
-                                        <input type="text" class="form-control" id="retainage_end" name="retainage_end" value="{$info.retainage_end}" <if condition="($info['deposit'] eq 0) OR ($info['end_time'] lt time())">disabled='disabled'</if> >
-                                    </td>
-                                    <td class="col-sm-4">建议留给用户支付尾款时间至少72小时以上</td>
-                                </tr>
-                                <tr>
-                                    <td>开始发货时间描述：</td>
-                                    <td>
-                                        <textarea class="form-control" rows="4" placeholder="请输入开始发货时间描述" id="deliver_goods" name="deliver_goods">{$info.deliver_goods}</textarea>
-                                    </td>
-                                    <td class="col-sm-4">格式建议：1.预计 yyyy-MM-dd HH 时前发货。2.付款后 N 天内发货。</td>
-                                </tr>
-                                <tr>
-                                <style>
-                                    .addprine{
-                                        display: inline;
-                                    }
-                                    .alisth{
-                                        margin-top: 10px
-                                    }
-                                    .p_plus strong{
-                                        cursor: pointer;
-                                        margin-left: 4px;
-                                    }
-                                </style>
-                                    <td>价格阶梯：</td>
-                                    <td>
-                                        <div class="alisth" id="alisth_0">
-                                            预定个数达到<input type="text" class="form-control addprine" name="ladder_amount[]" style="width: 100px;" value="{$info['price_ladder'][0]['amount']}">&nbsp;
-                                            价格<input type="text" class="form-control addprine" name="ladder_price[]" style="width: 100px;" value="{$info['price_ladder'][0]['price']}">
-                                            <a class="p_plus" href="javascript:;"><strong>[+]</strong></a>
-                                        </div>
-                                        <volist name="info['price_ladder']" id="vo" offset="1">
-                                        <div class="alisth">
-                                            预定个数达到<input type="text" class="form-control addprine" name="ladder_amount[]" style="width: 100px;" value="{$vo['amount']}">&nbsp;价格
-                                            <input type="text" class="form-control addprine" name="ladder_price[]" style="width: 100px;" value="{$vo['price']}">
-                                            <a class="p_plus" onclick='$(this).parent().remove();'><strong>[-]</strong></a>
-                                        </div>
-                                        </volist>
-                                    </td>
-                                    <script>
-                                        $(function(){
-                                            $('.p_plus').click(function() {
-                                                var html = "<div class='alisth'>"
-                                                + "预定个数达到"
-                                                + "<input type='text' class='form-control addprine' name='ladder_amount[]' style='width: 100px;' value=''/>"
-                                                + "&nbsp;&nbsp;价格"
-                                                + "<input type='text' class='form-control addprine' name='ladder_price[]' style='width: 100px;' value=''>"
-                                                + "<a class='p_plus' onclick='$(this).parent().remove();'>&nbsp;<strong>[-]</strong></a>"
-                                                + "</div>";
-                                                $('#alisth_0').after(html);
-                                            });
-                                        })
-                                    </script>
-                                </tr>
-                                <tr>
-                                    <td>活动说明：</td>
-                                    <td>
-                                    	<textarea class="form-control" rows="4" placeholder="请输入活动介绍" name="act_desc">{$info.act_desc}</textarea>
-                                    </td>
-                                    <td class="col-sm-4">活动说明</td>
-                                </tr>                                
-                                </tbody> 
-                                <tfoot>
-                                <tr>
-                                    <td><input class="btn btn-default" type="reset" value="重置">
-                                        <input type="hidden" name="id" value="{$info.act_id}">
-                                    </td>
-                                    <td class="col-sm-4"></td>
-                                    <td class="text-right">
-                                        <input class="btn btn-primary" type="button" onclick="adsubmit()" value="保存">
-                                        <if condition="$info['act_id'] gt 0">
-                                            <if condition="($info['is_finished'] eq 0) AND ((strtotime($info['start_time']) elt time() AND strtotime($info['end_time']) gt time()) AND $info['act_count'] lt $info['restrict_amount'])">
-                                                <input class="btn btn-primary" type="button" onclick="shut_submit()" value="结束活动">
-                                            </if>
-                                            <if condition="$info['is_finished'] eq 0 AND (strtotime($info['end_time']) lt time() OR $info['act_count'] egt $info['restrict_amount'])">
-                                                <input class="btn btn-primary" type="button" onclick="pre_sell_success();" value="活动成功">
-                                                <input class="btn btn-primary" type="button" onclick="pre_sell_fail();" value="活动失败">
-                                            </if>
-                                        </if>
-                                    </td>
-                                </tr>
-                                </tfoot>
-                                </table>
-                        </div>                           
-                    </div>              
-			    	</form><!--表单数据-->
-                </div>
+<include file="public/layout" />
+<script src="__ROOT__/public/static/js/layer/laydate/laydate.js"></script>
+<style>
+    .disabled{pointer-events: none;filter:alpha(opacity=40);-moz-opacity:0.4;-khtml-opacity: 0.4;opacity: 0.4;}
+</style>
+<body style="background-color: #FFF; overflow: auto;">
+<div id="toolTipLayer" style="position: absolute; z-index: 9999; display: none; visibility: visible; left: 95px; top: 573px;"></div>
+<div id="append_parent"></div>
+<div id="ajaxwaitid"></div>
+<div class="page">
+    <div class="fixed-bar">
+        <div class="item-title"><a class="back" href="javascript:history.back();" title="返回列表"><i class="fa fa-arrow-circle-o-left"></i></a>
+            <div class="subject">
+                <h3>预售管理 - 编辑</h3>
+                <h5>网站系统预售详情页</h5>
             </div>
         </div>
-    </section>
+    </div>
+    <form class="form-horizontal" action="" id="handleposition" method="post">
+        <input type="hidden" name="shut_down" id="shut_down" value="0" >
+        <input type="hidden" id="goods_id" name="goods_id" value="{$info.goods_id}">
+        <input type="hidden" name="id" value="{$info.act_id}">
+        <div class="ncap-form-default">
+            <dl class="row">
+                <dt class="tit">
+                    <label><em>*</em>选择预售商品</label>
+                </dt>
+                <dd class="opt">
+                    <input type="text" id="goods_name" name="goods_name" value="{$info.goods_name}" class="input-txt">
+                    <div style="overflow: hidden" id="selected_group_goods">
+                        <if condition="$info['goods_id'] gt 0">
+                            <div style="float: left;margin-right: 10px" class="selected-group-goods">
+                                <div class="goods-thumb"><img style="width: 162px;height: 162px"  src="{$info['goods_id']|goods_thum_images=162,162}"/></div>
+                                <div class="goods-name">
+                                    <a target="_blank" href="{:U('Home/Goods/goodsInfo',array('id'=>$info['goods_id']))}">{$info.goods_name}</a>
+                                </div>
+                                <div class="goods-price">商城价：￥{$info['goods']['shop_price']}库存:{$info['goods']['store_count']}</div>
+                            </div>
+                        </if>
+                    </div>
+                    <span class="err"></span>
+                    <p class="notic">
+                        <a onclick="selectGoods()" class="ncap-btn <notempty name='info'><if condition="strtotime($info['start_time']) lt time()">disabled</if></notempty>"><i class="fa fa-search"></i>选择商品</a>
+                    </p>
+                </dd>
+            </dl>
+            <dl class="row">
+                <dt class="tit">
+                    <label><em>*</em>活动开始时间</label>
+                </dt>
+                <dd class="opt">
+                    <input type="text" <notempty name='info'><if condition="$info[is_finished] gt 0">disabled='disabled'</if></notempty> id="start_time" name="start_time" value="{$info.start_time|default=$default_time[start_time]}"  class="input-txt">
+                    <p class="notic">预售开始时间</p>
+                </dd>
+            </dl>
+            <dl class="row">
+                <dt class="tit">
+                    <label><em>*</em>活动结束时间</label>
+                </dt>
+                <dd class="opt">
+                    <input type="text" <notempty name='info'><if condition="$info[is_finished] gt 0">disabled='disabled'</if></notempty> id="end_time" name="end_time" value="{$info.end_time|default=$default_time[end_time]}" class="input-txt">
+                    <p class="notic">预售结束时间</p>
+                </dd>
+            </dl>
+            <dl class="row">
+                <dt class="tit">
+                    <label><em>*</em>定金</label>
+                </dt>
+                <dd class="opt">
+                    <input <notempty name='info'><if condition="strtotime($info['start_time']) lt time()">readonly='readonly'</if></notempty>  style="width: 100px;" type="text" class="input-txt" id="deposit" name="deposit" value="{$info.deposit}" onblur="deposit_limit(this);"  onpaste="this.value=this.value.replace(/[^\d.]/g,'')" onkeyup="this.value=this.value.replace(/[^\d.]/g,'')"/>
+                    <p class="notic">单位：元。
+                                    <br/>定金为0时，表示用户直接支付当前的预售价格不需要支付尾款，此时尾款支付时间不可设置;
+                                    <br/>预售活动结束后，系统会根据最新的预售价格返还用户已支付的差额;
+                                    <br/>商品开始预售后，不能更改订金金额</p>
+                </dd>
+            </dl>
+            <dl class="row">
+                <dt class="tit">
+                    <label><em>*</em>预售库存</label>
+                </dt>
+                <dd class="opt">
+                    <input style="width: 100px;" type="text" class="input-txt" name="restrict_amount" id="restrict_amount" value="{$info.restrict_amount}" onpaste="this.value=this.value.replace(/[^\d.]/g,'')" onkeyup="this.value=this.value.replace(/[^\d.]/g,'')"/>
+                    <p class="notic">达到此数量，预售活动自动结束。不能为0！</p>
+                </dd>
+            </dl>
+            <dl class="row">
+                <dt class="tit">
+                    <label><em>*</em>尾款支付开始时间</label>
+                </dt>
+                <dd class="opt">
+                    <input type="text" class="input-txt" id="retainage_start" name="retainage_start" value="{$info.retainage_start}" <notempty name="info"><if condition="($info['deposit'] eq 0) OR (strtotime($info['start_time']) lt time())">disabled='disabled'</if></notempty> >
+                    <p class="notic">尾款支付开始时间</p>
+                </dd>
+            </dl>
+            <dl class="row">
+                <dt class="tit">
+                    <label><em>*</em>尾款支付结束时间</label>
+                </dt>
+                <dd class="opt">
+                    <input type="text" class="input-txt"  id="retainage_end" name="retainage_end" value="{$info.retainage_end}" <notempty name="info"><if condition="($info['deposit'] eq 0) OR (strtotime($info['start_time']) lt time())">disabled='disabled'</if></notempty>>
+                    <p class="notic">尾款支付结束时间</p>
+                </dd>
+            </dl>
+            <dl class="row">
+                <dt class="tit">
+                    <label><em>*</em>开始发货时间描述</label>
+                </dt>
+                <dd class="opt">
+                    <textarea class="tarea" rows="4" placeholder="请输入开始发货时间描述" id="deliver_goods" name="deliver_goods">{$info.deliver_goods}</textarea>
+                    <p class="notic">格式建议：1.预计 yyyy-MM-dd HH 时前发货。2.付款后 N 天内发货。</p>
+                </dd>
+            </dl>
+            <dl class="row">
+                <dt class="tit">
+                    <label><em>*</em>价格阶梯</label>
+                </dt>
+                <dd class="opt">
+                    <style>
+                        .addprine{
+                            display: inline;
+                        }
+                        .alisth{
+                            margin-top: 10px
+                        }
+                        .p_plus strong{
+                            cursor: pointer;
+                            margin-left: 4px;
+                        }
+                    </style>
+                    <div class="alisth" id="alisth_0">
+                        预定个数达到<input type="text" class="input-number addprine" name="ladder_amount[]" value="{$info['price_ladder'][0]['amount']}" onpaste="this.value=this.value.replace(/[^\d.]/g,'')" onkeyup="this.value=this.value.replace(/[^\d.]/g,'')" style="width: 100px;" >&nbsp;
+                        价格<input type="text" class="input-number addprine" name="ladder_price[]" value="{$info['price_ladder'][0]['price']}" onpaste="this.value=this.value.replace(/[^\d.]/g,'')" onkeyup="this.value=this.value.replace(/[^\d.]/g,'')" style="width: 100px;" >
+                        <a class="p_plus" href="javascript:;"><strong>[+]</strong></a>
+                    </div>
+                    <volist name="info['price_ladder']" id="vo" offset="1">
+                        <div class="alisth">
+                            预定个数达到<input type="text" class="input-number addprine" name="ladder_amount[]" value="{$vo['amount']}" onpaste="this.value=this.value.replace(/[^\d.]/g,'')" onkeyup="this.value=this.value.replace(/[^\d.]/g,'')" style="width: 100px;" >&nbsp;
+                            价格<input type="text" class="input-number addprine" name="ladder_price[]" value="{$vo['price']}" onpaste="this.value=this.value.replace(/[^\d.]/g,'')" onkeyup="this.value=this.value.replace(/[^\d.]/g,'')" style="width: 100px;" >
+                            <a class="p_plus" onclick='$(this).parent().remove();'><strong>[-]</strong></a>
+                        </div>
+                    </volist>
+                </dd>
+                <script>
+                    $(function(){
+                        $('.p_plus').click(function() {
+                            var html = "<div class='alisth'>"
+                                    + "预定个数达到"
+                                    + "<input type='text' class='input-number addprine' name='ladder_amount[]' style='width: 100px;' value=''/>"
+                                    + "&nbsp;&nbsp;价格"
+                                    + "<input type='text' class='form-control addprine' name='ladder_price[]' style='width: 100px;' value=''>"
+                                    + "<a class='p_plus' onclick='$(this).parent().remove();'>&nbsp;<strong>[-]</strong></a>"
+                                    + "</div>";
+                            $('#alisth_0').after(html);
+                        });
+                    })
+                </script>
+            </dl>
+            <dl class="row">
+                <dt class="tit">
+                    <label>活动说明</label>
+                </dt>
+                <dd class="opt">
+                    <textarea placeholder="请输入活动介绍" name="act_desc" rows="6" class="tarea">{$info.act_desc}</textarea>
+                    <p class="notic">预售描述介绍</p>
+                </dd>
+            </dl>
+            <div class="bot">
+                <a onclick="adsubmit()" class="ncap-btn-big ncap-btn-green">保存</a>
+                <if condition="$info['act_id'] gt 0">
+                    <if condition="($info['is_finished'] eq 0) AND ((strtotime($info['start_time']) elt time() AND strtotime($info['end_time']) gt time()) AND $pre_count_info['total_goods'] lt $info['restrict_amount'])">
+                        <a onclick="shut_submit()" class="ncap-btn-big ncap-btn-green">结束活动</a>
+                    </if>
+                    <if condition="$info['is_finished'] eq 0 AND (strtotime($info['end_time']) lt time() OR $pre_count_info['total_goods'] egt $info['restrict_amount'])">
+                        <a onclick="pre_sell_success()" class="ncap-btn-big ncap-btn-green">活动成功</a>
+                        <a onclick="pre_sell_fail()" class="ncap-btn-big ncap-btn-green">活动失败</a>
+                    </if>
+                </if>
+            </div>
+        </div>
+    </form>
 </div>
-<script>
+<script type="text/javascript">
+    /***/
     function adsubmit() {
         if ($('#goods_name').val() == '') {
             layer.msg('请选择一个预售商品',{icon:2});
@@ -182,97 +198,14 @@
     }
 
     $(document).ready(function () {
-        $('#start_time').daterangepicker({
-            format: "YYYY-MM-DD HH:mm:ss",
-            singleDatePicker: true,
-            showDropdowns: true,
-            minDate: '{$min_date}',
-            maxDate: '2030-01-01',
-            startDate: '{$min_date}',
-            timePicker: true, //是否显示小时和分钟
-            timePickerIncrement: 1,//time选择递增数
-            timePicker12Hour: false, //是否使用12小时制来显示时间
-            locale: {
-                applyLabel: '确定',
-                cancelLabel: '取消',
-                fromLabel: '起始时间',
-                toLabel: '结束时间',
-                customRangeLabel: '自定义',
-                daysOfWeek: ['日', '一', '二', '三', '四', '五', '六'],
-                monthNames: ['一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月'],
-                firstDay: 1
-            }
-        });
-
-        $('#end_time').daterangepicker({
-            format: "YYYY-MM-DD HH:mm:ss",
-            singleDatePicker: true,
-            showDropdowns: true,
-            minDate: '{$min_date}',
-            maxDate: '2030-01-01',
-            startDate: '{$min_date}',
-            timePicker: true, //是否显示小时和分钟
-            timePickerIncrement: 1,//time选择递增数
-            timePicker12Hour: false, //是否使用12小时制来显示时间
-            locale: {
-                applyLabel: '确定',
-                cancelLabel: '取消',
-                fromLabel: '起始时间',
-                toLabel: '结束时间',
-                customRangeLabel: '自定义',
-                daysOfWeek: ['日', '一', '二', '三', '四', '五', '六'],
-                monthNames: ['一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月'],
-                firstDay: 1
-            }
-        });
-        $('#retainage_start').daterangepicker({
-            format: "YYYY-MM-DD HH:mm:ss",
-            singleDatePicker: true,
-            showDropdowns: true,
-            minDate: '{$min_date}',
-            maxDate: '2030-01-01',
-            startDate: '{$min_date}',
-            timePicker: true, //是否显示小时和分钟
-            timePickerIncrement: 1,//time选择递增数
-            timePicker12Hour: false, //是否使用12小时制来显示时间
-            locale: {
-                applyLabel: '确定',
-                cancelLabel: '取消',
-                fromLabel: '起始时间',
-                toLabel: '结束时间',
-                customRangeLabel: '自定义',
-                daysOfWeek: ['日', '一', '二', '三', '四', '五', '六'],
-                monthNames: ['一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月'],
-                firstDay: 1
-            },
-            hide: true
-        });
-        $('#retainage_end').daterangepicker({
-            format: "YYYY-MM-DD HH:mm:ss",
-            singleDatePicker: true,
-            showDropdowns: true,
-            minDate: '{$min_date}',
-            maxDate: '2030-01-01',
-            startDate: '{$min_date}',
-            timePicker: true, //是否显示小时和分钟
-            timePickerIncrement: 1,//time选择递增数
-            timePicker12Hour: false, //是否使用12小时制来显示时间
-            locale: {
-                applyLabel: '确定',
-                cancelLabel: '取消',
-                fromLabel: '起始时间',
-                toLabel: '结束时间',
-                customRangeLabel: '自定义',
-                daysOfWeek: ['日', '一', '二', '三', '四', '五', '六'],
-                monthNames: ['一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月'],
-                firstDay: 1
-            }
-        });
-
+        $('#start_time').layDate();
+        $('#end_time').layDate();
+        $('#retainage_start').layDate();
+        $('#retainage_end').layDate();
     });
 
     function selectGoods() {
-        var url = "{:U('Promotion/search_goods',array('tpl'=>'select_goods'))}";
+        var url = "{:U('Promotion/search_goods',array('tpl'=>'pre_sell_search_goods','prom_type'=>4))}";
         layer.open({
             type: 2,
             title: '选择商品',
@@ -282,11 +215,18 @@
             content: url,
         });
     }
+    function call_back(goodsItem){
+        $('#goods_id').val(goodsItem.goods_id);
+        $('input[name=goods_name]').val(goodsItem.goods_name);
+        $('#group_num').val(goodsItem.store_count);
+        var html = '<div style="float: left;margin: 10px auto;" class="selected-group-goods"><div class="goods-thumb">' +
+                '<img style="width: 162px;height: 162px" src="'+goodsItem.goods_image+'"/></div> <div class="goods-name"> ' +
+                '<a target="_blank" href="/index.php?m=Home&c=Goods&a=goodsInfo&id='+goodsItem.goods_id+'">'+goodsItem.goods_name+'</a> </div>' +
+                ' <div class="goods-price">商城价：￥'+goodsItem.goods_price+'库存:'+goodsItem.store_count+'</div> </div>';
 
-    function call_back(goods_id, goods_name, store_count) {
-        $('#goods_id').val(goods_id);
-        $('#goods_name').val(goods_name);
-        $('#group_num').val(store_count);
+        $('#select_goods_button').attr('data-goods-id',goodsItem.goods_id);
+        $('#selected_group_goods').empty().html(html);
+        $('.selected-group-goods').show();
         layer.closeAll('iframe');
     }
 

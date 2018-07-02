@@ -7,12 +7,10 @@
  * ----------------------------------------------------------------------------
  * 这不是一个自由软件！您只能在不用于商业目的的前提下对程序代码进行修改和使用 .
  * 不允许对程序代码以任何形式任何目的的再发布。
- * 采用TP5助手函数可实现单字母函数M D U等,也可db::name方式,可双向兼容
+ * 采用最新Thinkphp5助手函数特性实现单字母函数M D U等简写方式
  * $Author: IT宇宙人 2015-08-10 $
- * 为兼容以前的Thinkphp3.2老用户习惯, 用TP5助手函数实现 M( ) D( ) U( ) S( )等单字母函数
  */
-
-use MongoDB\BSON\Type;
+use think\Log;
 use think\Db;
 /**
  * tpshop检验登陆
@@ -28,30 +26,29 @@ function is_login(){
 }
 /**
  * 获取用户信息
- * @param $user_id_or_name  用户id 邮箱 手机 第三方id
+ * @param $user_value  用户id 邮箱 手机 第三方id
  * @param int $type  类型 0 user_id查找 1 邮箱查找 2 手机查找 3 第三方唯一标识查找
  * @param string $oauth  第三方来源
  * @return mixed
  */
-function get_user_info($user_id_or_name, $type = 0, $oauth = '')
+function get_user_info($user_value, $type = 0, $oauth = '')
 {
-   
-    $map = array();
-    if ($type == 0)
-        $map['user_id'] = $user_id_or_name;
-    if ($type == 1)
-        $map['email'] = $user_id_or_name;
-    if ($type == 2)
-        $map['mobile'] = $user_id_or_name;
-    
-    if ($type == 3 || $type == 4) {
-            //获取用户信息
-            $column = ($type ==3) ? 'openid' : 'unionid';
-            $thirdUser = M('OauthUsers')->where([$column=>$user_id_or_name, 'oauth'=>$oauth])->find();
-            $map['user_id'] = $thirdUser['user_id'];
-     }    
-    $user = M('users')->where($map)->find();
-    return $user;
+    $map = [];
+    if ($type == 0) {
+        $map['user_id'] = $user_value;
+    } elseif ($type == 1) {
+        $map['email'] = $user_value;
+    } elseif ($type == 2) {
+        $map['mobile'] = $user_value;
+    } elseif ($type == 3) {
+        $thirdUser = Db::name('oauth_users')->where(['openid' => $user_value, 'oauth' => $oauth])->find();
+        $map['user_id'] = $thirdUser['user_id'];
+    } elseif ($type == 4) {
+        $thirdUser = Db::name('oauth_users')->where(['unionid' => $user_value])->find();
+        $map['user_id'] = $thirdUser['user_id'];
+    }
+
+    return Db::name('users')->where($map)->find();
 }
 
 /**
@@ -82,17 +79,16 @@ function update_user_level($user_id){
 
 /**
  *  商品缩略图 给于标签调用 拿出商品表的 original_img 原始图来裁切出来的
- * @param type $goods_id 商品id
- * @param type $width 生成缩略图的宽度
- * @param type $height 生成缩略图的高度
- * @return \app\common\logic\type|string
+ * @param type $goods_id  商品id
+ * @param type $width     生成缩略图的宽度
+ * @param type $height    生成缩略图的高度
  */
 function goods_thum_images($goods_id, $width, $height)
 {
     if (empty($goods_id)) return '';
     
     //判断缩略图是否存在
-    $path = "public/upload/goods/thumb/$goods_id/";
+    $path = UPLOAD_PATH."goods/thumb/$goods_id/";
     $goods_thumb_name = "goods_thumb_{$goods_id}_{$width}_{$height}";
 
     // 这个商品 已经生成过这个比例的图片就直接返回了
@@ -100,8 +96,7 @@ function goods_thum_images($goods_id, $width, $height)
     if (is_file($path . $goods_thumb_name . '.jpeg')) return '/' . $path . $goods_thumb_name . '.jpeg';
     if (is_file($path . $goods_thumb_name . '.gif')) return '/' . $path . $goods_thumb_name . '.gif';
     if (is_file($path . $goods_thumb_name . '.png')) return '/' . $path . $goods_thumb_name . '.png';
-
-    $original_img = M('Goods')->cache(true, 3600)->where("goods_id", $goods_id)->getField('original_img');
+    $original_img = Db::name('goods')->where("goods_id", $goods_id)->cache(true, 30, 'original_img_cache')->value('original_img');
     if (empty($original_img)) {
         return '/public/images/icon_goods_thumb_empty_300.png';
     }
@@ -117,13 +112,14 @@ function goods_thum_images($goods_id, $width, $height)
     }
 
     try {
-        vendor('topthink.think-image.src.Image');
+        require_once 'vendor/topthink/think-image/src/Image.php';
+        require_once 'vendor/topthink/think-image/src/image/Exception.php';
         if(strstr(strtolower($original_img),'.gif'))
         {
-                vendor('topthink.think-image.src.image.gif.Encoder');
-                vendor('topthink.think-image.src.image.gif.Decoder');
-                vendor('topthink.think-image.src.image.gif.Gif');				
-        }	        
+            require_once 'vendor/topthink/think-image/src/image/gif/Encoder.php';
+            require_once 'vendor/topthink/think-image/src/image/gif/Decoder.php';
+            require_once 'vendor/topthink/think-image/src/image/gif/Gif.php';
+        }
         $image = \think\Image::open($original_img);
 
         $goods_thumb_name = $goods_thumb_name . '.' . $image->type();
@@ -131,37 +127,6 @@ function goods_thum_images($goods_id, $width, $height)
         !is_dir($path) && mkdir($path, 0777, true);
         // 参考文章 http://www.mb5u.com/biancheng/php/php_84533.html  改动参考 http://www.thinkphp.cn/topic/13542.html
         $image->thumb($width, $height, 2)->save($path . $goods_thumb_name, NULL, 100); //按照原图的比例生成一个最大为$width*$height的缩略图并保存
-        //图片水印处理
-        $water = tpCache('water');
-        if ($water['is_mark'] == 1) {
-            $imgresource = './' . $path . $goods_thumb_name;
-            if ($width > $water['mark_width'] && $height > $water['mark_height']) {
-                if ($water['mark_type'] == 'img') {
-                    //检查水印图片是否存在
-                    $waterPath = "." . $water['mark_img'];
-                    if (is_file($waterPath)) {
-                        $quality = $water['mark_quality'] ?: 80;
-                        $waterTempPath = dirname($waterPath).'/temp_'.basename($waterPath);
-                        $image->open($waterPath)->save($waterTempPath, null, $quality);
-                        $image->open($imgresource)->water($waterTempPath, $water['sel'], $water['mark_degree'])->save($imgresource);
-                        @unlink($waterTempPath);
-                    }
-                } else {
-                    //检查字体文件是否存在,注意是否有字体文件
-                    $ttf = './hgzb.ttf';
-                    if (file_exists($ttf)) {
-                        $size = $water['mark_txt_size'] ?: 30;
-                        $color = $water['mark_txt_color'] ?: '#000000';
-                        if (!preg_match('/^#[0-9a-fA-F]{6}$/', $color)) {
-                            $color = '#000000';
-                        }
-                        $transparency = intval((100 - $water['mark_degree']) * (127/100));
-                        $color .= dechex($transparency);
-                        $image->open($imgresource)->text($water['mark_txt'], $ttf, $size, $color, $water['sel'])->save($imgresource);
-                    }
-                }
-            }
-        }
         $img_url = '/' . $path . $goods_thumb_name;
 
         return $img_url;
@@ -177,7 +142,7 @@ function goods_thum_images($goods_id, $width, $height)
 function get_sub_images($sub_img, $goods_id, $width, $height)
 {
     //判断缩略图是否存在
-    $path = "public/upload/goods/thumb/$goods_id/";
+    $path = UPLOAD_PATH."goods/thumb/$goods_id/";
     $goods_thumb_name = "goods_sub_thumb_{$sub_img['img_id']}_{$width}_{$height}";
     
     //这个缩略图 已经生成过这个比例的图片就直接返回了
@@ -197,12 +162,13 @@ function get_sub_images($sub_img, $goods_id, $width, $height)
     }
 
     try {
-        vendor('topthink.think-image.src.Image');
+        require_once 'vendor/topthink/think-image/src/Image.php';
+        require_once 'vendor/topthink/think-image/src/image/Exception.php';
         if(strstr(strtolower($original_img),'.gif'))
         {
-            vendor('topthink.think-image.src.image.gif.Encoder');
-            vendor('topthink.think-image.src.image.gif.Decoder');
-            vendor('topthink.think-image.src.image.gif.Gif');
+            require_once 'vendor/topthink/think-image/src/image/gif/Encoder.php';
+            require_once 'vendor/topthink/think-image/src/image/gif/Decoder.php';
+            require_once 'vendor/topthink/think-image/src/image/gif/Gif.php';
         }
         $image = \think\Image::open($original_img);
 
@@ -211,37 +177,6 @@ function get_sub_images($sub_img, $goods_id, $width, $height)
         !is_dir($path) && mkdir($path, 0777, true);
         // 参考文章 http://www.mb5u.com/biancheng/php/php_84533.html  改动参考 http://www.thinkphp.cn/topic/13542.html
         $image->thumb($width, $height, 2)->save($path . $goods_thumb_name, NULL, 100); //按照原图的比例生成一个最大为$width*$height的缩略图并保存
-        //图片水印处理
-        $water = tpCache('water');
-        if ($water['is_mark'] == 1) {
-            $imgresource = './' . $path . $goods_thumb_name;
-            if ($width > $water['mark_width'] && $height > $water['mark_height']) {
-                if ($water['mark_type'] == 'img') {
-                    //检查水印图片是否存在
-                    $waterPath = "." . $water['mark_img'];
-                    if (is_file($waterPath)) {
-                        $quality = $water['mark_quality'] ?: 80;
-                        $waterTempPath = dirname($waterPath).'/temp_'.basename($waterPath);
-                        $image->open($waterPath)->save($waterTempPath, null, $quality);
-                        $image->open($imgresource)->water($waterTempPath, $water['sel'], $water['mark_degree'])->save($imgresource);
-                        @unlink($waterTempPath);
-                    }
-                } else {
-                    //检查字体文件是否存在,注意是否有字体文件
-                    $ttf = './hgzb.ttf';
-                    if (file_exists($ttf)) {
-                        $size = $water['mark_txt_size'] ?: 30;
-                        $color = $water['mark_txt_color'] ?: '#000000';
-                        if (!preg_match('/^#[0-9a-fA-F]{6}$/', $color)) {
-                            $color = '#000000';
-                        }
-                        $transparency = intval((100 - $water['mark_degree']) * (127/100));
-                        $color .= dechex($transparency);
-                        $image->open($imgresource)->text($water['mark_txt'], $ttf, $size, $color, $water['sel'])->save($imgresource);
-                    }
-                }
-            }
-        }
         $img_url = '/' . $path . $goods_thumb_name;
 
         return $img_url;
@@ -253,8 +188,7 @@ function get_sub_images($sub_img, $goods_id, $width, $height)
 
 /**
  * 刷新商品库存, 如果商品有设置规格库存, 则商品总库存 等于 所有规格库存相加
- * @param type $goods_id 商品id
- * @return bool
+ * @param type $goods_id  商品id
  */
 function refresh_stock($goods_id){
     $count = M("SpecGoodsPrice")->where("goods_id", $goods_id)->count();
@@ -302,9 +236,8 @@ function minus_stock($order){
 /**
  * 邮件发送
  * @param $to    接收人
- * @param string $subject 邮件标题
- * @param string $content 邮件内容(html模板渲染后的内容)
- * @return array
+ * @param string $subject   邮件标题
+ * @param string $content   邮件内容(html模板渲染后的内容)
  * @throws Exception
  * @throws phpmailerException
  */
@@ -371,7 +304,7 @@ function send_email($to,$subject='',$content=''){
 /**
  * 检测是否能够发送短信
  * @param unknown $scene
- * @return array :number string
+ * @return multitype:number string
  */
 function checkEnableSendSms($scene)
 {
@@ -401,7 +334,6 @@ function checkEnableSendSms($scene)
 /**
  * 发送短信逻辑
  * @param unknown $scene
- * @return array|bool
  */
 function sendSms($scene, $sender, $params,$unique_id=0)
 {
@@ -416,24 +348,6 @@ function sendSms($scene, $sender, $params,$unique_id=0)
  * @return array  物流跟踪信息数组
  */
 function queryExpress($postcom , $getNu) {
-    /*    $url = "http://wap.kuaidi100.com/wap_result.jsp?rand=".time()."&id={$postcom}&fromWeb=null&postid={$getNu}";
-        //$resp = httpRequest($url,'GET');
-        $resp = file_get_contents($url);
-        if (empty($resp)) {
-            return array('status'=>0, 'message'=>'物流公司网络异常，请稍后查询');
-        }
-        preg_match_all('/\\<p\\>&middot;(.*)\\<\\/p\\>/U', $resp, $arr);
-        if (!isset($arr[1])) {
-            return array( 'status'=>0, 'message'=>'查询失败，参数有误' );
-        }else{
-            foreach ($arr[1] as $key => $value) {
-                $a = array();
-                $a = explode('<br /> ', $value);
-                $data[$key]['time'] = $a[0];
-                $data[$key]['context'] = $a[1];
-            }
-            return array( 'status'=>1, 'message'=>'1','data'=> array_reverse($data));
-        }*/
     $url = "https://m.kuaidi100.com/query?type=".$postcom."&postid=".$getNu."&id=1&valicode=&temp=0.49738534969422676";
     $resp = httpRequest($url,"GET");
     return json_decode($resp,true);
@@ -442,7 +356,6 @@ function queryExpress($postcom , $getNu) {
 /**
  * 获取某个商品分类的 儿子 孙子  重子重孙 的 id
  * @param type $cat_id
- * @return array|mixed
  */
 function getCatGrandson ($cat_id)
 {
@@ -464,7 +377,6 @@ function getCatGrandson ($cat_id)
 /**
  * 获取某个文章分类的 儿子 孙子  重子重孙 的 id
  * @param type $cat_id
- * @return array|mixed
  */
 function getArticleCatGrandson ($cat_id)
 {
@@ -520,9 +432,9 @@ function getArticleCatGrandson2($cat_id)
 
 /**
  * 查看某个用户购物车中商品的数量
- * @param int $user_id
- * @param string $session_id
- * @return float|int 购买数量
+ * @param type $user_id
+ * @param type $session_id
+ * @return type 购买数量
  */
 function cart_goods_num($user_id = 0,$session_id = '')
 {
@@ -543,8 +455,7 @@ function cart_goods_num($user_id = 0,$session_id = '')
 /**
  * 获取商品库存
  * @param type $goods_id 商品id
- * @param type $key 库存 key
- * @return
+ * @param type $key  库存 key
  */
 function getGoodNum($goods_id,$key)
 {
@@ -619,16 +530,14 @@ function tpCache($config_key,$data = array()){
 
 /**
  * 记录帐户变动
- * @param   int $user_id 用户id
- * @param int $user_money 可用余额变动
- * @param   int $pay_points 消费积分变动
- * @param   string $desc 变动说明
- * @param int $distribut_money
+ * @param   int     $user_id        用户id
+ * @param   float   $user_money     可用余额变动
+ * @param   int     $pay_points     消费积分变动
+ * @param   string  $desc    变动说明
+ * @param   float   distribut_money 分佣金额
  * @param int $order_id 订单id
  * @param string $order_sn 订单sn
  * @return  bool
- * @throws \think\Exception
- * @throws \think\exception\PDOException
  */
 function accountLog($user_id, $user_money = 0,$pay_points = 0, $desc = '',$distribut_money = 0,$order_id = 0 ,$order_sn = ''){
     /* 插入帐户变动记录 */
@@ -663,10 +572,10 @@ function accountLog($user_id, $user_money = 0,$pay_points = 0, $desc = '',$distr
 /**
  * 订单操作日志
  * 参数示例
- * @param type $order_id 订单id
+ * @param type $order_id  订单id
  * @param type $action_note 操作备注
  * @param type $status_desc 操作状态  提交订单, 付款成功, 取消, 等待收货, 完成
- * @param int $user_id 用户id 默认为管理员
+ * @param type $user_id  用户id 默认为管理员
  * @return boolean
  */
 function logOrder($order_id,$action_note,$status_desc,$user_id = 0)
@@ -717,11 +626,10 @@ function get_user_default_address($user_id){
     $data = M('user_address')->where(array('user_id'=>$user_id,'is_default'=>1))->find();
     return $data;
 }
-
 /**
  * 获取订单状态的 中文描述名称
- * @param int $order_id 订单id
- * @param array $order 订单数组
+ * @param type $order_id  订单id
+ * @param type $order     订单数组
  * @return string
  */
 function orderStatusDesc($order_id = 0, $order = array())
@@ -759,8 +667,8 @@ function orderStatusDesc($order_id = 0, $order = array())
 
 /**
  * 获取订单状态的 显示按钮
- * @param int $order_id 订单id
- * @param array $order 订单数组
+ * @param type $order_id  订单id
+ * @param type $order     订单数组
  * @return array()
  */
 function orderBtn($order_id = 0, $order = array())
@@ -795,12 +703,8 @@ function orderBtn($order_id = 0, $order = array())
         if($order['shipping_status'] == 1 && $order['order_status'] == 1) //待收货
         {
             $btn_arr['receive_btn'] = 1;  // 确认收货
-            $btn_arr['return_btn'] = 1; // 退货按钮 (联系客服)
         }
-    }
-    // 非货到付款
-    else
-    {
+    } else{// 非货到付款
         if($order['pay_status'] == 0 && $order['order_status'] == 0) // 待支付
         {
             $btn_arr['pay_btn'] = 1; // 去支付按钮
@@ -846,7 +750,6 @@ function orderBtn($order_id = 0, $order = array())
 /**
  * 给订单数组添加属性  包括按钮显示属性 和 订单状态显示属性
  * @param type $order
- * @return array
  */
 function set_btn_order_status($order)
 {
@@ -858,50 +761,86 @@ function set_btn_order_status($order)
 }
 
 
+
+/**
+ * VIP充值返利上级
+ * $order_sn 订单号
+ */
+function rechargevip_rebate($order) {
+    //获取返利配置
+    $tpshop_config =  tpCache('basic');
+    //检查配置是否开启
+    if ($tpshop_config["rechargevip_on_off"] > 0 && $tpshop_config["rechargevip_rebate_on_off"] > 0) {
+        //查询充值VIP上级
+        $userid = $order['user_id'];
+        //更改用户VIP状态
+        Db::name('users')->where('user_id',$userid)->save(['is_vip'=>1]);
+        $first_leader = Db::name('users')->where('user_id', $userid)->value('first_leader');
+        if ($first_leader) {
+            //变动上级资金，记录日志
+            $msg = '获取线下' . $userid . '充值VIP返利' . $tpshop_config["rechargevip_rebate"];
+            accountLog($first_leader, $tpshop_config["rechargevip_rebate"], 0, $msg, 0, 0, $order['order_sn']);
+        }
+    }
+}
+
 /**
  * 支付完成修改订单
  * @param $order_sn 订单号
  * @param array $ext 额外参数
  * @return bool|void
- * @throws \think\Exception
- * @throws \think\exception\DbException
- * @throws \think\exception\PDOException
  */
 function update_pay_status($order_sn,$ext=array())
 {
+    $time=time();
     if(stripos($order_sn,'recharge') !== false){
         //用户在线充值
         $order = M('recharge')->where(['order_sn' => $order_sn, 'pay_status' => 0])->find();
         if (!$order) return false;// 看看有没已经处理过这笔订单  支付宝返回不重复处理操作
-        M('recharge')->where("order_sn",$order_sn)->save(array('pay_status'=>1,'pay_time'=>time()));
-        accountLog($order['user_id'],$order['account'],0,'会员在线充值');
+        M('recharge')->where("order_sn",$order_sn)->save(array('pay_status'=>1,'pay_time'=>$time));
+
+        $msg = '会员在线充值';
+        if( $order['buy_vip'] == 1){
+            rechargevip_rebate($order);
+            $msg = '会员充值购买VIP';
+        }
+        accountLog($order['user_id'],$order['account'],0, $msg, 0, 0, $order_sn);
     }else{
         // 如果这笔订单已经处理过了
-        $count = M('order')->master()->where("order_sn = :order_sn and pay_status = 0 OR pay_status = 2")->bind(['order_sn'=>$order_sn])->count();   // 看看有没已经处理过这笔订单  支付宝返回不重复处理操作
+        $count = M('order')->master()->where("order_sn = :order_sn and (pay_status = 0 OR pay_status = 2)")->bind(['order_sn'=>$order_sn])->count();   // 看看有没已经处理过这笔订单  支付宝返回不重复处理操作
         if($count == 0) return false;
         // 找出对应的订单
         $order = M('order')->master()->where("order_sn",$order_sn)->find();
+        if ($order['prom_type'] == 6 && $order['order_amount'] != 0) {
+            $team = new \app\common\logic\team\Team();
+            $team->setTeamActivityById($order['prom_id']);
+            $team->setOrder($order);
+            $team->doOrderPayAfter();
+        }
         //预售订单
-        if ($order['order_prom_type'] == 4) {
+        if ($order['prom_type'] == 4) {
             $orderGoodsArr = M('OrderGoods')->where(array('order_id'=>$order['order_id']))->find();
             // 预付款支付 有订金支付 修改支付状态  部分支付
             if($order['total_amount'] != $order['order_amount'] && $order['pay_status'] == 0){
                 //支付订金
-                M('order')->where("order_sn", $order_sn)->save(array('order_sn'=> date('YmdHis').mt_rand(1000,9999) ,'pay_status' => 2, 'pay_time' => time(),'paid_money'=>$order['order_amount']));
-                M('goods_activity')->where(array('act_id'=>$order['order_prom_id']))->setInc('act_count',$orderGoodsArr['goods_num']);
+                M('order')->where("order_sn", $order_sn)->save(array('order_sn'=> date('YmdHis').mt_rand(1000,9999) ,'pay_status' => 2, 'pay_time' => $time,'paid_money'=>$order['order_amount']));
+                M('goods_activity')->where(array('act_id'=>$order['prom_id']))->setInc('act_count',$orderGoodsArr['goods_num']);
             }else{
                 //全额支付 无订金支付 支付尾款
-                M('order')->where("order_sn", $order_sn)->save(array('pay_status' => 1, 'pay_time' => time()));
-                $pre_sell = M('goods_activity')->where(array('act_id'=>$order['order_prom_id']))->find();
+                M('order')->where("order_sn", $order_sn)->save(array('pay_status' => 1, 'pay_time' => $time));
+                $pre_sell = M('goods_activity')->where(array('act_id'=>$order['prom_id']))->find();
                 $ext_info = unserialize($pre_sell['ext_info']);
                 //全额支付 活动人数加一
                 if(empty($ext_info['deposit'])){
-                    M('goods_activity')->where(array('act_id'=>$order['order_prom_id']))->setInc('act_count',$orderGoodsArr['goods_num']);
+                    M('goods_activity')->where(array('act_id'=>$order['prom_id']))->setInc('act_count',$orderGoodsArr['goods_num']);
                 }
+                //预售全额支付发票生成
+                $Invoice = new \app\admin\logic\InvoiceLogic();
+                $Invoice->createInvoice($order);
             }
         } else {
             // 修改支付状态  已支付
-            $updata = array('pay_status'=>1,'pay_time'=>time());
+            $updata = array('pay_status'=>1,'pay_time'=>$time);
             if(isset($ext['transaction_id'])) $updata['transaction_id'] = $ext['transaction_id'];
             M('order')->where("order_sn", $order_sn)->save($updata);
 //             if(is_weixin()){
@@ -910,12 +849,15 @@ function update_pay_status($order_sn,$ext=array())
 //             	$order['goods_name'] = M('order_goods')->where(array('order_id'=>$order['order_id']))->getField('goods_name');
 //             	$jssdk->send_template_message($order);//发送微信模板消息提醒
 //             }
+            //发票生成
+            $Invoice = new \app\admin\logic\InvoiceLogic();
+            $Invoice->createInvoice($order);
         }
 
         // 减少对应商品的库存.注：拼团类型为抽奖团的，先不减库存
         if(tpCache('shopping.reduce') == 2) {
-            if ($order['order_prom_type'] == 6) {
-                $team = \app\common\model\TeamActivity::get($order['order_prom_id']);
+            if ($order['prom_type'] == 6) {
+                $team = \app\common\model\TeamActivity::get($order['prom_id']);
                 if ($team['team_type'] != 2) {
                     minus_stock($order);
                 }
@@ -938,30 +880,25 @@ function update_pay_status($order_sn,$ext=array())
         if($distribut_condition == 1)  // 购买商品付款才可以成为分销商
             M('users')->where("user_id", $order['user_id'])->save(array('is_distribut'=>1));
         //虚拟服务类商品支付
-        if($order['order_prom_type'] == 5){
+        if($order['prom_type'] == 5){
             $OrderLogic = new \app\common\logic\OrderLogic();
             $OrderLogic->make_virtual_code($order);
         }
-        if ($order['order_prom_type'] == 6) {
-            $TeamOrderLogic = new \app\common\logic\TeamOrderLogic();
-            $team = \app\common\model\TeamActivity::get($order['order_prom_id']);
-            $TeamOrderLogic->setTeam($team);
-            $TeamOrderLogic->doOrderPayAfter($order);
-        }
-         //发票生成
-        $Invoice = new \app\admin\logic\InvoiceLogic();
-        $Invoice->create_Invoice($order);
-        
+        $order['pay_time']=$time;
         //用户支付, 发送短信给商家
         $res = checkEnableSendSms("4");
-        if(!$res || $res['status'] !=1) return ;
+        if ($res && $res['status'] ==1) {
+            $sender = tpCache("shop_info.mobile");
+            if (!empty($sender)) {
+                $params = array('order_id'=>$order['order_id']);
+                sendSms("4", $sender, $params);
+            }
+        }
 
-        $sender = tpCache("shop_info.mobile");
-        if(empty($sender))return;
-        $params = array('order_id'=>$order['order_id']);
-        sendSms("4", $sender, $params);
+        // 发送微信消息模板提醒
+        $wechat = new \app\common\logic\WechatLogic;
+        $wechat->sendTemplateMsgOnPaySuccess($order);
     }
-
 }
 
 /**
@@ -999,9 +936,7 @@ function confirm_order($id,$user_id = 0){
 
 /**
  * 下单赠送活动：优惠券，积分
- * @param $order |订单数组
- * @throws \think\Exception
- * @throws \think\exception\PDOException
+ * @param $order|订单数组
  */
 function order_give($order)
 {
@@ -1072,164 +1007,12 @@ function order_give($order)
 
 
 /**
- * 查看订单是否满足条件参加活动
- * @param $order_amount
- * @return array
- */
-function get_order_promotion($order_amount)
-{
-//    $parse_type = array('0'=>'满额打折','1'=>'满额优惠金额','2'=>'满额送倍数积分','3'=>'满额送优惠券','4'=>'满额免运费');
-    $now = time();
-    $prom = M('prom_order')->where("type<2 and end_time>$now and start_time<$now and money<=$order_amount")->order('money desc')->find();
-    $res = array('order_amount' => $order_amount, 'order_prom_id' => 0, 'order_prom_amount' => 0);
-    if ($prom) {
-        if ($prom['type'] == 0) {
-            $res['order_amount'] = round($order_amount * $prom['expression'] / 100, 2);//满额打折
-            $res['order_prom_amount'] = round($order_amount - $res['order_amount'], 2);
-            $res['order_prom_id'] = $prom['id'];
-        } elseif ($prom['type'] == 1) {
-            $res['order_amount'] = $order_amount - $prom['expression'];//满额优惠金额
-            $res['order_prom_amount'] = $prom['expression'];
-            $res['order_prom_id'] = $prom['id'];
-        }
-    }
-    return $res;
-}
-
-/**
- * 计算订单金额
- * @param int $user_id 用户id
- * @param $order_goods 购买的商品
- * @param string $shipping_code 物流code
- * @param int $shipping_price 物流费用, 如果传递了物流费用 就不在计算物流费
- * @param int $province 省份
- * @param int $city 城市
- * @param int $district 县
- * @param int $pay_points 积分
- * @param int $user_money 余额
- * @param int $coupon_id 优惠券
- * @return array
- */
-function calculate_price($user_id = 0, $order_goods, $shipping_code = '', $shipping_price = 0, $province = 0, $city = 0, $district = 0, $pay_points = 0, $user_money = 0, $coupon_id = 0)
-{
-    $couponLogic = new \app\common\logic\CouponLogic();
-    $goodsLogic = new app\common\logic\GoodsLogic();
-    $user = M('users')->where("user_id", $user_id)->find();// 找出这个用户
-    $result=[];
-    if (empty($order_goods)){
-        return array('status' => -9, 'msg' => '商品列表不能为空', 'result' => '');
-    }
-    $use_percent_point = tpCache('shopping.point_use_percent') / 100;     //最大使用限制: 最大使用积分比例, 例如: 为50时, 未50% , 那么积分支付抵扣金额不能超过应付金额的50%
-    /*判断能否使用积分
-     1..积分低于point_min_limit时,不可使用
-     2.在不使用积分的情况下, 计算商品应付金额
-     3.原则上, 积分支付不能超过商品应付金额的50%, 该值可在平台设置
-     @{ */
-    $point_rate = tpCache('shopping.point_rate'); //兑换比例: 如果拥有的积分小于该值, 不可使用
-    $min_use_limit_point = tpCache('shopping.point_min_limit'); //最低使用额度: 如果拥有的积分小于该值, 不可使用
-    
-    if ($min_use_limit_point > 0 && $pay_points > 0 && $pay_points < $min_use_limit_point) {
-        return array('status' => -1, 'msg' => "您使用的积分必须大于{$min_use_limit_point}才可以使用", 'result' => ''); // 返回结果状态
-    }
-    // 计算该笔订单最多使用多少积分
-    if(($use_percent_point !=1 ) && $pay_points > $result['order_integral']) {
-        return array('status'=>-1,'msg'=>"该笔订单, 您使用的积分不能大于{$result['order_integral']}",'result'=>'积分'); // 返回结果状态
-    }
-
-    if(($pay_points > 0 && $use_percent_point == 0) ||  ($pay_points >0 && $result['order_integral']==0)){
-        return array('status' => -1, 'msg' => "该笔订单不能使用积分", 'result' => '积分'); // 返回结果状态
-    }
-
-    if ($pay_points && ($pay_points > $user['pay_points']))
-        return array('status' => -5, 'msg' => "你的账户可用积分为:" . $user['pay_points'], 'result' => ''); // 返回结果状态
-    if ($user_money && ($user_money > $user['user_money']))
-        return array('status' => -6, 'msg' => "你的账户可用余额为:" . $user['user_money'], 'result' => ''); // 返回结果状态
-
-    $goods_id_arr = get_arr_column($order_goods, 'goods_id');
-    $goods_arr = M('goods')->where("goods_id in(" . implode(',', $goods_id_arr) . ")")->cache(true,TPSHOP_CACHE_TIME)
-        ->getField('goods_id,weight,market_price,is_free_shipping,exchange_integral,shop_price'); // 商品id 和重量对应的键值对
-    $goods_weight=$goods_price=$cut_fee=$anum=$coupon_price= 0;  //定义一些变量
-    foreach ($order_goods as $key => $val) {
-        // 如果传递过来的商品列表没有定义会员价
-        if (!array_key_exists('member_goods_price', $val)) {
-            $user['discount'] = $user['discount'] ? $user['discount'] : 1; // 会员折扣 不能为 0
-            $order_goods[$key]['member_goods_price'] = $val['member_goods_price'] = $val['goods_price'] * $user['discount'];
-        }
-        //如果商品不是包邮的
-        if ($goods_arr[$val['goods_id']]['is_free_shipping'] == 0)
-            $goods_weight += $goods_arr[$val['goods_id']]['weight'] * $val['goods_num']; //累积商品重量 每种商品的重量 * 数量
-        //计算订单可用积分
-        if($goods_arr[$val['goods_id']]['exchange_integral']>0){
-            //商品设置了积分兑换就用商品本身的积分。
-            $result['order_integral'] +=  $goods_arr[$val['goods_id']]['exchange_integral'];
-        }else{
-            //没有就按照会员价与平台设置的比例来计算。
-            $result['order_integral'] +=  ceil($order_goods[$key]['member_goods_price'] * $use_percent_point);
-        }
-        $order_goods[$key]['goods_fee'] = $val['goods_num'] * $val['member_goods_price'];    // 小计
-        $order_goods[$key]['store_count'] = getGoodNum($val['goods_id'], $val['spec_key']); // 最多可购买的库存数量
-        if ($order_goods[$key]['store_count'] <= 0 || $order_goods[$key]['store_count'] < $order_goods[$key]['goods_num'])
-            return array('status' => -10, 'msg' => $order_goods[$key]['goods_name'] .','.$val['spec_key_name']. "库存不足,请重新下单", 'result' => '');
-
-        $goods_price += $order_goods[$key]['goods_fee']; // 商品总价
-        $cut_fee += $val['goods_num'] * $val['market_price'] - $val['goods_num'] * $val['member_goods_price']; // 共节约
-        $anum += $val['goods_num']; // 购买数量
-    }
-    // 优惠券处理操作
-    if ($coupon_id && $user_id) {
-        $coupon_price = $couponLogic->getCouponMoney($user_id, $coupon_id); // 下拉框方式选择优惠券
-    }
-    // 处理物流
-    if ($shipping_price == 0) {
-        $freight_free = tpCache('shopping.freight_free'); // 全场满多少免运费
-        if ($freight_free > 0 && $goods_price >= $freight_free) {
-            $shipping_price = 0;
-        } else {
-            $shipping_price = $goodsLogic->getFreight($shipping_code, $province, $city, $district, $goods_weight);
-        }
-    }
-
-    $order_amount = $goods_price + $shipping_price - $coupon_price; // 应付金额 = 商品价格 + 物流费 - 优惠券
-    $user_money = ($user_money > $order_amount) ? $order_amount : $user_money;  // 余额支付余额不能大于应付金额，原理等同于积分
-    $order_amount = $order_amount - $user_money;  //余额支付抵应付金额 （如果未付完，剩余多少没付）
-
-    // 积分支付 100 积分等于 1块钱
-    if($pay_points  > floor($order_amount * $point_rate)){
-        $pay_points = floor($order_amount * $point_rate);
-    }
-
-    $integral_money = ($pay_points / $point_rate);
-    $order_amount = $order_amount - $integral_money; //  积分抵消应付金额 （如果未付完，剩余多少没付）
-
-    $total_amount = $goods_price + $shipping_price;  //订单总价
-
-    // 订单满额优惠活动
-    $order_prom = get_order_promotion($goods_price);
-    //订单总价  应付金额  物流费  商品总价 节约金额 共多少件商品 积分  余额  优惠券
-    $result = array(
-        'total_amount' => $total_amount, // 订单总价
-        'order_amount' => round($order_amount-$order_prom['order_prom_amount'], 2), // 应付金额(要减去优惠的钱)
-        'shipping_price' => $shipping_price, // 物流费
-        'goods_price' => $goods_price, // 商品总价
-        'cut_fee' => $cut_fee, // 共节约多少钱
-        'anum' => $anum, // 商品总共数量
-        'integral_money' => $integral_money,  // 积分抵消金额
-        'user_money' => $user_money, // 使用余额
-        'coupon_price' => $coupon_price,// 优惠券抵消金额
-        'order_prom_id' => $order_prom['order_prom_id'],
-        'order_prom_amount' => $order_prom['order_prom_amount'],
-        'order_goods' => $order_goods, // 商品列表 多加几个字段原样返回
-    );
-    return array('status' => 1, 'msg' => "计算价钱成功", 'result' => $result); // 返回结果状态
-}
-
-/**
  * 获取商品一二三级分类
- * @return array
+ * @return type
  */
 function get_goods_category_tree(){
     $tree = $arr = $result = array();
-    $cat_list = M('goods_category')->cache(true)->where("is_show = 1")->order('sort_order')->select();//所有分类
+    $cat_list = M('goods_category')->cache(true)->where(['is_show' => 1])->order('sort_order')->select();//所有分类
     if($cat_list){
         foreach ($cat_list as $val){
             if($val['level'] == 2){
@@ -1353,7 +1136,7 @@ function update_stock_log($muid, $stock = 1, $goods, $order_sn = '')
     $data['muid'] = $muid;
     $data['goods_id'] = $goods['goods_id'];
     $data['goods_name'] = $goods['goods_name'];
-    $data['goods_spec'] = empty($goods['spec_key_name']) ? '' : $goods['spec_key_name'];
+    $data['goods_spec'] = empty($goods['spec_key_name']) ? $goods['key_name'] : $goods['spec_key_name'];
     $data['order_sn'] = $order_sn;
     M('stock_log')->add($data);
 }

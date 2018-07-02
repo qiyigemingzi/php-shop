@@ -7,7 +7,7 @@
  * ----------------------------------------------------------------------------
  * 这不是一个自由软件！您只能在不用于商业目的的前提下对程序代码进行修改和使用 .
  * 不允许对程序代码以任何形式任何目的的再发布。
- * 采用TP5助手函数可实现单字母函数M D U等,也可db::name方式,可双向兼容
+ * 采用最新Thinkphp5助手函数特性实现单字母函数M D U等简写方式
  * ============================================================================
  * Author: IT宇宙人
  * Date: 2015-09-09
@@ -18,7 +18,7 @@ namespace app\common\logic;
 use app\common\model\UserAddress;
 use think\Model;
 use think\Page;
-use think\db;
+use think\Db;
 
 /**
  * 分类逻辑定义
@@ -40,24 +40,26 @@ class UsersLogic extends Model
     /*
      * 登陆
      */
-    public function login($username,$password){
-    	$result = array();
-        if(!$username || !$password)
-           $result= array('status'=>0,'msg'=>'请填写账号或密码');
-        $user = M('users')->where("mobile",$username)->whereOr('email',$username)->find();
-        if(!$user){
-           $result = array('status'=>-1,'msg'=>'账号不存在!');
-        }elseif(encrypt($password) != $user['password']){
-           $result = array('status'=>-2,'msg'=>'密码错误!');
-        }elseif($user['is_lock'] == 1){
-           $result = array('status'=>-3,'msg'=>'账号异常已被锁定！！！');
-        }else{
+    public function login($username,$password)
+    {
+        if (!$username || !$password) {
+            return array('status' => 0, 'msg' => '请填写账号或密码');
+        }
+
+        $user = Db::name('users')->where("mobile", $username)->whereOr('email', $username)->find();
+        if (!$user) {
+            $result = array('status' => -1, 'msg' => '账号不存在!');
+        } elseif (encrypt($password) != $user['password']) {
+            $result = array('status' => -2, 'msg' => '密码错误!');
+        } elseif ($user['is_lock'] == 1) {
+            $result = array('status' => -3, 'msg' => '账号异常已被锁定！！！');
+        } else {
             //查询用户信息之后, 查询用户的登记昵称
             $levelId = $user['level'];
-            $levelName = M("user_level")->where("level_id", $levelId)->getField("level_name");
+            $levelName = Db::name("user_level")->where("level_id", $levelId)->getField("level_name");
             $user['level_name'] = $levelName;
-          
-           $result = array('status'=>1,'msg'=>'登陆成功','result'=>$user);
+
+            $result = array('status' => 1, 'msg' => '登陆成功', 'result' => $user);
         }
         return $result;
     }
@@ -112,30 +114,37 @@ class UsersLogic extends Model
     }
 
     //绑定账号
-    public function oauth_bind($data = array()){
-    	$user = session('user');
-    	if(empty($data['oauth_child'])){
-    	    $data['oauth_child'] = '';
-    	}
-    	
-    	if(empty($data['unionid'])){
-    	    $column = 'openid';
-    	    $open_or_unionid = $data['openid'];
-    	}else{
-    	    $column = 'unionid';
-    	    $open_or_unionid = $data['unionid'];
-    	}  
-    	
-    	if(empty($user['openid'])){
-    		$ouser = M('Users')->alias('u')->field('u.user_id,o.tu_id')->join('OauthUsers o' , 'u.user_id = o.user_id')->where(['oauth'=>$data['oauth'],$column=>$open_or_unionid])->find();
-    		if($ouser){
-    		    //删除原来绑定
-    		    M('OauthUsers')->where('tu_id' , $ouser['tu_id'])->delete();
-    		}
-    		//绑定账号
-    		return M('OauthUsers')->save(array('oauth'=>$data['oauth'] , 'openid'=>$data['openid'] ,'user_id'=>$user['user_id'] , 'unionid'=>$data['unionid'], 'oauth_child'=>$data['oauth_child']));
-    	}
-    	return false;
+    public function oauth_bind($data = array())
+    {
+        if (!empty($data['openid'])) {
+            return false;
+        }
+
+        $user = session('user');
+        if (empty($data['oauth_child'])) {
+            $data['oauth_child'] = '';
+        }
+
+        if (empty($data['unionid'])) {
+            $column = 'openid';
+            $open_or_unionid = $data['openid'];
+        } else {
+            $column = 'unionid';
+            $open_or_unionid = $data['unionid'];
+        }
+
+        $where = [$column => $open_or_unionid];
+        if ($column == 'openid') {
+            $where['oauth'] = $data['oauth']; //unionid不需要加这个限制
+        }
+
+        $ouser = Db::name('Users')->alias('u')->field('u.user_id,o.tu_id')->join('OauthUsers o', 'u.user_id = o.user_id')->where($where)->find();
+        if ($ouser) {
+            //删除原来绑定
+            Db::name('OauthUsers')->where('tu_id', $ouser['tu_id'])->delete();
+        }
+        //绑定账号
+        return Db::name('OauthUsers')->save(array('oauth' => $data['oauth'], 'openid' => $data['openid'], 'user_id' => $user['user_id'], 'unionid' => $data['unionid'], 'oauth_child' => $data['oauth_child']));
     }
     
     //绑定账号
@@ -212,114 +221,136 @@ class UsersLogic extends Model
        
          
     }
- 
+
+    /**
+     * 获取第三方登录的用户
+     * @param $openid
+     * @param $unionid
+     * @param $oauth
+     * @param $oauth_child
+     * @return array
+     */
+    private function getThirdUser($data)
+    {
+        $user = [];
+        $thirdUser = Db::name('oauth_users')->where(['openid' => $data['openid'], 'oauth' => $data['oauth']])->find();
+        if (!$thirdUser) {
+            if ($data['unionid']) {
+                $thirdUser = Db::name('oauth_users')->where(['unionid' => $data['unionid']])->find();
+                if ($thirdUser) {
+                	$data['user_id'] = $thirdUser['user_id'];
+                	Db::name('oauth_users')->insert($data);//补充其他第三方登录方式
+                }
+            }
+        }
+        
+        if ($thirdUser) {
+            $user = Db::name('users')->where('user_id', $thirdUser['user_id'])->find();
+            if (!$user) {
+                Db::name('oauth_users')->where(['openid' => $data['openid'], 'oauth' => $data['oauth']])->delete();//删除残留数据
+            }
+        }
+        return $user;
+    }
+
     /*
      * 第三方登录: (第一种方式:第三方账号直接创建账号, 不需要额外绑定账号)
      */
-    public function thirdLogin($data=array()){
-        $openid = $data['openid']; //第三方返回唯一标识
-        $oauth = $data['oauth']; //来源
-        $unionid = $data['$unionid']; //$unionid
-        if(!$openid || !$oauth)
-            return array('status'=>-1,'msg'=>'参数有误','result'=>'');
-        //获取用户信息
-        if(!empty($data['unionid'])){
-        	$map['unionid'] = $data['unionid'];
-        	$user = get_user_info($data['unionid'],4,$oauth);
-        }else{
-            $user = get_user_info($openid,3,$oauth);
+    public function thirdLogin($data = array())
+    {
+        if (!$data['openid'] || !$data['oauth']) {
+            return array('status' => -1, 'msg' => '参数有误', 'result' => 'aaa');
         }
         $user2 = session('user');
-        if(!empty($user2)){
+        if (!empty($user2)) {
             $r = $this->oauth_bind($data);//绑定账号
-            if($r){
-                return array('status'=>1,'msg'=>'绑定成功','result'=>$user2);
-            }else{
-                return array('status'=>-1,'msg'=>'您的'.$data['oauth'].'账号已经绑定过账号','bind_status'=>0);
+            if ($r) {
+                return array('status' => 1, 'msg' => '绑定成功', 'result' => $user2);
+            } else {
+                return array('status' => -1, 'msg' => '您的' . $data['oauth'] . '账号已经绑定过账号', 'bind_status' => 0);
             }
         }
+
         $data['push_id'] && $map['push_id'] = $data['push_id'];
-        $map['token'] = md5(time().mt_rand(1,999999999));
+        $map['token'] = md5(time() . mt_rand(1, 999999999));
         $map['last_login'] = time();
+        
+        $user = $this->getThirdUser($data);
         if(!$user){
             //账户不存在 注册一个
             $map['password'] = '';
-            $map['openid'] = $openid;
+            $map['openid'] = $data['openid'];
             $map['nickname'] = $data['nickname'];
             $map['reg_time'] = time();
-            $map['oauth'] = $oauth;
-            $map['head_pic'] = $data['head_pic'];
+            $map['oauth'] = $data['oauth'];
+            $map['head_pic'] = !empty($data['head_pic']) ? $data['head_pic'] : '/public/images/icon_goods_thumb_empty_300.png';
             $map['sex'] = $data['sex'] === null ? 0 :  $data['sex'];
             $map['first_leader'] = cookie('first_leader'); // 推荐人id
             if($_GET['first_leader'])
                 $map['first_leader'] = $_GET['first_leader']; // 微信授权登录返回时 get 带着参数的
     
             // 如果找到他老爸还要找他爷爷他祖父等
-            if($map['first_leader'])
-            {
-                $first_leader = M('users')->where("user_id = {$map['first_leader']}")->find();
+            if ($map['first_leader']) {
+                $first_leader = Db::name('users')->where("user_id = {$map['first_leader']}")->find();
                 $map['second_leader'] = $first_leader['first_leader']; //  第一级推荐人
                 $map['third_leader'] = $first_leader['second_leader']; // 第二级推荐人
                 //他上线分销的下线人数要加1
-                M('users')->where(array('user_id' => $map['first_leader']))->setInc('underling_number');
-                M('users')->where(array('user_id' => $map['second_leader']))->setInc('underling_number');
-                M('users')->where(array('user_id' => $map['third_leader']))->setInc('underling_number');
-            }else
-            {
+                Db::name('users')->where(array('user_id' => $map['first_leader']))->setInc('underling_number');
+                Db::name('users')->where(array('user_id' => $map['second_leader']))->setInc('underling_number');
+                Db::name('users')->where(array('user_id' => $map['third_leader']))->setInc('underling_number');
+            } else {
                 $map['first_leader'] = 0;
             }
             // 成为分销商条件
-            //$distribut_condition = tpCache('distribut.condition');
-            //if($distribut_condition == 0)  // 直接成为分销商, 每个人都可以做分销
-            $map['is_distribut']  = 1;
-            $row_id = M('users')->add($map);
-            $user = M('users')->where(array('user_id'=>$row_id))->find();
+            $distribut_condition = tpCache('distribut.condition');
+            if($distribut_condition == 0){    // 直接成为分销商, 每个人都可以做分销
+                $map['is_distribut']  = 1;
+            } 
+            $row_id = Db::name('users')->add($map);
+            $user = Db::name('users')->where(array('user_id'=>$row_id))->find();
             
-            if(!isset($data['oauth_child'])){
+            if (!isset($data['oauth_child'])) {
                 $data['oauth_child'] = '';
             }
+            
             //不存在则创建个第三方账号
-            M('OauthUsers')->save(array('oauth'=>$oauth , 'openid'=>$openid ,'user_id'=>$user['user_id'] , 'unionid'=>$unionid, 'oauth_child'=>$data['oauth_child']));
-             
+            $data['user_id'] = $user['user_id'];
+            $user_level =Db::name('user_level')->where('amount = 0')->find(); //折扣
+            $data['discount'] = !empty($user_level) ? $user_level['discount']/100 : 1;  //新注册的会员都不打折
+            Db::name('OauthUsers')->save($data);
+            
         } else {
-            M('users')->where("user_id = '{$user['user_id']}'")->save($map);
+            Db::name('users')->where('user_id', $user['user_id'])->save($map);
             $user['token'] = $map['token'];
             $user['last_login'] = $map['last_login'];
         }
     
-        return array('status'=>1,'msg'=>'登陆成功5','result'=>$user);
+        return array('status'=>1,'msg'=>'登陆成功','result'=>$user);
     }
     
     /*
      * 第三方登录(第二种方式:第三方账号登录必须绑定账号)
      */
-    public function thirdLogin_new($data=array()){
-        $openid = $data['openid']; //第三方返回唯一标识
-        $oauth = $data['oauth']; //来源
-        if(!$openid || !$oauth){
-            return array('status'=>-1,'msg'=>'第三方平台参数有误','result'=>'');
-        }
-        //获取用户信息
-        if($data['unionid']){
-            $user = get_user_info($data['unionid'],4,$oauth);
-        } else {
-            $user = get_user_info($openid,3,$oauth);
+    public function thirdLogin_new($data = array())
+    {
+        if((empty($data['openid']) && empty($data['unionid'])) || empty($data['oauth'])){
+            return ['status' => -1, 'msg' => '参数错误, openid,unionid或oauth为空','result'=>''];
         }
 
-        if (!$user) {
-            return array('status'=>-1,'msg'=>'用户不存在', 'result' => $data);
+        $user = $this->getThirdUser($data);
+        if( ! $user){
+            return ['status' => -1, 'msg' => '请绑定账号' , 'result'=>'100'];
         }
 
         $data['push_id'] && $map['push_id'] = $data['push_id'];
-    
-        $map['token'] = md5(time().mt_rand(1,999999999));
+        $map['token'] = md5(time() . mt_rand(1, 999999999));
         $map['last_login'] = time();
-    
-        M('users')->where(array('user_id'=>$user['user_id']))->save($map);
+
+        Db::name('users')->where(array('user_id' => $user['user_id']))->save($map);
         //重新加载一次用户信息
-        $user = M('users')->where(array('user_id'=>$user['user_id']))->find();
-    
-        return array('status'=>1,'msg'=>'登陆成功','result'=>$user);
+        $user = Db::name('users')->where(array('user_id' => $user['user_id']))->find();
+
+        return array('status' => 1, 'msg' => '登陆成功', 'result' => $user);
     }
 
     /**
@@ -349,8 +380,10 @@ class UsersLogic extends Model
         
         if(!empty($head_pic)){
             $map['head_pic'] = $head_pic;
+        }else{
+            $map['head_pic']='/public/images/icon_goods_thumb_empty_300.png';
         }
-        
+
         if($is_validated != 1)
             return array('status'=>-1,'msg'=>'请用手机号或邮箱注册','result'=>'');
 
@@ -397,7 +430,8 @@ class UsersLogic extends Model
         $map['push_id'] = $push_id; //推送id
         $map['token'] = md5(time().mt_rand(1,999999999));
         $map['last_login'] = time();
-                
+        $user_level =Db::name('user_level')->where('amount = 0')->find(); //折扣
+        $map['discount'] = !empty($user_level) ? $user_level['discount']/100 : 1;  //新注册的会员都不打折
         $user_id = M('users')->insertGetId($map);
         if($user_id === false)
             return array('status'=>-1,'msg'=>'注册失败');
@@ -427,17 +461,16 @@ class UsersLogic extends Model
         $activityLogic = new \app\common\logic\ActivityLogic;             //获取能使用优惠券个数
         $user['coupon_count'] = $activityLogic->getUserCouponNum($user_id, 0);
         
-        $user['collect_count'] = $this->getGoodsCollectNum($user_id);; //获取收藏数量
-        $user['return_count'] = M('return_goods')->where("user_id=$user_id and status<2")->count();   //退换货数量
-        
+        $user['collect_count'] = Db::name('goods_collect')->where('user_id', $user_id)->count(); //获取收藏数量
+        $user['return_count'] = M('return_goods')->where(['user_id'=>$user_id,'status'=>['in', '0,1,2,3']])->count();   //退换货数量
         $user['waitPay']     = M('order')->where("user_id = :user_id ".C('WAITPAY'))->bind(['user_id'=>$user_id])->count(); //待付款数量
         $user['waitSend']    = M('order')->where("user_id = :user_id ".C('WAITSEND'))->bind(['user_id'=>$user_id])->count(); //待发货数量
         $user['waitReceive'] = M('order')->where("user_id = :user_id ".C('WAITRECEIVE'))->bind(['user_id'=>$user_id])->count(); //待收货数量
         $user['order_count'] = $user['waitPay'] + $user['waitSend'] + $user['waitReceive'];
         
         $commentLogic = new CommentLogic;
-        $user['comment_count'] = $commentLogic->getHadCommentNum($user_id); //已评论数
-        $user['uncomment_count'] = $commentLogic->getWaitCommentNum($user_id); //待评论数
+        $user['uncomment_count'] = $commentLogic->getCommentNum($user_id, 0); //待评论数
+        $user['comment_count'] = $commentLogic->getCommentNum($user_id, 1); //已评论数
         
         return ['status' => 1, 'msg' => '获取成功', 'result' => $user];
      }
@@ -459,22 +492,21 @@ class UsersLogic extends Model
         $activityLogic = new \app\common\logic\ActivityLogic;             //获取能使用优惠券个数
         $user['coupon_count'] = $activityLogic->getUserCouponNum($user_id, 0);
         
-        $user['collect_count'] = $this->getGoodsCollectNum($user_id);; //获取收藏数量
+        $user['collect_count'] = Db::name('goods_collect')->where('user_id', $user_id)->count();//获取收藏数量
         $user['visit_count']   = M('goods_visit')->where('user_id', $user_id)->count();   //商品访问记录数
         $user['return_count'] = M('return_goods')->where("user_id=$user_id and status<2")->count();   //退换货数量
-        
-        $user['waitPay']     = M('order')->where("user_id = :user_id ".C('WAITPAY'))->bind(['user_id'=>$user_id])->count(); //待付款数量
-        $user['waitSend']    = M('order')->where("user_id = :user_id ".C('WAITSEND'))->bind(['user_id'=>$user_id])->count(); //待发货数量
-        $user['waitReceive'] = M('order')->where("user_id = :user_id ".C('WAITRECEIVE'))->bind(['user_id'=>$user_id])->count(); //待收货数量
+        $order_where = "deleted=0 AND order_status<>5 AND prom_type<5 AND user_id=$user_id ";
+        $user['waitPay']     = M('order')->where($order_where.C('WAITPAY'))->count(); //待付款数量
+        $user['waitSend']    = M('order')->where($order_where.C('WAITSEND'))->count(); //待发货数量
+        $user['waitReceive'] = M('order')->where($order_where.C('WAITRECEIVE'))->count(); //待收货数量
         $user['order_count'] = $user['waitPay'] + $user['waitSend'] + $user['waitReceive'];
         
         $messageLogic = new \app\common\logic\MessageLogic();
         $user['message_count'] = $messageLogic->getUserMessageCount();
         
         $commentLogic = new CommentLogic;
-        $user['comment_count'] = $commentLogic->getHadCommentNum($user_id); //已评论数
-        $user['uncomment_count'] = $commentLogic->getWaitCommentNum($user_id); //待评论数
-
+        $user['uncomment_count'] = $commentLogic->getCommentNum($user_id, 0);; //待评论数
+        $user['comment_count'] = $commentLogic->getCommentNum($user_id, 1); //已评论数
         $cartLogic = new CartLogic();
         $cartLogic->setUserId($user_id);
         $user['cart_goods_num'] = $cartLogic->getUserCartGoodsNum();
@@ -509,18 +541,19 @@ class UsersLogic extends Model
      * 获取账户资金记录
      * @param $user_id|用户id
      * @param int $account_type|收入：1,支出:2 所有：0
-     * @return mixed
+     * @param null $order_sn
+     * @return array
      */
-    public function get_account_log($user_id,$account_type = 0){
+    public function get_account_log($user_id, $account_type = 0, $order_sn = null){
         $account_log_where = ['user_id'=>$user_id];
         if($account_type == 1){
             $account_log_where['user_money|pay_points'] = ['gt',0];
-        }
-        if($account_type == 2){
+        }elseif($account_type == 2){
             $account_log_where['user_money|pay_points'] = ['lt',0];
         }
+        $order_sn && $account_log_where['order_sn'] = $order_sn;
         $count = M('account_log')->where($account_log_where)->count();
-        $Page = new Page($count,16);
+        $Page = new Page($count,15);
         $account_log = M('account_log')->where($account_log_where)
             ->order('change_time desc')
             ->limit($Page->firstRow.','.$Page->listRows)
@@ -590,12 +623,12 @@ class UsersLogic extends Model
     /*
      * 获取优惠券
      */
-    public function get_coupon($user_id, $type =0, $orderBy = null,$order_money = 0)
+    public function get_coupon($user_id, $type =0, $orderBy = null,$order_money = 0,$p=12)
     {
         $activityLogic = new \app\common\logic\ActivityLogic;
         $count = $activityLogic->getUserCouponNum($user_id, $type, $orderBy,$order_money );
         
-        $page = new Page($count, 10);
+        $page = new Page($count, $p);
         $list = $activityLogic->getUserCouponList($page->firstRow, $page->listRows, $user_id, $type, $orderBy,$order_money);
 
         $return['status'] = 1;
@@ -605,21 +638,13 @@ class UsersLogic extends Model
         return $return;
     }
 
-    public function getGoodsCollectNum($user_id)
-    {
-        $count = M('goods_collect')->alias('c')
-                ->join('goods g','g.goods_id = c.goods_id','INNER')
-                ->where('user_id', $user_id)
-                ->count();
-        return $count;
-    }
-    
     /**
      * 获取商品收藏列表
-     * @param $user_id  用户id
+     * @param $user_id
+     * @return mixed
      */
     public function get_goods_collect($user_id){
-        $count = $this->getGoodsCollectNum($user_id);
+        $count = Db::name('goods_collect')->where('user_id', $user_id)->count();
         $page = new Page($count,10);
         $show = $page->show();
         //获取我的收藏列表
@@ -700,15 +725,16 @@ class UsersLogic extends Model
             return array('status'=>-1,'msg'=>'该笔订单还未确认收货','result'=>'');
 
         //检查是否已评论过
-        $goods = M('comment')->where(['order_id'=>$add['order_id'],'goods_id'=>$add['goods_id']])->find();
-        if($goods)            
-            return array('status'=>-1,'msg'=>'您已经评论过该商品','result'=>'');        
-        
+        $goods = M('comment')->where(['rec_id'=>$add['rec_id']])->find();
+        if($goods)return array('status'=>-1,'msg'=>'您已经评论过该商品','result'=>'');
+        if($add['goods_rank']<1 || $add['service_rank']<1){
+            return array('status'=>-1,'msg'=>'请给商品评分','result'=>'');
+        }
         $row = M('comment')->add($add);
         if($row)
         {
             //更新订单商品表状态
-            M('order_goods')->where(array('goods_id'=>$add['goods_id'],'order_id'=>$add['order_id']))->save(array('is_comment'=>1));
+            M('order_goods')->where(array('rec_id'=>$add['rec_id'],'order_id'=>$add['order_id']))->save(array('is_comment'=>1));
             M('goods')->where(array('goods_id'=>$add['goods_id']))->setInc('comment_count',1); // 评论数加一
             // 查看这个订单是否全部已经评论,如果全部评论了 修改整个订单评论状态            
             $comment_count   = M('order_goods')->where("order_id", $add['order_id'])->where('is_comment', 0)->count();
@@ -779,11 +805,11 @@ class UsersLogic extends Model
         //检查手机格式
         if($post['consignee'] == '')
             return array('status'=>-1,'msg'=>'收货人不能为空','result'=>'');
-        if(!$post['province'] || !$post['city'] || !$post['district'])
+        if (!($post['province'] > 0)|| !($post['city']>0) || !($post['district']>0))
             return array('status'=>-1,'msg'=>'所在地区不能为空','result'=>'');
         if(!$post['address'])
             return array('status'=>-1,'msg'=>'地址不能为空','result'=>'');
-        if(!check_mobile($post['mobile']))
+        if(!check_mobile($post['mobile']) && !check_telephone($post['mobile']))
             return array('status'=>-1,'msg'=>'手机号码格式有误','result'=>'');
 
         //编辑模式
@@ -882,7 +908,7 @@ class UsersLogic extends Model
             return array('status'=>-1,'msg'=>'两次密码输入不一致','result'=>'');
         //验证原密码
         if($is_update && ($user['password'] != '' && encrypt($old_password) != $user['password']))
-            return array('status'=>-1,'msg'=>'密码验证失败','result'=>'');
+            return array('status'=>-1,'msg'=>'原密码验证失败','result'=>'');
         $row = M('users')->where("user_id", $user_id)->save(array('password'=>encrypt($new_password)));
         if(!$row)
             return array('status'=>-1,'msg'=>'修改失败','result'=>'');
@@ -894,7 +920,8 @@ class UsersLogic extends Model
      * @param $user_id  用户id
      * @param $old_password  旧密码
      * @param $new_password  新密码
-     * @param $confirm_password 确认新 密码
+     * @param bool $is_update
+     * @return array
      */
     public function passwordForApp($user_id,$old_password,$new_password,$is_update=true){
         $user = M('users')->where('user_id', $user_id)->find();
@@ -931,6 +958,25 @@ class UsersLogic extends Model
         $url = session('payPriorUrl') ? session('payPriorUrl'): U('User/userinfo');
         session('payPriorUrl',null);
     	return array('status'=>1,'msg'=>'修改成功','url'=>$url);
+    }
+
+    /**
+     *  针对 APP 修改支付密码的方法
+     * @param $user_id  用户id
+     * @param $new_password  新密码
+     * @return array
+     */
+    public function payPwdForApp($user_id, $new_password)
+    {
+        if (strlen($new_password) < 6) {
+            return array('status' => -1, 'msg' => '密码不能低于6位字符', 'result' => '');
+        }
+
+        $row = Db::name('users')->where(['user_id'=>$user_id])->update(array('paypwd' => $new_password));
+        if (!$row) {
+            return array('status' => -1, 'msg' => '密码修改失败', 'result' => '');
+        }
+        return array('status' => 1, 'msg' => '密码修改成功', 'result' => '');
     }
     /**
      * 发送验证码: 该方法只用来发送邮件验证码, 短信验证码不再走该方法
@@ -1120,7 +1166,7 @@ class UsersLogic extends Model
             $file = request()->file('head_pic');
             $image_upload_limit_size = config('image_upload_limit_size');
             $validate = ['size'=>$image_upload_limit_size,'ext'=>'jpg,png,gif,jpeg'];
-            $dir = 'public/upload/head_pic/';
+            $dir = UPLOAD_PATH.'head_pic/';
             if (!($_exists = file_exists($dir))) {
                 mkdir($dir);
             }
@@ -1178,4 +1224,128 @@ class UsersLogic extends Model
         $result['page'] = $page;
         return $result;
     }
+
+    /**
+     * 添加用户签到信息
+     * @param $user_id int 用户id
+     * @param $date date 日期
+     * @return array
+     */
+    public function addUserSign($user_id, $date)
+    {
+        $config = tpCache('sign');
+        $data['user_id'] = $user_id;
+        $data['sign_total'] = 1;
+        $data['sign_last'] = $date;
+        $data['cumtrapz'] = $config['sign_integral'];
+        $data['sign_time'] = "$date";
+        $data['sign_count'] = 1;
+        $data['this_month'] = $config['sign_integral'];
+        $result['status'] = false;
+        $result['msg'] = '签到失败!';
+        if (Db::name('user_sign')->add($data)) {
+            $result['status'] = true;
+            $result['msg'] = '签到旅程开始啦,积分奖励!';
+            accountLog($user_id, 0, $config['sign_integral'], '第一次签到赠送' . $config['sign_integral'] . '积分');
+        }
+        return $result;
+    }
+
+    /**
+     * 累计用户签到信息
+     * @param $userInfo  array   用户信息
+     * @param $date      date    日期
+     * @return array
+     */
+    public function updateUserSign($userInfo, $date)
+    {
+        $config = tpCache('sign');
+        $update_data = array(
+            'sign_total' => ['exp', 'sign_total+' . 1],                                     //累计签到天数
+            'sign_last'  => ['exp', "'$date'"],                                             //最后签到时间
+            'cumtrapz'   => ['exp', 'cumtrapz+' . $config['sign_integral']],                //累计签到获取积分
+            'sign_time'  => ['exp', "CONCAT_WS(',',sign_time ,'$date')"],                   //历史签到记录
+            'sign_count' => ['exp', 'sign_count+' . 1],                                     //连续签到天数
+            'this_month' => ['exp', 'this_month+' . $config['sign_integral']],              //本月累计积分
+        );
+        $daya = $userInfo['sign_last'];
+        $dayb = date("Y-n-j", strtotime($date) - 86400);
+        if ($daya != $dayb) {                                                               //不是连续签
+            $update_data['sign_count'] = ['exp', 1];
+        }
+        $mb = date("m", strtotime($date));
+        if (intval($mb) != intval(date("m", strtotime($daya)))) {                            //不是本月签到
+            $update_data['sign_count'] = ['exp', 1];
+            $update_data['sign_time']  = ['exp', "'$date'"];
+            $update_data['this_month'] = ['exp', $config['sign_integral']];
+        }
+        $update = Db::name('user_sign')->where(['user_id' => $userInfo['user_id']])->update($update_data);
+        $result['status'] = false;
+        $result['msg'] = '签到失败!';
+        if ($update>0) {
+            accountLog($userInfo['user_id'], 0, $config['sign_integral'], '签到赠送' . $config['sign_integral'] . '积分');
+            $result['status'] = true;
+            $result['msg']    = '签到成功!奖励' . $config['sign_integral'] . '积分';
+            $userFind = Db::name('user_sign')->where(['user_id' => $userInfo['user_id']])->find();
+            //满足额外奖励
+            if ($userFind['sign_count'] >= $config['sign_signcount']) {
+                $result['msg']    = '哇，你已经连续签到' . $userFind['sign_count'] . '天,得到额外奖励！';
+                $this->extraAward($userInfo, $config);
+            }
+        }
+        return $result;
+    }
+
+    /**
+     * 累计签到额外奖励
+     * @param $userSingInfo array 用户信息
+     */
+    public function extraAward($userSingInfo)
+    {
+        $config = tpCache('sign');
+        //满足额外奖励
+        Db::name('user_sign')->where(['user_id' => $userSingInfo['user_id']])->update([
+            'cumtrapz' => ['exp', 'cumtrapz+' . $config['sign_award']],
+            'this_month' => ['exp', 'this_month+' . $config['sign_award']]
+        ]);
+        $msg = '连续签到奖励' . $config['sign_award'] . '积分';
+        accountLog($userSingInfo['user_id'], 0, $config['sign_award'], $msg);
+    }
+
+    /**
+     * 标识用户签到信息
+     * @param $user_id int 用户id
+     * @return      array
+     */
+    public function idenUserSign($user_id)
+    {
+        $config = tpCache('sign');
+        $map['us.user_id'] = $user_id;
+        $field = [
+            'u.user_id as user_id',
+            'u.nickname',
+            'u.mobile',
+            'us.*',
+        ];
+        $join = [['users u', 'u.user_id=us.user_id', 'left']];
+        $info = Db::name('user_sign')->alias('us')->field($field)->join($join)->where($map)->find();
+        ($info['sign_last'] != date("Y-n-j", time())) && $tab = "1";
+        $signTime = explode(",", $info['sign_time']);
+        $str = "";
+        //是否标识历史签到
+        if (date("m", strtotime($info['sign_last'])) == date("m", time())) {
+            foreach ($signTime as $val) {
+                $str .= date("j", strtotime($val)) . ',';
+            }
+        } else {
+            $info['sign_count'] = 0; //不是本月清除连续签到
+        }
+        if( $info['sign_count']>=$config['sign_signcount'])
+            $display_sign=  $config['sign_award']+ $config['sign_integral'];
+        else
+            $display_sign=  $config['sign_integral'];
+        $jiFen = ($config['sign_signcount'] * $config['sign_integral']) + $config['sign_award'];
+        return ['info' => $info, 'str' => $str, 'jifen' => $jiFen, 'config' => $config, 'tab' => $tab,'display_sign'=>$display_sign];
+    }
+
 }

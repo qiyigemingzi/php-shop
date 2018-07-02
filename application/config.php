@@ -1,13 +1,17 @@
 <?php
-// +----------------------------------------------------------------------
-// | ThinkPHP [ WE CAN DO IT JUST THINK ]
-// +----------------------------------------------------------------------
-// | Copyright (c) 2006~2016 http://thinkphp.cn All rights reserved.
-// +----------------------------------------------------------------------
-// | Licensed ( http://www.apache.org/licenses/LICENSE-2.0 )
-// +----------------------------------------------------------------------
-// | Author: liu21st <liu21st@gmail.com>
-// +----------------------------------------------------------------------
+/**
+ * tpshop
+ * ============================================================================
+ * * 版权所有 2015-2027 深圳搜豹网络科技有限公司，并保留所有权利。
+ * 网站地址: http://www.tp-shop.cn
+ * ----------------------------------------------------------------------------
+ * 这不是一个自由软件！您只能在不用于商业目的的前提下对程序代码进行修改和使用 .
+ * 不允许对程序代码以任何形式任何目的的再发布。
+ * 如果商业用途务必到官方购买正版授权, 以免引起不必要的法律纠纷.
+ * 采用最新Thinkphp5助手函数特性实现单字母函数M D U等简写方式
+ * ============================================================================
+ * $Author: IT宇宙人 2015-08-10 $
+ */
 
 return [
     // +----------------------------------------------------------------------
@@ -34,8 +38,6 @@ return [
     'default_return_type'    => 'html',
     // 默认AJAX 数据返回格式,可选json xml ...
     'default_ajax_return'    => 'html',
-    // 默认API 数据返回格式,可选json xml ...
-    'default_api_return'    => 'json',
     // 默认JSONP格式返回的处理方法
     'default_jsonp_handler'  => 'jsonpReturn',
     // 默认JSONP处理方法
@@ -116,6 +118,8 @@ return [
     'request_cache'          => false,
     // 请求缓存有效期
     'request_cache_expire'   => null,
+    // 全局请求缓存排除规则
+    'request_cache_except'   => [],
 
     // +----------------------------------------------------------------------
     // | 模板设置
@@ -196,7 +200,7 @@ return [
         // 缓存保存目录
         'path'   => CACHE_PATH,
         // 缓存前缀
-        'prefix' => 'e459d613186e6512ff8b849b0ac77b2e',
+        'prefix' => 'a0704802c3105b4a89e688fc34a8b82c',
         // 缓存有效期 0表示永久缓存
         'expire' => 1,
     ],
@@ -303,6 +307,7 @@ return [
         '3'=>'成团失败',
     ),
     'TEAM_TYPE' => [0 => '分享团', 1 => '佣金团', 2 => '抽奖团'],
+    'FREIGHT_TYPE' => [0 => '件数', 1 => '重量', 2 => '体积'],
     // 订单用户端显示状态
     'WAITPAY'=>' AND pay_status = 0 AND order_status = 0 AND pay_code !="cod" ', //订单查询状态 待支付
     'WAITSEND'=>' AND (pay_status=1 OR pay_code="cod") AND shipping_status !=1 AND order_status in(0,1) ', //订单查询状态 待发货
@@ -311,6 +316,7 @@ return [
     'FINISH'=> ' AND order_status = 4 ', // 已完成
     'CANCEL'=> ' AND order_status = 3 ', // 已取消
     'CANCELLED'=> 'AND order_status = 5 ',//已作废
+    'PAYED'=>' AND (order_status=2 OR (order_status=1 AND pay_status=1) ) ', //虚拟订单状态:已付款
     
     'ORDER_STATUS_DESC' => [
         'WAITPAY' => '待支付',
@@ -329,7 +335,9 @@ return [
         0  => '待审核',//卖家审核
         1  => '审核通过',//同意
         2  => '买家发货',//买家发货
-        3  => '已完成',//服务单完成
+        3  => '已收货',//服务单完成
+        4  => '换货完成',
+        5  => '退款完成',
     ),
     /**
      * 售后类型
@@ -344,10 +352,10 @@ return [
         '1'=>array('用户注册','验证码${code}，用户注册新账号, 请勿告诉他人，感谢您的支持!','regis_sms_enable'),
         '2'=>array('用户找回密码','验证码${code}，用于密码找回，如非本人操作，请及时检查账户安全','forget_pwd_sms_enable'),
         '3'=>array('客户下单','您有新订单，收货人：${consignee}，联系方式：${phone}，请您及时查收.','order_add_sms_enable'),
-        '4'=>array('客户支付','客户下的单(订单ID:${order_id})已经支付，请及时发货.','order_pay_sms_enable'),
-        '5'=>array('商家发货','尊敬的${user_name}用户，您的订单已发货，收货人${consignee}，请您及时查收','order_shipping_sms_enable'),
+        '4'=>array('客户支付','客户下的单(订单ID:${orderId})已经支付，请及时发货.','order_pay_sms_enable'),
+        '5'=>array('商家发货','尊敬的${userName}用户，您的订单已发货，收货人${consignee}，请您及时查收','order_shipping_sms_enable'),
         '6'=>array('身份验证','尊敬的用户，您的验证码为${code}, 请勿告诉他人.','bind_mobile_sms_enable'),
-        '7'=>array('购买虚拟商品通知','尊敬的用户，您购买的虚拟商品【${goods_name}】兑换码已生成,请注意查收.','virtual_goods_sms_enable'),
+        '7'=>array('购买虚拟商品通知','尊敬的用户，您购买的虚拟商品${goodsName}兑换码已生成,请注意查收.','virtual_goods_sms_enable'),
     ),
     
     'APP_TOKEN_TIME' => 60 * 60 * 24 , //App保持token时间 , 此处为1天
@@ -389,6 +397,21 @@ return [
         'delivery'=>'确认发货',
         'delivery_confirm'=>'确认收货',
     ],
+    'WITHDRAW_STATUS'=>[
+        '-2'=>'删除作废',
+        '-1'=>'审核失败',
+        '0'=>'申请中',
+        '1'=>'审核通过',
+        '2'=>'付款成功',
+        '3'=>'付款失败',
+    ],
+    'RECHARGE_STATUS'=>[
+        '0'=>'待支付',
+        '1'=>'支付成功',
+        '2'=>'交易关闭',
+    ],
+    'erasable_type' =>['.gif','.jpg','.jpeg','.bmp','.png','.mp4','.3gp','.flv','.avi','.wmv'],
     'COUPON_USER_TYPE'=>['全店通用','指定商品可用','指定分类商品可用'],
     'image_upload_limit_size'=>1024 * 1024 * 5,//上传图片大小限制
+   
 ];

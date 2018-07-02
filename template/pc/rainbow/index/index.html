@@ -9,7 +9,7 @@
     <link rel="stylesheet" type="text/css" href="__STATIC__/css/index.css"/>
     <script src="__STATIC__/js/jquery-1.11.3.min.js" type="text/javascript" charset="utf-8"></script>
     <script src="__PUBLIC__/js/global.js"></script>
-    <link rel="shortcut icon" type="image/x-icon" href="{$tpshop_config['shop_info_store_logo']}" media="screen"/>
+    <link rel="shortcut icon" type="image/x-icon" href="{$tpshop_config.shop_info_store_ico|default='/public/static/images/logo/storeico_default.png'}" media="screen"/>
 </head>
 <body class="gray_f5">
 <!--header-s-->
@@ -203,7 +203,7 @@
 <!--楼层导航-e-->
 <!--侧边栏-s-->
 <div class="slidebar-right">
-	<a class="slidebar-item ico-slidebar1" target="_blank" href="tencent://message/?uin={$tpshop_config['shop_info_qq2']}&amp;Site=微商城&amp;Menu=yes" >
+	<a class="slidebar-item ico-slidebar1" target="_blank" href="tencent://message/?uin={$tpshop_config['shop_info_qq2']}&amp;Site=TPshop商城&amp;Menu=yes" >
 		<div class="sbar-hover-txt">客服服务</div>
 	</a>
 	<a class="slidebar-item ico-slidebar2" target="_blank" href="javascript:;" >
@@ -216,7 +216,7 @@
 	<a class="slidebar-item ico-slidebar3" target="_blank" href="javascript:;" >
 		<div class="sbar-hover-txt">手机商城</div>
 		<div class="sbar-hover-pic">
-			<div class="qrcode-wrap"><img class="w-100" src="__STATIC__/images/qrcode.png" alt="" /></div>
+			<div class="qrcode-wrap"><img class="w-100" src="/index.php?m=Home&c=Index&a=qr_code&data={$mobile_url}&head_pic={$head_pic}&back_img={$back_img}" alt="" /></div>
 			<p class="qrcode-des">扫码下载手机商城,随时随地享受优惠购物</p>
 		</div>
 	</a>
@@ -225,6 +225,7 @@
 	</a>
 </div>
 <script>
+ 
 function init(){  //初始化函数
     //首页商品分类显示
     $('.categorys .dd').show();

@@ -2,7 +2,7 @@
 	   <div class="pull-right hidden-xs">
 	    	 感谢使用ThinkPHP Shop开源系统<b></b>
 	   </div>
-	   <strong>Copyright &copy; 2015-2025 <a href="http://www.tp-shop.cn">深圳搜豹公司旗下产品</a>.</strong>保留所有权利。
+	   <strong>Copyright &copy; 2015-2025 <a href="http://www.tp-shop.cn">{$tpshop_config.shop_info_store_name|default='TPshop商城'}</a>.</strong>保留所有权利。
 	</footer>
 
      <!-- Control Sidebar -->
@@ -58,7 +58,8 @@ function callUrl(url){
     var is_close=0;
     function ajaxOrderNotice(){
         var url = '{:U("Order/ajaxOrderNotice")}';
-        if(is_close > 0) return;
+        if(is_close > 0)
+            return;
         $.get(url,function(data){
             //有新订单且数量不跟上次相等 弹出提示
             if(data > 0 && data != now_num){
@@ -98,10 +99,11 @@ function callUrl(url){
 </div>
 <script type="text/javascript">
 	function closes(){
-	       is_close = 1;
+        is_close = 1;
 		document.getElementById('ordfoo').style.display = 'none';
 	}
-	// 没有点击收货确定的按钮让他自己收货确定    
+    
+	// 没有点击收货确定的按钮让他自己收货确定
 	var timestamp = Date.parse(new Date());
 	$.ajax({
         type:'post',
@@ -111,7 +113,7 @@ function callUrl(url){
         success:function(){
             // 执行定时任务
         }
-	});
+    });  
 </script>
 <!-- 新订单提醒-e -->
 </body>

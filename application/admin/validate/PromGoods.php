@@ -16,6 +16,7 @@ class PromGoods extends Validate
         'end_time'=>'require|checkEndTime',
         'prom_img'=>'require',
         'description'=>'max:100',
+        'buy_limit'=>'require|checkBuyLimit',
     ];
     //错误信息
     protected $message  = [
@@ -30,7 +31,9 @@ class PromGoods extends Validate
         'end_time.require'              => '请选择结束时间',
         'end_time.checkEndTime'         => '结束时间不能早于开始时间',
         'prom_img.require'              => '图片必须',
-        'description.max'               => '活动介绍小于100字符'
+        'description.max'               => '活动介绍必须小于100字符',
+        'buy_limit.require'             => '限购数量必须',
+        'buy_limit.checkBuyLimit'       => '限购数量',
     ];
     /**
      * 检查结束时间
@@ -93,5 +96,21 @@ class PromGoods extends Validate
         }else{
             return true;
         }
+    }
+
+    /**
+     * 检查限购数量
+     * @param $value
+     * @param $rule
+     * @param $data
+     * @return bool
+     */
+    public function checkBuyLimit($value, $rule ,$data)
+    {
+        $nmin_store_count  = min($data['store_count']);
+        if($value > $nmin_store_count){
+            return '限购数量不得大于所参加商品最小库存【'.$nmin_store_count.'件】';
+        }
+        return true;
     }
 }

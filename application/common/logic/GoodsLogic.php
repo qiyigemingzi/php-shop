@@ -7,12 +7,13 @@
  * ----------------------------------------------------------------------------
  * 这不是一个自由软件！您只能在不用于商业目的的前提下对程序代码进行修改和使用 .
  * 不允许对程序代码以任何形式任何目的的再发布。
- * 采用TP5助手函数可实现单字母函数M D U等,也可db::name方式,可双向兼容
+ * 采用最新Thinkphp5助手函数特性实现单字母函数M D U等简写方式
  * ============================================================================
  */
 
 namespace app\common\logic;
 
+use app\common\model\Goods;
 use think\Model;
 use think\Db;
 /**
@@ -176,11 +177,16 @@ class GoodsLogic extends Model
      */
     public function collect_goods($user_id, $goods_id)
     {
-        if (!is_numeric($user_id) || $user_id <= 0) return array('status' => -1, 'msg' => '必须登录后才能收藏', 'result' => array());
-        $count = M('GoodsCollect')->where("user_id",$user_id)->where("goods_id", $goods_id)->count();
-        if ($count > 0) return array('status' => -3, 'msg' => '商品已收藏', 'result' => array());
-        M('GoodsCollect')->add(array('goods_id' => $goods_id, 'user_id' => $user_id, 'add_time' => time()));
-        return array('status' => 1, 'msg' => '收藏成功!请到个人中心查看', 'result' => array());
+        if(!is_numeric($user_id) || $user_id <= 0){
+            return array('status'=>-1,'msg'=>'必须登录后才能收藏','result'=>array());
+        }
+        $count = Db::name('goods_collect')->where("user_id", $user_id)->where("goods_id", $goods_id)->count();
+        if($count > 0){
+            return array('status'=>-3,'msg'=>'商品已收藏','result'=>array());
+        }
+        Db::name('goods')->where('goods_id', $goods_id)->setInc('collect_sum');
+        Db::name('goods_collect')->add(array('goods_id'=>$goods_id,'user_id'=>$user_id, 'add_time'=>time()));
+        return array('status'=>1,'msg'=>'收藏成功!请到个人中心查看','result'=>array());
     }
     /**
      * 获取商品规格
@@ -522,86 +528,69 @@ class GoodsLogic extends Model
     }
 
     /**
-     * 商品物流配送和运费
-     * @param $goods_id
+     * 检查多个商品是否可配送
+     * @param $goodsArr
      * @param $region_id
-     * @return array
+     * @return false|\PDOStatement|string|\think\Collection
      */
-    function getGoodsDispatching($goods_id,$region_id)
+    public function checkGoodsListShipping($goodsArr, $region_id)
     {
-        $return_data = array('status'=>1,'msg'=>'');
-        $goods = M('goods')->where(array('goods_id'=>$goods_id))->find();
-        //检查商品是否包邮
-        if($goods['is_free_shipping']){
-            $return_data['msg'] = '可配送';
-            $return_data['result'] = array(array('shipping_name'=>'包邮','freight'=>0));
-            return $return_data;
+        $Goods = new Goods();
+        $freightLogic = new FreightLogic();
+        $freightLogic->setRegionId($region_id);
+        $goods_ids = get_arr_column($goodsArr, 'goods_id');
+        $goodsList = $Goods->field('goods_id,template_id,is_free_shipping')->where('goods_id', 'IN', $goods_ids)->cache(true)->select();
+        foreach ($goodsList as $goodsKey => $goodsVal) {
+            $freightLogic->setGoodsModel($goodsVal);
+            $goodsList[$goodsKey]['shipping_able'] = $freightLogic->checkShipping();
         }
-        $parent_region_id = $this->getParentRegionList($region_id);
-        $goodsLogic = new GoodsLogic();
-        //商品没有配置物流，使用物流配置里的默认物流
-        if(empty($goods['shipping_area_ids'])){
-            $plugin_goods_shipping = M('plugin')->where(array('type'=>'shipping'))->select();
-            $goods_shipping = array();
-            foreach($plugin_goods_shipping as $k=>$v){
-                $goods_shipping[$k]['freight'] = $goodsLogic->getFreight($plugin_goods_shipping[$k]['code'],$parent_region_id[0],$parent_region_id[1],$region_id,$goods['weight']);//默认全国
-                $goods_shipping[$k]['shipping_name'] = $plugin_goods_shipping[$k]['name'];
-            }
-            $return_data['msg'] = '可配送';
-            $return_data['result'] = $goods_shipping;
-            return $return_data;
-        }
-        //查找地区$region_id的所有父类，与地区地址表进行匹配
-        $goods_shipping_area_id_array = explode(',',$goods['shipping_area_ids']);
-        array_push($parent_region_id,(string)$region_id);//把region_id和它全部父级存起来
-        $find_shipping_area_id = M('area_region')->where(array('region_id'=>array('in',$parent_region_id)))->group('shipping_area_id')->getField('shipping_area_id',true);
-        $shipping_area_id_array =array();
-        foreach($find_shipping_area_id as $key=>$val){
-            if(in_array($find_shipping_area_id[$key],$goods_shipping_area_id_array)){
-                array_push($shipping_area_id_array,$find_shipping_area_id[$key]);
-            }
-        }
-        //没有匹配到，就使用商品配置的物流id去物流地址表去查找
-        if(count($shipping_area_id_array) == 0){
-            $goods_shipping = M('shipping_area')->where(array('shipping_area_id'=>array('in',$goods_shipping_area_id_array),'is_default'=>1))->select();
-            //查询到就返回物流信息和运费，没有返回无货
-            if(!empty($goods_shipping)){
-                foreach($goods_shipping as $k=>$v){
-                    $goods_shipping[$k]['freight'] = $goodsLogic->getFreight($goods_shipping[$k]['shipping_code'],$parent_region_id[0],$parent_region_id[1],$region_id,$goods['weight']);
-                    $goods_shipping[$k]['shipping_name'] = M('plugin')->where(array('type'=>'shipping','code'=>$goods_shipping[$k]['shipping_code']))->getField('name');
+        return $goodsList;
+    }
+
+    /**
+     * 根据配送地址获取多个商品的运费
+     * @param $goodsArr
+     * @param $region_id
+     * @return int
+     */
+    public function getFreight($goodsArr, $region_id)
+    {
+        $Goods = new Goods();
+        $freightLogic = new FreightLogic();
+        $freightLogic->setRegionId($region_id);
+        $goods_ids = get_arr_column($goodsArr, 'goods_id');
+        $goodsList = $Goods->field('goods_id,volume,weight,template_id,is_free_shipping')->where('goods_id', 'IN', $goods_ids)->select();
+        $goodsList = collection($goodsList)->toArray();
+        foreach ($goodsArr as $cartKey => $cartVal) {
+            foreach ($goodsList as $goodsKey => $goodsVal) {
+                if ($cartVal['goods_id'] == $goodsVal['goods_id']) {
+                    $goodsArr[$cartKey]['volume'] = $goodsVal['volume'];
+                    $goodsArr[$cartKey]['weight'] = $goodsVal['weight'];
+                    $goodsArr[$cartKey]['template_id'] = $goodsVal['template_id'];
+                    $goodsArr[$cartKey]['is_free_shipping'] = $goodsVal['is_free_shipping'];
                 }
-                $return_data['msg'] = '可配送';
-                $return_data['result'] = $goods_shipping;
-                return $return_data;
-            }else{
-                $return_data['status'] = -1;
-                $return_data['msg'] = '该地区不支持配送';
-                return $return_data;
             }
         }
-        //匹配到就返回物流信息和运费
-        $goods_shipping = M('area_region')
-            ->alias('ar')
-            ->join('__SHIPPING_AREA__ sa','sa.shipping_area_id = ar.shipping_area_id','INNER')
-            ->where(array('ar.shipping_area_id'=>array('in',$shipping_area_id_array)))
-            ->group('sa.shipping_code')
-            ->select();
-        //没匹配到就返回无货
-        if(empty($goods_shipping)){
-            $return_data['status'] = -1;
-            $return_data['msg'] = '该地区不支持配送';
-            return $return_data;
+        $template_list = [];
+        foreach ($goodsArr as $goodsKey => $goodsVal) {
+            $template_list[$goodsVal['template_id']][] = $goodsVal;
         }
-        foreach($goods_shipping as $k=>$v){
-            $goods_shipping[$k]['freight'] = $goodsLogic->getFreight($goods_shipping[$k]['shipping_code'],0,0,$goods_shipping[$k]['region_id'],$goods['weight']);
-            $goods_shipping[$k]['shipping_name'] = M('plugin')->where(array('type'=>'shipping','code'=>$goods_shipping[$k]['shipping_code']))->getField('name');
+        $freight = 0;
+        foreach ($template_list as $templateVal => $goodsArr) {
+            $temp['template_id'] = $templateVal;
+            foreach ($goodsArr as $goodsKey => $goodsVal) {
+                $temp['total_volume'] += $goodsVal['volume'] * $goodsVal['goods_num'];
+                $temp['total_weight'] += $goodsVal['weight'] * $goodsVal['goods_num'];
+                $temp['goods_num'] += $goodsVal['goods_num'];
+                $temp['is_free_shipping'] = $goodsVal['is_free_shipping'];
+            }
+            $freightLogic->setGoodsModel($temp);
+            $freightLogic->setGoodsNum($temp['goods_num']);
+            $freightLogic->doCalculation();
+            $freight += $freightLogic->getFreight();
+            unset($temp);
         }
-        $return_data = array(
-            'status'=>1,
-            'msg'=>'可配送',
-            'result'=>$goods_shipping
-        );
-        return $return_data;
+        return $freight;
     }
 
 
@@ -678,62 +667,6 @@ class GoodsLogic extends Model
         }
     }
 
-    /**
-     * 计算根据商品重量计算物流运费
-     * @param  $shipping_code|物流 编号
-     * @param  $province|省份
-     * @param  $city|市
-     * @param  $district|区
-     * @param  $weight|重量
-     * @return int
-     */
-    public function getFreight($shipping_code, $province, $city, $district, $weight)
-    {
-
-        if ($weight == 0) return 0; // 商品没有重量
-        if ($shipping_code == '') return 0;
-
-        // 先根据 镇 县 区找 shipping_area_id
-        if ($district != 0) {
-            $shipping_area_id = M('AreaRegion')->where("shipping_area_id in (select shipping_area_id from  " . C('database.prefix') . "shipping_area where shipping_code = :shipping_code) and region_id = :region_id")->bind(['shipping_code'=>$shipping_code,'region_id'=>$district])->getField('shipping_area_id');
-        }
-
-        // 先根据市区找 shipping_area_id
-        if ($shipping_area_id == false && $city != 0) {
-            $shipping_area_id = M('AreaRegion')->where("shipping_area_id in (select shipping_area_id from  " . C('database.prefix') . "shipping_area where shipping_code = :shipping_code) and region_id = :region_id")->bind(['shipping_code'=>$shipping_code,'region_id'=>$city])->getField('shipping_area_id');
-        }
-
-        // 市区找不到 根据省份找shipping_area_id
-        if ($shipping_area_id == false && $province != 0) {
-            $shipping_area_id = M('AreaRegion')->where("shipping_area_id in (select shipping_area_id from  " . C('database.prefix') . "shipping_area where shipping_code = :shipping_code) and region_id = :region_id")->bind(['shipping_code'=>$shipping_code,'region_id'=>$province])->getField('shipping_area_id');
-        }
-
-        // 省份找不到 找默认配置全国的物流费
-        if ($shipping_area_id == false) {
-            // 如果市和省份都没查到, 就查询 tp_shipping_area 表 is_default = 1 的  表示全国的  select * from `tp_plugin`  select * from  `tp_shipping_area` select * from  `tp_area_region`
-            $shipping_area_id = M("ShippingArea")->where(['shipping_code'=>$shipping_code,'is_default'=>1])->getField('shipping_area_id');
-        }
-
-        if ($shipping_area_id == false) {
-            return 0;
-        }
-
-        /// 找到了 shipping_area_id  找config
-        $shipping_config = M('ShippingArea')->where("shipping_area_id", $shipping_area_id)->getField('config');
-        $shipping_config = unserialize($shipping_config);
-        $shipping_config['money'] = $shipping_config['money'] ? $shipping_config['money'] : 0;
-
-        // 1000 克以内的 只算个首重费
-        if ($weight < $shipping_config['first_weight']) {
-            return $shipping_config['money'];
-        }
-        // 超过 1000 克的计算方法
-        $weight = $weight - $shipping_config['first_weight']; // 续重
-        $weight = ceil($weight / $shipping_config['second_weight']); // 续重不够取整
-        $freight = $shipping_config['money'] + $weight * $shipping_config['add_money']; // 首重 + 续重 * 续重费
-
-        return $freight;
-    }
 
     /**
      * 是否收藏商品
@@ -1013,18 +946,23 @@ class GoodsLogic extends Model
                 $activity = [
                     'prom_type' => $goods['prom_type'],
                     'prom_price' => $prom['price'],
-                    'prom_start_time' => $prom['start_time'],
-                    'prom_end_time' => $prom['end_time'],
                     'prom_store_count' => $info['store_count'],
                     'virtual_num' => $info['virtual_num']
                 ];
+                if($prom['start_time']){
+                    $activity['prom_start_time'] = $prom['start_time'];
+                }
+                if($prom['end_time']) {
+                    $activity['prom_end_time'] = $prom['end_time'];
+                }
                 return $activity;
             }
     
             // 3优惠促销
             // type:0直接打折,1减价优惠,2固定金额出售,3买就赠优惠券
             if ($prom['type'] == 0) {
-                $activityData[] = ['title' => '折扣', 'content' => "指定商品立打{$prom['expression']}折"];
+                $expression = round($prom['expression']/10,2);
+                $activityData[] = ['title' => '折扣', 'content' => "指定商品立打{$expression}折"];
             } elseif ($prom['type'] == 1) {
                 $activityData[] = ['title' => '直减', 'content' => "指定商品立减{$prom['expression']}元"];
             } elseif ($prom['type'] == 2) {
@@ -1041,10 +979,14 @@ class GoodsLogic extends Model
                 $activity = [
                     'prom_type' => $goods['prom_type'],
                     'prom_price' => $activityInfo['shop_price'],
-                    'prom_start_time' => $prom['start_time'],
-                    'prom_end_time' => $prom['end_time'],
                     'data' => $activityData
                 ];
+                if($prom['start_time']){
+                    $activity['prom_start_time'] = $prom['start_time'];
+                }
+                if($prom['end_time']) {
+                    $activity['prom_end_time'] = $prom['end_time'];
+                }
             }
     
             return $activity;

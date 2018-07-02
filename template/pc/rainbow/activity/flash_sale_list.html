@@ -6,6 +6,7 @@
 		<link rel="stylesheet" type="text/css" href="__STATIC__/css/flash_sale_list.css"/>
 		<link rel="stylesheet" type="text/css" href="__STATIC__/css/tpshop.css"/>
 		<script src="__STATIC__/js/jquery-1.11.3.min.js" type="text/javascript" charset="utf-8"></script>
+        <link rel="shortcut icon" type="image/x-icon" href="{$tpshop_config.shop_info_store_ico|default='/public/static/images/logo/storeico_default.png'}" media="screen"/>
 		<script src="__PUBLIC__/js/global.js"></script>
 	</head>
 	<body>
@@ -32,7 +33,7 @@
 									<i class="timeline_item_link_skew_processtips">
                                         <if condition="time() lt $vo['start_time']">即将开场
                                             <elseif condition="(time() egt $vo['start_time']) AND (time() lt $vo['end_time'])"/>
-                                            秒杀中<else />已经结束
+                                           	 秒杀中<else />已经结束
                                         </if>
                                     </i>
 								</div>                 

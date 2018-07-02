@@ -7,7 +7,7 @@
  * ----------------------------------------------------------------------------
  * 这不是一个自由软件！您只能在不用于商业目的的前提下对程序代码进行修改和使用 .
  * 不允许对程序代码以任何形式任何目的的再发布。
- * 采用TP5助手函数可实现单字母函数M D U等,也可db::name方式,可双向兼容
+ * 采用最新Thinkphp5助手函数特性实现单字母函数M D U等简写方式
  * ============================================================================
  * $Author: 当燃   2016-05-10
  */ 
@@ -234,6 +234,9 @@ class Activity extends MobileBase {
     	$filter_spec = $goodsLogic->get_spec($goods['goods_id']);
     	$spec_goods_price = M('spec_goods_price')->where(array('goods_id' => $goods['goods_id']))->getField("key,price,store_count"); // 规格 对应 价格 库存表
     	$commentStatistics = $goodsLogic->commentStatistics($goods['goods_id']);// 获取某个商品的评论统计
+        $user_id = cookie('user_id');
+        $collect = M('goods_collect')->where(array("goods_id"=>$goods['goods_id'] ,"user_id"=>$user_id))->count();
+        $this->assign('collect',$collect);
     	$this->assign('pre_count_info', $pre_count_info);//预售商品的订购数量和订单数量
     	$this->assign('commentStatistics', $commentStatistics);//评论概览
     	$this->assign('goods_attribute', $goods_attribute);//属性值

@@ -279,7 +279,7 @@ $(function() {
 			dnd: '#dndArea',
 			paste: '#uploader',
 			chunked: false,
-			chunkSize: 512 * 1024,
+			chunkSize: 512 * 1024 * 1024,
 			/*
 			formData: {},
 			accept: {
@@ -341,7 +341,7 @@ $(function() {
 			if(data.state == 'SUCCESS'){
 				var sLi = "";
 				sLi += '<li class="img '+file.id+'">';
-				sLi += '<img src="' + data.url + '" width="100" height="100" onerror="this.src=\'__ROOT__/Public/plugins/uploadify/nopic.png\'">';
+				sLi += '<img src="' + data.url + '" width="100" height="100" onerror="this.src=\'__ROOT__/public/plugins/uploadify/nopic.png\'">';
 				sLi += '<input type="hidden" name="fileurl_tmp[]" value="' + data.url + '">';
 				sLi += '<a href="javascript:void(0);">删除</a>';
 				sLi += '</li>';
@@ -711,7 +711,7 @@ $(function() {
 		},
 
 		upload : function(opts){
-		
+
 			this.opts = opts, par = window.parent, type = this.opts.type;
 
 			if(type == 'Images'){
@@ -732,9 +732,9 @@ $(function() {
 
 					title : '视频',
 				 
-					extensions : 'flash,swf,zip',
+					extensions : 'mp4,3gp,flv,avi,wmv',
 				 
-					mimeTypes : 'image/*'
+					mimeTypes : 'video/*'
 
 				}
 			
@@ -954,7 +954,7 @@ $(function() {
 			var data = $file.data('file');
 			var sLi = "";
 			sLi += '<li class="img">';
-			sLi += '<img src="' + data.url + '" width="100" height="100" onerror="this.src=\'__ROOT__/Public/plugins/uploadify/nopic.png\'">';
+			sLi += '<img src="' + data.url + '" width="100" height="100" onerror="this.src=\'__ROOT__/public/plugins/uploadify/nopic.png\'">';
 			sLi += '<input type="hidden" name="fileurl_tmp[]" value="' + data.url + '">';
 			sLi += '<a href="javascript:void(0);">删除</a>';
 			sLi += '</li>';
@@ -967,7 +967,7 @@ $(function() {
 		},
 
 		uploadComplete : function(list){
-			console.log(list)
+			// console.log(list)
 		},
 		
 		del:function(obj){

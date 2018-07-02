@@ -12,8 +12,10 @@
  * $Author: IT宇宙人 2015-08-10 $
  */
 namespace app\mobile\controller;
-use think\Db;
 
+use think\Db;
+use app\common\model\WxNews;
+ 
 class Article extends MobileBase
 {
     /**
@@ -27,4 +29,15 @@ class Article extends MobileBase
         return $this->fetch();
     }
 
+    public function news()
+    {
+        $id = input('id');
+        if (!$news = WxNews::get($id)) {
+            $this->error('文章不存在了~', null, '', 100);
+        }
+
+        $news->content = htmlspecialchars_decode($news->content);
+        $this->assign('news', $news);
+        return $this->fetch();
+    }
 }

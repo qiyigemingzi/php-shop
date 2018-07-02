@@ -6,9 +6,9 @@
                       <tr>
                         <td width="5%"  class="default"><i></i></td>
                         <td width="5%"  class="co-red default">自提点</td>
- 
-                        <td width="5%"  class="address_id"><input onclick="swidth_address(this)" type="radio" name="address_id" value="{$address_list['address_id']}"/></td>
- 
+                        <td width="5%"  class="address_id">
+                            <input onclick="swidth_address(this)" type="radio" name="address_id" value="{$address_list['address_id']}" />
+                        </td>
                         <td width="15%"  class="consignee"><b>收货人:{$address_list['consignee']}</b></td>
                         <td width="40%"  class="address2"><span>地址:{$address_list['province_name']} {$address_list['city_name']} {$address_list['district_name']} {$address_list['address']}</span></td>
                         <td width="20%"  class="mobile"><span>电话：{$address_list[mobile]}</span></td>

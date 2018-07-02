@@ -5,6 +5,7 @@
 		<title>领券中心</title>
 		<link rel="stylesheet" type="text/css" href="__STATIC__/css/tpshop.css" />
 		<script src="__STATIC__/js/jquery-1.11.3.min.js" type="text/javascript" charset="utf-8"></script>
+        <link rel="shortcut icon" type="image/x-icon" href="{$tpshop_config.shop_info_store_ico|default='/public/static/images/logo/storeico_default.png'}" media="screen"/>
 		<script src="__PUBLIC__/js/global.js"></script>
 		<script src="__STATIC__/js/lazyload.min.js"></script>
 	</head>
@@ -21,57 +22,43 @@
 							<a href="{:U('Activity/coupon_list',array('atype'=>2))}" class="<if condition='$Request.param.atype eq 2'>selted</if>" >即将过期</a>
 							<a href="{:U('Activity/coupon_list',array('atype'=>3))}" class="<if condition='$Request.param.atype eq 3'>selted</if>" >面值最大</a>
 						</div>
-						<!--<div class="f-types">-->
-							<!--<a href="{:U('Activity/coupon_list',array('atype'=>1))}" class="<if condition='$Request.param.atype eq 1'>selted</if>" ><i></i>全部类型</a>-->
-							<!--<a href="{:U('Activity/coupon_list',array('atype'=>2))}" class="<if condition='$Request.param.atype eq 2'>selted</if>"><i></i>优惠券</a>-->
-							<!--<a href="{:U('Activity/coupon_list',array('atype'=>3))}" class="<if condition='$Request.param.atype eq 3'>selted</if>"><i></i>运费券</a>-->
-							<!--<a href="{:U('Activity/coupon_list',array('atype'=>4))}" class="<if condition='$Request.param.atype eq 4'>selted</if>"><i></i>自营券</a>-->
-							<!--<a href="{:U('Activity/coupon_list',array('atype'=>5))}" class="<if condition='$Request.param.atype eq 5'>selted</if>"><i></i>商家券</a>-->
-						<!--</div>-->
-						<!--
-						<div class="f-service">
-							<a href="javascript:void(0);" class="selted" ><i></i>全部类型</a>
-							<a href="javascript:void(0);"><i></i>优惠券</a>
-						</div>
-						-->
 					</div>
 					<div class="coupon-ticket p">
 					<foreach name="coupon_list" item="vo">
-						<if condition="$vo[createnum] eq $vo[send_num]">
-						<div class="aldw-item aldw-gray">
-							<div class="q-type">
-						        <div class="q-price p">
-						            <em>￥</em>
-						            <div class="num">{$vo.money|intval}</div>
-						            <div class="txt">
-						                <div class="typ-txt">商城券</div>
-						                <div class="limit">
+						<if condition="$vo[createnum] gt $vo[send_num] or $vo[createnum] eq 0">
+                            <div class="aldw-item">
+                                <div class="q-type">
+                                    <div class="q-price p">
+                                        <em>￥</em>
+                                        <div class="num">{$vo.money|intval}</div>
+                                        <div class="txt">
+                                            <div class="typ-txt">商城券</div>
+                                            <div class="limit">
 						                    <span class="ftx-06">
 				                        		满{$vo.condition|intval}元可用
 						                    </span>
-						                </div>
-						            </div>
-						        </div>
-						        <div class="q-range">
-						            <div class="range-item">
-						                <p>{$vo.name}</p>
-						            </div>
-						            <div class="range-item">{$vo.use_scope}</div>
-						            <div class="range-item">{$vo.use_start_time|date='Y-m-d H:i',###}-{$vo.use_end_time|date='Y-m-d H:i',###}</div>
-						        </div>
-						    </div>
-						    <div class="q-opbtns ">
-						    	<a href="javascript:void(0);">
-						    		<b class="semi-circle"></b>
-						    		今日已领完
-						    	</a>
-						    </div>
-						    <div class="q-state">
-						    	<!--两种状态 btn-state:已抢完，btn-state,geten:已领取-->
-						    	<div class="btn-state"></div>
-						    </div>
-					    </div>
-						<elseif condition="$vo[isget] eq 1" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="q-range">
+                                        <div class="range-item">
+                                            <p>{$vo.name}</p>
+                                        </div>
+                                        <div class="range-item">{$vo.use_scope}</div>
+                                        <div class="range-item">{$vo.use_start_time|date='Y-m-d H:i',###}-{$vo.use_end_time|date='Y-m-d H:i',###}</div>
+                                    </div>
+                                </div>
+                                <div class="q-opbtns ">
+                                    <a href="{:U('Activity/get_coupon',array('coupon_id'=>$vo[id]))}">
+                                        <b class="semi-circle"></b>
+                                        立即领取
+                                    </a>
+                                </div>
+                                <div class="q-state">
+                                    <div class="btn-state"></div>
+                                </div>
+                            </div>
+                    <elseif condition="$vo[isget] eq 1" />
 						<div class="aldw-item aldw-useing">
 							<div class="q-type">
 						        <div class="q-price p">
@@ -105,39 +92,40 @@
 						    	<div class="btn-state geten"></div>
 						    </div>
 					    </div>
-						<else />
-						<div class="aldw-item">
-							<div class="q-type">
-						        <div class="q-price p">
-						            <em>￥</em>
-						            <div class="num">{$vo.money|intval}</div>
-						            <div class="txt">
-						                <div class="typ-txt">商城券</div>
-						                <div class="limit">
+                    <else />
+                        <div class="aldw-item aldw-gray">
+                                <div class="q-type">
+                                    <div class="q-price p">
+                                        <em>￥</em>
+                                        <div class="num">{$vo.money|intval}</div>
+                                        <div class="txt">
+                                            <div class="typ-txt">商城券</div>
+                                            <div class="limit">
 						                    <span class="ftx-06">
 				                        		满{$vo.condition|intval}元可用
 						                    </span>
-						                </div>
-						            </div>
-						        </div>
-						        <div class="q-range">
-						            <div class="range-item">
-						                <p>{$vo.name}</p>
-						            </div>
-						            <div class="range-item">{$vo.use_scope}</div>
-						            <div class="range-item">{$vo.use_start_time|date='Y-m-d H:i',###}-{$vo.use_end_time|date='Y-m-d H:i',###}</div>
-						        </div>
-						    </div>
-						    <div class="q-opbtns ">
-						    	<a href="{:U('Activity/get_coupon',array('coupon_id'=>$vo[id]))}">
-						    		<b class="semi-circle"></b>
-						    		立即领取
-						    	</a>
-						    </div>
-						    <div class="q-state">
-						    	<div class="btn-state"></div>
-						    </div>
-					    </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="q-range">
+                                        <div class="range-item">
+                                            <p>{$vo.name}</p>
+                                        </div>
+                                        <div class="range-item">{$vo.use_scope}</div>
+                                        <div class="range-item">{$vo.use_start_time|date='Y-m-d H:i',###}-{$vo.use_end_time|date='Y-m-d H:i',###}</div>
+                                    </div>
+                                </div>
+                                <div class="q-opbtns ">
+                                    <a href="javascript:void(0);">
+                                        <b class="semi-circle"></b>
+                                        今日已领完
+                                    </a>
+                                </div>
+                                <div class="q-state">
+                                    <!--两种状态 btn-state:已抢完，btn-state,geten:已领取-->
+                                    <div class="btn-state"></div>
+                                </div>
+                        </div>
 					    </if>
 					   </foreach>	
 					</div>

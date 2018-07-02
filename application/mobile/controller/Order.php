@@ -7,7 +7,7 @@
  * ----------------------------------------------------------------------------
  * 这不是一个自由软件！您只能在不用于商业目的的前提下对程序代码进行修改和使用 .
  * 不允许对程序代码以任何形式任何目的的再发布。
- * 采用TP5助手函数可实现单字母函数M D U等,也可db::name方式,可双向兼容
+ * 采用最新Thinkphp5助手函数特性实现单字母函数M D U等简写方式
  * ============================================================================
  * 2015-11-21
  */
@@ -16,6 +16,7 @@ namespace app\mobile\controller;
 use app\common\model\TeamFound;
 use app\common\logic\UsersLogic;
 use app\common\logic\OrderLogic;
+use app\common\logic\CommentLogic;
 use think\Page;
 use think\Request;
 use think\db;
@@ -61,7 +62,7 @@ class Order extends MobileBase
         if(I('get.type')){
             $where .= C(strtoupper(I('get.type')));
         }
-        $where.=' and order_prom_type < 5 ';//虚拟订单和拼团订单不列出来
+        $where.=' and prom_type < 5 ';//虚拟订单和拼团订单不列出来
         $count = M('order')->where($where)->count();
         $Page = new Page($count, 10);
         $show = $Page->show();
@@ -102,7 +103,8 @@ class Order extends MobileBase
     public function team_list(){
         $type = input('type');
         $Order = new \app\common\model\Order();
-        $order_where = ['order_prom_type' => 6, 'user_id' => $this->user_id, 'deleted' => 0,'pay_code'=>['<>','cod']];//拼团基础查询
+        $order_where = ['prom_type' => 6, 'user_id' => $this->user_id, 'deleted' => 0,'pay_code'=>['<>','cod']];//拼团基础查询
+        $listRows = 10;
         switch (strval($type)) {
             case 'WAITPAY':
                 //待支付订单
@@ -111,18 +113,28 @@ class Order extends MobileBase
                 break;
             case 'WAITTEAM':
                 //待成团订单
-                $found_order_id = Db::name('team_found')->where(['user_id'=>$this->user_id,'status'=>1])->getField('order_id',true);//团长待成团
-                $follow_order_id = Db::name('team_follow')->where(['found_user_id'=>$this->user_id,'status'=>1])->getField('order_id',true);//团员待成团
+                $found_order_id = Db::name('team_found')->where(['user_id'=>$this->user_id,'status'=>1])->limit($listRows)->order('found_id desc')->getField('order_id',true);//团长待成团
+                $follow_order_id = Db::name('team_follow')->where(['follow_user_id'=>$this->user_id,'status'=>1])->limit($listRows)->order('follow_id desc')->getField('order_id',true);//团员待成团
                 $team_order_id = array_merge($found_order_id,$follow_order_id);
                 if (count($team_order_id) > 0) {
                     $order_where['order_id'] = ['in', $team_order_id];
+                }else{
+                    $order_where['order_id'] = 0;
                 }
                 break;
             case 'WAITSEND':
                 //待发货
                 $order_where['pay_status'] = 1;
                 $order_where['shipping_status'] = ['<>',1];
-                $order_where['order_status'] = ['in','0,1'];
+                $order_where['order_status'] = ['elt',1];
+                $found_order_id = Db::name('team_found')->where(['user_id'=>$this->user_id,'status'=>2])->limit($listRows)->order('found_id desc')->getField('order_id',true);//团长待成团
+                $follow_order_id = Db::name('team_follow')->where(['follow_user_id'=>$this->user_id,'status'=>2])->limit($listRows)->order('follow_id desc')->getField('order_id',true);//团员待成团
+                $team_order_id = array_merge($found_order_id,$follow_order_id);
+                if (count($team_order_id) > 0) {
+                    $order_where['order_id'] = ['in', $team_order_id];
+                }else{
+                    $order_where['order_id'] = 0;
+                }
                 break;
             case 'WAITRECEIVE':
                 //待收货
@@ -136,7 +148,7 @@ class Order extends MobileBase
         }
         $request = Request::instance();
         $order_count = $Order->where($order_where)->count();
-        $page = new Page($order_count, 10);
+        $page = new Page($order_count, $listRows);
         $order_list = $Order->with('orderGoods')->where($order_where)->limit($page->firstRow . ',' . $page->listRows)->order('order_id desc')->select();
         $this->assign('order_list',$order_list);
         if ($request->isAjax()) {
@@ -150,7 +162,7 @@ class Order extends MobileBase
         $order_id = input('order_id');
         $Order = new \app\common\model\Order();
         $TeamFound = new TeamFound();
-        $order_where = ['order_prom_type' => 6, 'order_id' => $order_id, 'deleted' => 0];
+        $order_where = ['prom_type' => 6, 'order_id' => $order_id, 'deleted' => 0];
         $order = $Order->with('orderGoods')->where($order_where)->find();
         if (empty($order)) {
             $this->error('该订单记录不存在或已被删除');
@@ -187,8 +199,16 @@ class Order extends MobileBase
         $model = new UsersLogic();
         $data = $model->get_order_goods($order_info['order_id']);
         $order_info['goods_list'] = $data['result'];
-        //$order_info['total_fee'] = $order_info['goods_price'] + $order_info['shipping_price'] - $order_info['integral_money'] -$order_info['coupon_price'] - $order_info['discount'];
-
+        if($order_info['prom_type'] == 4){
+            $pre_sell_item =  M('goods_activity')->where(array('act_id'=>$order_info['prom_id']))->find();
+            $pre_sell_item = array_merge($pre_sell_item,unserialize($pre_sell_item['ext_info']));
+            $order_info['pre_sell_is_finished'] = $pre_sell_item['is_finished'];
+            $order_info['pre_sell_retainage_start'] = $pre_sell_item['retainage_start'];
+            $order_info['pre_sell_retainage_end'] = $pre_sell_item['retainage_end'];
+            $order_info['pre_sell_deliver_goods'] = $pre_sell_item['deliver_goods'];
+        }else{
+            $order_info['pre_sell_is_finished'] = -1;//没有参与预售的订单
+        }
         $region_list = get_region_list();
         $invoice_no = M('DeliveryDoc')->where("order_id", $id)->getField('invoice_no', true);
         $order_info[invoice_no] = implode(' , ', $invoice_no);
@@ -204,6 +224,23 @@ class Order extends MobileBase
         if (I('waitreceive')) {  //待收货详情
             return $this->fetch('wait_receive_detail');
         }
+        return $this->fetch();
+    }
+
+    /**
+     * 物流信息
+     * @return mixed
+     */
+    public function express()
+    {
+        $order_id = I('get.order_id/d', 0);
+        $order_goods = M('order_goods')->where("order_id", $order_id)->select();
+        if(empty($order_goods) || empty($order_id)){
+            $this->error('没有获取到订单信息');
+        }
+        $delivery = M('delivery_doc')->where("order_id", $order_id)->find();
+        $this->assign('order_goods', $order_goods);
+        $this->assign('delivery', $delivery);
         return $this->fetch();
     }
 
@@ -244,7 +281,7 @@ class Order extends MobileBase
         $order_id = I('get.order_id/d');
 
         $order = M('order')
-            ->field('order_id,pay_code,pay_name,user_money,integral_money,coupon_price,order_amount')
+            ->field('order_id,pay_code,pay_name,user_money,integral_money,coupon_price,order_amount,consignee,mobile')
             ->where(['order_id' => $order_id, 'user_id' => $this->user_id])
             ->find();
 
@@ -283,7 +320,6 @@ class Order extends MobileBase
         $confirm_time = $confirm_time_config * 24 * 60 * 60;
         if ((time() - $order['confirm_time']) > $confirm_time && !empty($order['confirm_time'])) {
             $this->error('已经超过' . $confirm_time_config . "天内退货时间");
-//            return ['result'=>-1,'msg'=>'已经超过' . $confirm_time_config . "天内退货时间"];
         }
         if(empty($order))$this->error('非法操作');
         if(IS_POST)
@@ -299,6 +335,7 @@ class Order extends MobileBase
         $region_id[] = 0;
         $return_address = M('region')->where("id in (".implode(',', $region_id).")")->getField('id,name');
         $this->assign('return_address', $return_address);
+        $this->assign('return_type', C('RETURN_TYPE'));
         $this->assign('goods', $order_goods);
         $this->assign('order',$order);
         return $this->fetch();
@@ -313,13 +350,14 @@ class Order extends MobileBase
         $count = M('return_goods')->where("user_id", $this->user_id)->count();
         $pagesize = C('PAGESIZE');
         $page = new Page($count, $pagesize);
-        $list = M('return_goods')->where("user_id", $this->user_id)->order("id desc")->limit("{$page->firstRow},{$page->listRows}")->select();
-        $goods_id_arr = get_arr_column($list, 'goods_id');  //获取商品ID
-        if (!empty($goods_id_arr)){
-            $goodsList = M('goods')->where("goods_id", "in", implode(',', $goods_id_arr))->getField('goods_id,goods_name');
-        }
+        $list = Db::name('return_goods')->alias('rg')
+            ->field('rg.*,og.goods_name,og.spec_key_name')
+            ->join('order_goods og','rg.rec_id=og.rec_id','LEFT')
+            ->where(['rg.user_id'=>$this->user_id])
+            ->order("rg.id desc")
+            ->limit("{$page->firstRow},{$page->listRows}")
+            ->select();
         $state = C('REFUND_STATUS');
-        $this->assign('goodsList', $goodsList);
         $this->assign('list', $list);
         $this->assign('state',$state);
         $this->assign('page', $page->show());// 赋值分页输出
@@ -337,15 +375,35 @@ class Order extends MobileBase
     {
         $id = I('id/d', 0);
         $return_goods = M('return_goods')->where("id = $id")->find();
+        if(empty($return_goods)){
+            $this->error('参数错误');
+        }
         $return_goods['seller_delivery'] = unserialize($return_goods['seller_delivery']);  //订单的物流信息，服务类型为换货会显示
+        $return_goods['delivery'] = unserialize($return_goods['delivery']);  //订单的物流信息，服务类型为换货会显示
         if ($return_goods['imgs'])
             $return_goods['imgs'] = explode(',', $return_goods['imgs']);
-        $goods = M('goods')->where("goods_id = {$return_goods['goods_id']} ")->find();
-        $state = C('REFUND_STATUS');
-        $this->assign('state',$state);
+        $goods = M('order_goods')->where("rec_id = {$return_goods['rec_id']} ")->find();
+        $this->assign('state',C('REFUND_STATUS'));
+        $this->assign('return_type', C('RETURN_TYPE'));
         $this->assign('goods', $goods);
         $this->assign('return_goods', $return_goods);
         return $this->fetch();
+    }
+
+    /**
+     * 修改退货状态，发货
+     */
+    public function checkReturnInfo()
+    {
+        $data = I('post.');
+        $data['delivery'] = serialize($data['delivery']);
+        $data['status'] = 2;
+        $res = M('return_goods')->where(['id'=>$data['id'],'user_id'=>$this->user_id])->save($data);
+        if($res !== false){
+            $this->ajaxReturn(['status'=>1,'msg'=>'发货提交成功','url'=>'']);
+        }else{
+            $this->ajaxReturn(['status'=>-1,'msg'=>'提交失败','url'=>'']);
+        }
     }
 
     public function return_goods_refund()
@@ -377,12 +435,15 @@ class Order extends MobileBase
      */
     public function return_goods_cancel(){
         $id = I('id',0);
-        if(empty($id))$this->error('参数错误');
+        if(empty($id))$this->ajaxReturn(['status'=>-1,'msg'=>'参数错误']);
         $return_goods = M('return_goods')->where(array('id'=>$id,'user_id'=>$this->user_id))->find();
-        if(empty($return_goods)) $this->error('参数错误');
-        M('return_goods')->where(array('id'=>$id))->save(array('status'=>-2,'canceltime'=>time()));
-        $this->success('取消成功',U('Order/return_goods_list'));
-        exit;
+        if(empty($return_goods)) $this->ajaxReturn(['status'=>-1,'msg'=>'参数错误']);
+        $res= M('return_goods')->where(array('id'=>$id))->save(array('status'=>-2,'canceltime'=>time()));
+        if ($res !== false){
+            $this->ajaxReturn(['status'=>1,'msg'=>'取消成功']);
+        }else{
+            $this->ajaxReturn(['status'=>-1,'msg'=>'取消失败']);
+        }
     }
     /**
      * 换货商品确认收货
@@ -411,12 +472,14 @@ class Order extends MobileBase
     {
         $user_id = $this->user_id;
         $status = I('get.status');
-        $logic = new \app\common\logic\CommentLogic;
-        $result = $logic->getComment($user_id, $status); //获取评论列表
-        $this->assign('comment_list', $result['result']);
-        if ($_GET['is_ajax']) {
+        $logic = new CommentLogic;
+        $data = $logic->getComment($user_id, $status); //获取评论列表
+        $this->assign('page', $data['page']);// 赋值分页输出
+        $this->assign('comment_page', $data['page']);
+        $this->assign('comment_list', $data['result']);
+        $this->assign('active', 'comment');
+        if(I('is_ajax')){
             return $this->fetch('ajax_comment_list');
-            exit;
         }
         return $this->fetch();
     }
@@ -429,18 +492,20 @@ class Order extends MobileBase
         if (IS_POST) {
             // 晒图片
             $files = request()->file('comment_img_file');
-            $save_url = 'public/upload/comment/' . date('Y', time()) . '/' . date('m-d', time());
-            foreach ($files as $file) {
-                // 移动到框架应用根目录/public/uploads/ 目录下
-                $image_upload_limit_size = config('image_upload_limit_size');
-                $info = $file->rule('uniqid')->validate(['size' => $image_upload_limit_size, 'ext' => 'jpg,png,gif,jpeg'])->move($save_url);
-                if ($info) {
-                    // 成功上传后 获取上传信息
-                    // 输出 jpg
-                    $comment_img[] = '/'.$save_url . '/' . $info->getFilename();
-                } else {
-                    // 上传失败获取错误信息
-                    $this->error($file->getError());
+            $save_url = UPLOAD_PATH.'comment/' . date('Y', time()) . '/' . date('m-d', time());
+            if($files) {
+                foreach ($files as $file) {
+                    // 移动到框架应用根目录/public/uploads/ 目录下
+                    $image_upload_limit_size = config('image_upload_limit_size');
+                    $info = $file->rule('uniqid')->validate(['size' => $image_upload_limit_size, 'ext' => 'jpg,png,gif,jpeg'])->move($save_url);
+                    if ($info) {
+                        // 成功上传后 获取上传信息
+                        // 输出 jpg
+                        $comment_img[] = '/' . $save_url . '/' . $info->getFilename();
+                    } else {
+                        // 上传失败获取错误信息
+                        $this->error($file->getError());
+                    }
                 }
             }
             if (!empty($comment_img)) {
@@ -449,6 +514,7 @@ class Order extends MobileBase
 
             $user_info = session('user');
             $logic = new UsersLogic();
+            $add['rec_id'] = I('rec_id/d');
             $add['goods_id'] = I('goods_id/d');
             $add['email'] = $user_info['email'];
             $hide_username = I('hide_username');
@@ -478,7 +544,9 @@ class Order extends MobileBase
         }
         $rec_id = I('rec_id/d');
         $order_goods = M('order_goods')->where("rec_id", $rec_id)->find();
+        $order_info = Db::name('order')->where("order_id", $order_goods['order_id'])->find();
         $this->assign('order_goods', $order_goods);
+        $this->assign('order_info', $order_info);
         return $this->fetch();
     }
 
@@ -504,7 +572,6 @@ class Order extends MobileBase
         $model = new UsersLogic();
         foreach ($order_list as $k => $v) {
             $order_list[$k] = set_btn_order_status($v);  // 添加属性  包括按钮显示属性 和 订单状态显示属性
-            //$order_list[$k]['total_fee'] = $v['goods_amount'] + $v['shipping_fee'] - $v['integral_money'] -$v['bonus'] - $v['discount']; //订单总额
             $data = $model->get_order_goods($v['order_id']);
             $order_list[$k]['goods_list'] = $data['result'];
         }
@@ -529,4 +596,64 @@ class Order extends MobileBase
         return $this->fetch();
     }
 
+    /**
+     * 评论详情
+     * @return mixed
+     */
+    public function comment_info(){
+        $commentLogic = new \app\common\logic\CommentLogic;
+        $comment_id = I('comment_id/d');
+        $res = $commentLogic->getCommentInfo($comment_id);
+        if(empty($res)){
+            $this->error('参数错误！！');
+        }
+        if(!empty($res['comment_info']['img'])) $res['comment_info']['img'] = unserialize($res['comment_info']['img']);
+        $user = get_user_info($res['comment_info']['user_id']);
+        $res['comment_info']['nickname'] = $user['nickname'];
+        $this->assign('comment_info',$res['comment_info']);
+        $this->assign('comment_id',$res['comment_info']['comment_id']);
+        $this->assign('reply',$res['reply']);
+        $this->assign('user',$this->user);
+        return $this->fetch();
+    }
+
+    /**
+     * 评论别的用户评论
+     */
+    public function replyComment(){
+        $data=I('post.');
+        $data['reply_time'] = time();
+        $data['deleted'] = 0;
+        $return = Db::name('reply')->add($data);
+        if($return){
+            Db::name('comment')->where(['comment_id'=>$data['comment_id']])->setInc('reply_num');
+            $data['reply_time'] = date('Y-m-d H:m',$data['reply_time']);
+            $this->ajaxReturn(['status'=>1,'msg'=>'评论成功！','result'=>$data]);
+            exit;
+        } else {
+            $this->ajaxReturn(['status'=>0,'msg'=>"评论失败"]);
+        }
+    }
+
+    /**
+     *  点赞
+     */
+    public function ajaxZan()
+    {
+        $comment_id = I('post.comment_id/d');
+        $user_id = $this->user_id;
+        $comment_info = M('comment')->where(array('comment_id' => $comment_id))->find();  //获取点赞用户ID
+        $comment_user_id_array = explode(',', $comment_info['zan_userid']);
+        if (in_array($user_id, $comment_user_id_array)) {  //判断用户有没点赞过
+            $result = ['status' => 0, 'msg' => '您已经点过赞了~', 'result' => ''];
+        } else {
+            array_push($comment_user_id_array, $user_id);  //加入用户ID
+            $comment_user_id_string = implode(',', $comment_user_id_array);
+            $comment_data['zan_num'] = $comment_info['zan_num'] + 1;  //点赞数量加1
+            $comment_data['zan_userid'] = $comment_user_id_string;
+            M('comment')->where(array('comment_id' => $comment_id))->save($comment_data);
+            $result = ['status' => 1, 'msg' => '点赞成功~', 'result' => ''];
+        }
+        exit(json_encode($result));
+    }
 }

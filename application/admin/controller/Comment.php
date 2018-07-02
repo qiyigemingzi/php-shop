@@ -7,7 +7,7 @@
  * ----------------------------------------------------------------------------
  * 这不是一个自由软件！您只能在不用于商业目的的前提下对程序代码进行修改和使用 .
  * 不允许对程序代码以任何形式任何目的的再发布。
- * 采用TP5助手函数可实现单字母函数M D U等,也可db::name方式,可双向兼容
+ * 采用最新Thinkphp5助手函数特性实现单字母函数M D U等简写方式
  * ============================================================================
  * 评论管理控制器
  * Date: 2015-10-20
@@ -17,6 +17,7 @@ namespace app\admin\controller;
 
 use think\AjaxPage;
 use think\Page;
+use think\Db;
 
 class Comment extends Base {
 
@@ -117,21 +118,20 @@ class Comment extends Base {
     }
     
     public function ajax_ask_list(){
-    	$model = M('goods_consult');
-    	$username = I('username','','trim');
+    	$username = I('nickname','','trim');
     	$content = I('content','','trim');
-    	$where=' parent_id = 0';
+    	$where['parent_id']= 0;
     	if($username){
-    		$where .= " AND username='$username'";
+    		$where['username']= $username;
     	}
     	if($content){
-    		$where .= " AND content like '%{$content}%'";
+    		$where['content'] = ['like', '%{$content}%'];
     	}
-        $count = $model->where($where)->count();        
+        $count = Db::name('goods_consult')->where($where)->count();
         $Page  = $pager = new AjaxPage($count,10);
         $show  = $Page->show();            	
     	
-        $comment_list = $model->where($where)->order('add_time DESC')->limit($Page->firstRow.','.$Page->listRows)->select(); 
+        $comment_list = Db::name('goods_consult')->where($where)->order('add_time DESC')->limit($Page->firstRow.','.$Page->listRows)->select();
     	if(!empty($comment_list))
     	{
     		$goods_id_arr = get_arr_column($comment_list, 'goods_id');

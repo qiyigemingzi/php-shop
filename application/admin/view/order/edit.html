@@ -36,13 +36,13 @@
                                 <tr>
                                     <td>地址:</td>
                                     <td>
-                                        <select onchange="get_city(this)" id="province" name="province">
+                                        <select onblur="get_city(this,0)" id="province" name="province">
                                             <option value="0">选择省份</option>
                                             <volist name="province" id="vo">
                                                 <option value="{$vo.id}" >{$vo.name}</option>
                                             </volist>
                                         </select>
-                                        <select onchange="get_area(this)" id="city" name="city">
+                                        <select onblur="get_area(this)" id="city" name="city">
                                             <option value="0">选择城市</option>
                                             <volist name="city" id="vo">
                                                 <option value="{$vo.id}">{$vo.name}</option>

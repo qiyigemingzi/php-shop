@@ -6,6 +6,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
 	<link rel="stylesheet" type="text/css" href="__STATIC__/css/tpshop.css" />
 	<script src="__STATIC__/js/jquery-1.11.3.min.js" type="text/javascript" charset="utf-8"></script>
+    <link rel="shortcut icon" type="image/x-icon" href="{$tpshop_config.shop_info_store_ico|default='/public/static/images/logo/storeico_default.png'}" media="screen"/>
 	<script src="__PUBLIC__/js/layer/layer-min.js"></script>
 	<script src="__PUBLIC__/js/global.js"></script>
 	<script src="__PUBLIC__/js/pc_common.js"></script>
@@ -24,12 +25,6 @@
 	<div class="w1430">
 		<div class="search-path fl">
 			<a href="{:U('Home/Goods/goodsList',array('id'=>$cat_id))}">全部结果</a>
-			<i class="litt-xyb"></i>
-			<if condition="$goodsCate['parent_id'] eq 0">
-				<a href="{:U('Home/Goods/goodsList',array('id'=>$goodsCate['id']))}">{$goodsCate.parent_name}</a>
-				<else/>
-				<a href="{:U('Home/Goods/goodsList',array('id'=>$goodsCate['parent_id']))}">{$goodsCate.parent_name}</a>
-			</if>
 			<i class="litt-xyb"></i>
 			<!--如果当前分类是三级分类 则二级也要显示-->
 			<if condition="$goodsCate[level] eq 3">
@@ -106,6 +101,30 @@
 <div class="search-opt troblect">
     <div class="w1430">
         <div class="opt-list">
+            <!-- 分类筛选 start -->
+            <if condition="$goodsCate[level] lt 3">
+                <dl class="brand-section m-tr">
+                    <dt>分类筛选</dt>
+                    <dd class="ri-section">
+                        <div class="lf-list">
+                            <div class="brand-list">
+                                <div class="clearfix p">
+                                    <foreach name="goods_category" item="v" key="k">
+                                        <if condition="$v[parent_id] eq $goodsCate[id]">
+                                            <a href="{:U('Home/Goods/goodsList',array('id'=>$v['id']))}">
+                                                <span >{$v[name]}</span>
+                                            </a>
+                                        </if>
+                                    </foreach>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="lr-more">
+                            <a href="javascript:void(0)"><span class="gd_more">更多</span><i class="litt-tcr"></i></a>
+                        </div>
+                    </dd>
+                </dl>
+            </if>
             <!-- 品牌筛选 start -->
             <if condition="$filter_brand neq null">
                 <dl class="brand-section m-tr">
@@ -115,10 +134,10 @@
                             <div class="brand-box brand-list">
                                 <div class="clearfix p">
                                     <foreach name="filter_brand" item="v" key="k">
-                                        <a href="{$v[href]}" data-href="{$v[href]}"  data-key='brand' data-val='{$v[id]}'>
+                                        <a href="{$v[href]}" data-href="{$v[href]}"  data-key='brand' data-val='{$v[id]}' style="line-height: 33px;">
                                             <i class="litt-zd"></i>
                                             <img src="{$v[logo]}"/>
-                                            <span>品牌-{$v[name]}</span>
+                                            <span>{$v[name]}</span>
                                         </a>
                                     </foreach>
                                 </div>
@@ -387,7 +406,7 @@
 			type: "GET",
 			url: "/index.php?m=Home&c=Index&a=ajax_favorite&i=7&p="+favorite_page,//+tab,
 			success: function (data) {
-				if(data == ''){
+				if(data == '' && favorite_page > 1){
 					favorite_page = 0;
 					favourite();
 				}else{

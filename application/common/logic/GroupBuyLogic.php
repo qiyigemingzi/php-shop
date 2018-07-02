@@ -17,6 +17,7 @@ namespace app\common\logic;
 use app\common\model\GroupBuy;
 use app\common\model\SpecGoodsPrice;
 use app\common\model\Goods;
+use app\common\util\TpshopException;
 use think\Model;
 use think\db;
 
@@ -157,25 +158,28 @@ class GroupBuyLogic extends Prom
         }
         return true;
     }
+
     /**
+     * 团购商品立即购买
      * @param $buyGoods
-     * @return array
+     * @return mixed
+     * @throws TpshopException
      */
     public function buyNow($buyGoods){
         //活动是否已经结束
         if($this->GroupBuy['is_end'] == 1 || empty($this->GroupBuy)){
-            return array('status' => 0, 'msg' => '团购活动已结束', 'result' => '');
+            throw new TpshopException('团购商品立即购买',0,['status' => 0, 'msg' => '团购活动已结束', 'result' => '']);
         }
         if($this->checkActivityIsAble()){
             $groupBuyPurchase = $this->GroupBuy['goods_num'] - $this->GroupBuy['buy_num'];//团购剩余库存
             if($buyGoods['goods_num'] > $groupBuyPurchase){
-                return array('status' => 0, 'msg' => '商品库存不足，剩余'.$groupBuyPurchase, 'result' => '');
+                throw new TpshopException('团购商品立即购买',0,['status' => 0, 'msg' => '商品库存不足，剩余'.$groupBuyPurchase, 'result' => '']);
             }
             $buyGoods['member_goods_price'] = $this->GroupBuy['price'];
             $buyGoods['prom_type'] = 2;
             $buyGoods['prom_id'] = $this->GroupBuy['id'];
         }
-        return array('status' => 1, 'msg' => 'success', 'result' => ['buy_goods'=>$buyGoods]);
+        return $buyGoods;
     }
 
 }

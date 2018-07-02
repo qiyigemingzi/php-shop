@@ -8,7 +8,7 @@ ol, ul{list-style:none outside none;padding:0;margin:0;}
 .list1 .dt{float:left;height:18px;text-align:right;width:72px;}
 .list1 .dd{width:350px;float:left;}
 .list1 .content{z-index:100}
-#dispatching_select{ outline: none;height: 28px;width: 120px;font-family : Trebuchet MS ;position: relative;top: -2px;color: #666;border:1px solid #cecbce; appearance:none; -moz-appearance:none; -webkit-appearance:none;border-right: 0; /*替换选择框的最右侧显示小箭头图片*/ background: url(../images/btn20121210.png) no-repeat scroll right center transparent; /*为下拉小箭头留出一点位置，避免被文字覆盖*/ padding:0 2px;background-position:115px 0}
+#dispatching_desc{vertical-align: middle;  position: relative;  top: -4px;  left: 9px;  color: rgb(102, 102, 102);}
 #dispatching_msg{vertical-align: middle;position: relative;top: -4px;left: -1px}
 .store-selector{position:relative;float:left;height:30px;margin-right:6px}
 .store-selector dl,.store-selector dt,.store-selector dd{float:none;color:#999}

@@ -17,6 +17,7 @@ namespace app\common\logic;
 use app\common\model\PromGoods;
 use app\common\model\Goods;
 use app\common\model\SpecGoodsPrice;
+use app\common\util\TpshopException;
 use think\Model;
 use think\db;
 
@@ -47,13 +48,11 @@ class PromGoodsLogic extends Prom
         if ($this->promGoods) {
             //每次初始化都检测活动是否失效，如果失效就更新活动和商品恢复成普通商品
             if ($this->checkActivityIsEnd() && $this->promGoods['is_end'] == 0) {
+                Db::name('goods')->where(['prom_type'=>3,'prom_id' =>$this->goods['prom_id']])->save(['prom_type' => 0, 'prom_id' => 0]);
                 if($this->specGoodsPrice){
-                    Db::name('spec_goods_price')->where('item_id', $this->specGoodsPrice['item_id'])->save(['prom_type' => 0, 'prom_id' => 0]);
-                    Db::name('goods')->where("goods_id", $this->specGoodsPrice['goods_id'])->save(['prom_type' => 0, 'prom_id' => 0]);
+                    Db::name('spec_goods_price')->where(['prom_type'=>3,'prom_id' =>$this->specGoodsPrice['prom_id']])->save(['prom_type' => 0, 'prom_id' => 0]);
                     unset($this->specGoodsPrice);
-                    $this->specGoodsPrice = SpecGoodsPrice::get($specGoodsPrice['item_id']);
-                }else{
-                    Db::name('goods')->where("goods_id", $this->goods['goods_id'])->save(['prom_type' => 0, 'prom_id' => 0]);
+                    $this->specGoodsPrice = SpecGoodsPrice::get($specGoodsPrice['item_id'],'',true);
                 }
                 $this->promGoods->is_end = 1;
                 $this->promGoods->save();
@@ -170,10 +169,10 @@ class PromGoodsLogic extends Prom
         }
         return true;
     }
-    /**
+/*    /**
      * @param $buyGoods
      * @return array
-     */
+     *
     public function buyNow($buyGoods){
         if(!$this->checkActivityIsEnd() && $this->checkActivityIsAble()){
             $buyGoods['member_goods_price'] = $this->getPromotionPrice($buyGoods['member_goods_price']);
@@ -181,5 +180,84 @@ class PromGoodsLogic extends Prom
         $buyGoods['prom_type'] = 1;
         $buyGoods['prom_id'] = $this->promGoods['id'];
         return array('status' => 1, 'msg' => 'success', 'result' => ['buy_goods'=>$buyGoods]);
+    }*/
+
+    /**
+     * 促销商品立即购买
+     * @param $buyGoods
+     * @return mixed
+     * @throws TpshopException
+     */
+    public function buyNow($buyGoods){
+        if(!$this->checkActivityIsEnd() && $this->checkActivityIsAble()){
+            if($buyGoods['goods_num'] > $this->promGoods['buy_limit']){
+                throw new TpshopException('促销商品立即购买', 0, ['status' => 0, 'msg' => '每人限购' . $this->promGoods['buy_limit'] . '件', 'result' => '']);
+            }
+            $buyGoods['member_goods_price'] = $this->getPromotionPrice($buyGoods['member_goods_price']);
+        }
+        $residue_buy_limit = $this->getPromoGoodsResidueGoodsNum($buyGoods['user_id']); //获取用户还能购买商品数量
+        $userPromOrderGoodsNum = $this->getUserPromOrderGoodsNum($buyGoods['user_id']); //获取用户已购商品数量
+        $userBuyGoodsNum = $buyGoods['goods_num'] + $userPromOrderGoodsNum;  //已经下单+要买
+        if($userBuyGoodsNum > $this->promGoods['buy_limit']){
+            throw new TpshopException('促销商品立即购买', 0, ['status' => 0, 'msg' => '每人限购'.$this->promGoods['buy_limit'].'件，您已下单'.$userPromOrderGoodsNum.'件', 'result' => '']);
+        }
+        if($buyGoods['goods_num'] > $residue_buy_limit){  //不算购物车的
+            throw new TpshopException('促销商品立即购买', 0, ['status' => 0, 'msg' => '商品库存不足，你只能购买'.$residue_buy_limit, 'result' => '']);
+        }
+        $buyGoods['prom_type'] = 3;
+        $buyGoods['prom_id'] = $this->promGoods['id'];
+        return $buyGoods;
+    }
+
+    /**
+     * 获取用户抢购已购商品数量
+     * @param $user_id
+     * @return float|int
+     */
+    public function getUserPromOrderGoodsNum($user_id){
+        $orderWhere = [
+            'user_id'=>$user_id,
+            'order_status' => ['<>', 3],
+            'add_time' => ['between', [$this->promGoods['start_time'], $this->promGoods['end_time']]]
+        ];
+        $order_id_arr = Db::name('order')->where($orderWhere)->getField('order_id', true);
+        if ($order_id_arr) {
+            $orderGoodsWhere = [
+                'prom_id' => $this->promGoods['id'],
+                'prom_type' => 3,
+                'order_id' => ['in', implode(',', $order_id_arr)],
+                'goods_id' => $this->goods['goods_id'],
+            ];
+            if($this->specGoodsPrice){
+                $orderGoodsWhere[ 'spec_key'] = $this->specGoodsPrice['key'];
+            }
+            $goods_num = DB::name('order_goods')->where($orderGoodsWhere)->sum('goods_num');
+            if($goods_num){
+                return $goods_num;
+            }else{
+                return 0;
+            }
+        } else {
+            return 0;
+        }
+    }
+    /**
+     * 获取用户剩余购买促销商品数量
+     * @param $user_id
+     * @return mixed
+     */
+    public function getPromoGoodsResidueGoodsNum($user_id){
+        $user_purchase_num = $this->getUserPromOrderGoodsNum($user_id); //用户已购商品数量
+        //限购》已购
+        $residue_buy_limit = $this->promGoods['buy_limit'] - $user_purchase_num;  //用户还能买的数量
+        $store_count = $this->goods['store_count'];  //剩余库存
+        if($this->specGoodsPrice){
+            $store_count = $this->specGoodsPrice['store_count'];
+        }
+        if($residue_buy_limit > $store_count){
+            return $store_count;
+        }else{
+            return $residue_buy_limit;
+        };
     }
 }

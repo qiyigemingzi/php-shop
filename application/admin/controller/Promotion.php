@@ -7,7 +7,7 @@
  * ----------------------------------------------------------------------------
  * 这不是一个自由软件！您只能在不用于商业目的的前提下对程序代码进行修改和使用 .
  * 不允许对程序代码以任何形式任何目的的再发布。
- * 采用TP5助手函数可实现单字母函数M D U等,也可db::name方式,可双向兼容
+ * 采用最新Thinkphp5助手函数特性实现单字母函数M D U等简写方式
  * ============================================================================
  * Author: 当燃
  * 专题管理
@@ -41,9 +41,9 @@ class Promotion extends Base
     public function prom_goods_list()
     {
         $PromGoods = new PromGoods();
-        $count = $PromGoods->where('')->count();
+        $count = $PromGoods->count();
         $Page = new Page($count, 10);
-        $prom_list = $PromGoods->where('')->limit($Page->firstRow . ',' . $Page->listRows)->select();
+        $prom_list = $PromGoods->order('start_time desc')->limit($Page->firstRow . ',' . $Page->listRows)->select();
         $this->assign('page',$Page);
         $this->assign('prom_list', $prom_list);
         return $this->fetch();
@@ -80,11 +80,11 @@ class Promotion extends Base
         $promGoods = $data['goods'];
         $promGoodsValidate = Loader::validate('PromGoods');
         if(!$promGoodsValidate->batch()->check($data)){
-            $return = ['status' => 0,'msg' =>'操作失败',
-                'result'    => $promGoodsValidate->getError(),
-                'token'       =>  \think\Request::instance()->token(),
-            ];
-            $this->ajaxReturn($return);
+            $error = '';
+            foreach ($promGoodsValidate->getError() as $value){
+                $error .= $value.'！';
+            }
+            $this->ajaxReturn(['status' => 0,'msg' =>$error,'token'=>\think\Request::instance()->token()]);
         }
         $data['start_time'] = strtotime($data['start_time']);
         $data['end_time'] = strtotime($data['end_time']);
@@ -119,11 +119,12 @@ class Promotion extends Base
         $prom_id = I('id');
         $order_goods = M('order_goods')->where("prom_type = 3 and prom_id = $prom_id")->find();
         if (!empty($order_goods)) {
-            $this->error("该活动有订单参与不能删除!");
+            $this->ajaxReturn(['status'=>-1,'msg'=>"该活动有订单参与不能删除!"]);
         }
         M("goods")->where("prom_id=$prom_id and prom_type=3")->save(array('prom_id' => 0, 'prom_type' => 0));
+        Db::name('spec_goods_price')->where(['prom_type'=>3,'prom_id'=>$prom_id])->save(array('prom_id'=>0,'prom_type'=>0));
         M('prom_goods')->where("id=$prom_id")->delete();
-        $this->success('删除活动成功', U('Promotion/prom_goods_list'));
+        $this->ajaxReturn(['status'=>1,'msg'=>'删除活动成功']);
     }
 
 
@@ -171,8 +172,8 @@ class Promotion extends Base
         $info['end_time'] = date('Y-m-d', time() + 3600 * 24 * 60);
         if ($prom_id > 0) {
             $info = M('prom_order')->where("id=$prom_id")->find();
-            $info['start_time'] = date('Y-m-d', $info['start_time']);
-            $info['end_time'] = date('Y-m-d', $info['end_time']);
+            $info['start_time'] = date('Y-m-d H:i:s', $info['start_time']);
+            $info['end_time'] = date('Y-m-d H:i:s', $info['end_time']);
         }
         $this->assign('info', $info);
         $this->assign('min_date', date('Y-m-d'));
@@ -334,7 +335,7 @@ class Promotion extends Base
         $where = ['is_on_sale' => 1, 'store_count' => ['gt', 0],'is_virtual'=>0,'exchange_integral'=>0];
         $prom_type = input('prom_type/d');
         if($goods_id){
-            $where['goods_id'] = ['<>',$goods_id];
+            $where['goods_id'] = ['notin',trim($goods_id,',')];
         }
         if($intro){
             $where[$intro] = 1;
@@ -354,7 +355,7 @@ class Promotion extends Base
             if($prom_type == 3){
                 //优惠促销
                 if ($prom_id) {
-                    $query->where(['prom_id' => $prom_id, 'prom_type' => 3])->whereor('prom_type', 0);
+                    $query->where(['prom_id' => $prom_id, 'prom_type' => 3])->whereor('prom_id', 0);
                 } else {
                     $query->where('prom_type', 0);
                 }
@@ -370,13 +371,13 @@ class Promotion extends Base
             if($prom_type == 3){
                 //优惠促销
                 if ($prom_id) {
-                    $query->where(['prom_id' => $prom_id, 'prom_type' => 3])->whereor('prom_type', 0);
+                    $query->where(['prom_id' => $prom_id, 'prom_type' => 3])->whereor('prom_id', 0);
                 } else {
                     $query->where('prom_type', 0);
                 }
             }else if(in_array($prom_type,[1,2,6])){
                 //抢购，团购
-                $query->where('prom_type','in' ,[0,$prom_type]);
+                $query->where('prom_type','in' ,[0,$prom_type])->where('prom_id',0);
             }else{
                 $query->where('prom_type',0);
             }

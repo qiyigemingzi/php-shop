@@ -12,6 +12,8 @@
  * Date: 2017-05-11
  */
 namespace app\common\logic;
+use app\common\logic\team\TeamActivityLogic;
+
 /**
  * 商品活动工厂类
  * Class CatsLogic

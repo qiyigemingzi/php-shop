@@ -8,6 +8,7 @@
  * 这不是一个自由软件！您只能在不用于商业目的的前提下对程序代码进行修改和使用 .
  * 不允许对程序代码以任何形式任何目的的再发布。
  * 如果商业用途务必到官方购买正版授权, 以免引起不必要的法律纠纷.
+ * 采用最新Thinkphp5助手函数特性实现单字母函数M D U等简写方式
  * ============================================================================
  * $Author: IT宇宙人 2015-08-10 $
  */
@@ -15,16 +16,15 @@ namespace app\mobile\controller;
 
 use app\common\logic\CouponLogic;
 use app\common\logic\GoodsLogic;
-use app\common\logic\TeamFoundLogic;
-use app\common\logic\TeamOrderLogic;
+use app\common\logic\Pay;
+use app\common\logic\PlaceOrder;
+use app\common\logic\team\TeamOrder;
 use app\common\model\Goods;
 use app\common\model\Order;
 use app\common\model\OrderGoods;
-use app\common\model\ShippingArea;
 use app\common\model\TeamActivity;
-use app\common\model\TeamFollow;
 use app\common\model\TeamFound;
-use app\common\model\UserAddress;
+use app\common\util\TpshopException;
 use think\Db;
 use think\Page;
 
@@ -109,8 +109,16 @@ class Team extends MobileBase
             }
         }
         $TeamActivity = new TeamActivity();
-        $list = $TeamActivity->alias('t')->join('__GOODS__ g', 'g.goods_id = t.goods_id')
-            ->with('specGoodsPrice,goods')->where($team_where)->group('t.goods_id')->order('t.team_id desc')->page($p, 10)->select();
+        $list = $TeamActivity->field('t.*')->alias('t')->join('__GOODS__ g', 'g.goods_id = t.goods_id')
+            ->with([
+                'goods'=>function($query) {
+                    $query->field('goods_id,goods_name,shop_price');
+                },
+                'specGoodsPrice'=>function($query) {
+                    $query->field('item_id,price');
+                }
+            ])
+            ->where($team_where)->group('t.goods_id')->order('t.team_id desc')->page($p, 10)->select();
         $this->ajaxReturn(['status' => 1, 'msg' => '获取成功','result'=>$list]);
     }
 
@@ -226,42 +234,28 @@ class Team extends MobileBase
         if(empty($goods_num)){
             $this->ajaxReturn(['status' => 0, 'msg' => '至少购买一份', 'result' => '']);
         }
-        $team = TeamActivity::get($team_id);
-        if($found_id){
-            $teamFound = TeamFound::get(['found_id' => $found_id, 'status' => 1]);
-            if(empty($teamFound)) {
-                $this->ajaxReturn(['status' => 0, 'msg' => '该拼单数据不存在或已失效', 'result' => '']);
-            }
-            if($teamFound['user_id'] == $this->user_id){
-                $this->ajaxReturn(['status' => 0, 'msg' => '不能自己开团自己拼', 'result' => '']);
-            }
-            if($team['team_type'] == 2){
-                //抽奖团，只能拼一次团
-                $teamFollow = new TeamFollow();
-                $teamYouSelfFollow = $teamFollow->where(['follow_user_id' => $this->user_id, 'team_id' => $team['team_id'], 'status' => ['in', '1,2']])->find();
-                if($teamYouSelfFollow){
-                    $this->ajaxReturn(['status' => 0, 'msg' => '你已经参与过该拼团活动。', 'result' => '']);
-                }
-            }
-            $teamFoundLogic = new TeamFoundLogic();
-            $teamFoundLogic->setTeam($team);
-            $teamFoundLogic->setTeamFound($teamFound);
-            $IsCanFollow = $teamFoundLogic->TeamFoundIsCanFollow();
-            if($IsCanFollow['status'] != 1){
-                $this->ajaxReturn(['status' => 0, 'msg' => $IsCanFollow['msg'], 'result' => '']);
-            }
+        $team = new \app\common\logic\team\Team();
+        $team->setUserById($this->user_id);
+        $team->setTeamActivityById($team_id);
+        $team->setTeamFoundById($found_id);
+        $team->setBuyNum($goods_num);
+        try{
+            $team->buy();
+            $teamActivity = $team->getTeamActivity();
+            $goods = $team->getTeamBuyGoods();
+            $goodsList[0] = $goods;
+            $pay = new Pay();
+            $pay->setUserId($this->user_id);
+            $pay->payGoodsList($goodsList);
+            $placeOrder = new PlaceOrder($pay);
+            $placeOrder->addTeamOrder($teamActivity);
+            $order = $placeOrder->getOrder();
+            $team->log($order);
+            $this->ajaxReturn(['status' => 1, 'msg' => '提交拼团订单成功', 'result' => ['order_id' => $order['order_id']]]);
+        }catch (TpshopException $t){
+            $error = $t->getErrorArr();
+            $this->ajaxReturn($error);
         }
-        $teamOrderLogic = new TeamOrderLogic();
-        if (!empty($teamFound)) {
-            $teamOrderLogic->setTeamFound($teamFound);
-        }
-        $teamOrderLogic->setTeam($team);
-        $teamOrderLogic->setGoods($team->goods);
-        $teamOrderLogic->setSpecGoodsPrice($team->specGoodsPrice);
-        $teamOrderLogic->setUserId($this->user_id);
-        $teamOrderLogic->setGoodsBuyNum($goods_num);
-        $result = $teamOrderLogic->add();
-        $this->ajaxReturn($result);
     }
 
     /**
@@ -319,199 +313,72 @@ class Team extends MobileBase
                 unset($paymentList[$key]);
             }
         }
-        $ShippingArea = new ShippingArea();
-        $shipping_area= $ShippingArea->alias('sa')->join('__PLUGIN__ p','sa.shipping_code = p.code')->with('plugin')
-            ->where(['sa.is_default' => 1,'p.type'=>'shipping','p.status'=>1])->group("sa.shipping_code")->cache(true, TPSHOP_CACHE_TIME)->select();
         //订单没有使用过优惠券
         if($order['coupon_price'] <= 0){
             $couponLogic = new CouponLogic();
-            $TeamOrderLogic = new TeamOrderLogic();
             $userCouponList = $couponLogic->getUserAbleCouponList($this->user_id, [$order_goods['goods_id']], [$order_goods['goods']['cat_id']]);//用户可用的优惠券列表
-            $TeamOrderLogic->setOrder($order);
-            $userCartCouponList = $TeamOrderLogic->getCouponOrderList($userCouponList);
+            $team = new \app\common\logic\team\Team();
+            $team->setOrder($order);
+            $userCartCouponList = $team->getCouponOrderList($userCouponList);
             $this->assign('userCartCouponList', $userCartCouponList);
         }
         $this->assign('paymentList', $paymentList);
         $this->assign('order', $order);
         $this->assign('order_goods', $order_goods);
-        $this->assign('shipping_area',$shipping_area);
         return $this->fetch();
     }
+
     /**
-     * 获取订单详细
+     * 获取订单详情
      */
-    public function getOrderInfo(){
-        $order_id = input('order_id/d');
-        $shipping_code = input('shipping_code/s');//配送方式
-        $goods_num = input('goods_num/d');
-        $coupon_id = input('coupon_id/d');
-        $address_id = input('address_id/d');
-        $user_money = input('user_money/f');
-        $pay_points = input('pay_points/d');
-        $pay_pwd = trim(input("paypwd")); //  支付密码
-        $user_note = trim(input("user_note")); //  用户备注
-        $act = input('post.act','');
+    public function getOrderInfo()
+    {
+        $order_id       = input('order_id/d');
+        $goods_num      = input('goods_num/d');
+        $coupon_id      = input('coupon_id/d');
+        $address_id     = input('address_id/d');
+        $user_money     = input('user_money/f');
+        $pay_points     = input('pay_points/d');
+        $payPwd        = trim(input("payPwd")); //  支付密码
+        $user_note      = trim(input("user_note")); //  用户备注
+        $act            = input('post.act','');
         if(empty($this->user_id)){
             $this->ajaxReturn(['status'=>0,'msg'=>'登录超时','result'=>['url'=>U("User/login")]]);
         }
         if(empty($order_id)){
             $this->ajaxReturn(['status'=>0,'msg'=>'参数错误','result'=>[]]);
         }
-        //获取订单,检查订单
-        $Order = new Order();
-        $order = $Order->where(['order_id' => $order_id, 'order_prom_type' => 6, 'user_id' => $this->user_id])->find();
-        if(empty($order)){
-            $this->ajaxReturn(['status'=>0,'msg'=>'该订单已关闭或者不存在','result'=>['url'=>U("Mobile/Order/order_list")]]);
-        }
-        $orderInfo = $order->toArray();
-        if(empty($order['province'])){
-            if(empty($address_id)){
-                $this->ajaxReturn(['status' => 0, 'msg' => '请选择地址', 'result' => ['url' => U('Mobile/User/add_address', array('source' => 'team', 'order_id' => $order_id))]]);
+        try{
+            $teamOrder = new TeamOrder($this->user_id, $order_id);
+            $teamOrder->changNum($goods_num);//更改数量
+            $teamOrder->pay();//获取订单结账信息
+            $teamOrder->useUserAddressById($address_id);//设置配送地址
+            $teamOrder->useCouponById($coupon_id);//使用优惠券
+            $teamOrder->useUserMoney($user_money);//使用余额
+            $teamOrder->usePayPoints($pay_points);//使用积分
+            $order = $teamOrder->getOrder();//获取订单信息
+            $orderGoods = $teamOrder->getOrderGoods();//获取订单商品信息
+            if ($act == 'submit_order') {
+                $teamOrder->setUserNote($user_note);//设置用户备注
+                $teamOrder->setPayPsw($payPwd);//设置支付密码
+                $teamOrder->submit();//确认订单
+                $this->ajaxReturn(['status' => 1, 'msg' => '提交成功', 'result' => ['order_amount'=>$order['order_amount']]]);
+            }else{
+                $couponLogic = new CouponLogic();
+                $userCouponList = $couponLogic->getUserAbleCouponList($this->user_id, [$orderGoods['goods_id']], [$orderGoods['goods']['cat_id']]);//用户可用的优惠券列表
+                $team = new \app\common\logic\team\Team();
+                $team->setOrder($order);
+                $userCartCouponList = $team->getCouponOrderList($userCouponList);
+                $result = [
+                    'order'=>$order,
+                    'order_goods'=>$orderGoods,
+                    'couponList'=>$userCartCouponList
+                ];
+                $this->ajaxReturn(['status' => 1, 'msg' => '计算成功', 'result' => $result]);
             }
-            //获取用户地址，检查用户地址
-            $UserAddress = new UserAddress();
-            $userAddress = $UserAddress->where(['address_id'=>$address_id,'user_id'=>$this->user_id])->find();
-            if(empty($userAddress)){
-                $this->ajaxReturn(['status' => -1, 'msg' => '请选择地址', 'result' => []]);
-            }
-        }
-
-        if(empty($shipping_code) && empty($order['shipping_code'])){
-            $this->ajaxReturn(['status' => 0, 'msg' => '请选择配送方式','result'=>[]]);
-        }
-
-        if($order['pay_status'] == 1){
-            $order_detail_url = U("Mobile/Order/order_detail",array('id'=>$order_id));
-            $this->ajaxReturn(['status'=>0,'msg'=>'该订单已支付成功','result'=>['url'=>$order_detail_url]]);
-        }
-
-        //获取订单商品,检查订单商品
-        $OrderGoods = new OrderGoods();
-        $orderGoods = $OrderGoods->with('goods')->where(['order_id' => $order_id, 'prom_type' => 6])->find();
-        if (empty($orderGoods)) {
-            $this->ajaxReturn(['status' => 0, 'msg' => '该订单失效或不存在', 'result' => []]);
-        }
-
-        //获取拼团活动,检查活动
-        $TeamActivity = new TeamActivity();
-        $team = $TeamActivity->with('goods,specGoodsPrice')->where(['team_id'=>$orderGoods['prom_id']])->find();
-        if(empty($team)){
-            $this->ajaxReturn(['status' => 0, 'msg' => '订单失效或不存在', 'result' => []]);
-        }
-
-        //付款前检验库存
-        (empty($team['specGoodsPrice'])) ? $store_num = $team['goods']['store_count'] : $store_num = $team['specGoodsPrice']['store_count'];//获取商品库存
-        if($goods_num > $store_num){
-            $this->ajaxReturn(['status' => 0, 'msg' => '商品库存不足,仅剩'.$store_num.'份', 'result' => []]);
-        }
-
-        //检查购买数
-        if($team['buy_limit'] != 0 && $goods_num > $team['buy_limit']){
-            $this->ajaxReturn(['status' => 0, 'msg' => '购买数已超过该活动单次购买限制数('.$team['buy_limit'].'个)', 'result' => []]);
-        }
-
-        //已经使用优惠券/积分/余额支付的订单不能更改数量
-        if($orderGoods['goods_num'] != $goods_num && $order['order_amount'] != $order['total_amount']){
-            $this->ajaxReturn(['status' => 0, 'msg' => '使用优惠券/积分/余额支付的订单不能更改数量', 'result' => []]);
-        }
-
-        //使用余额,检查使用余额条件
-        if($user_money && $user_money > $this->user['user_money']){
-            $this->ajaxReturn(['status' => 0, 'msg' => '你的账户可用余额为:'.$this->user['user_money'].'元', 'result' => []]);
-        }
-
-        //使用积分检查,检查使用积分条件
-        if($pay_points){
-            $use_percent_point = tpCache('shopping.point_use_percent');     //最大使用限制: 最大使用积分比例, 例如: 为50时, 未50% , 那么积分支付抵扣金额不能超过应付金额的50%
-            if($use_percent_point == 0){
-                $this->ajaxReturn(['status' => 0, 'msg' => '该笔订单不能使用积分', 'result' => []]);
-            }
-            if ($pay_points > $this->user['pay_points']){
-                $this->ajaxReturn(['status' => 0, 'msg' => '你的账户可用积分为:'.$this->user['pay_points'], 'result' => []]);
-            }
-            $min_use_limit_point = tpCache('shopping.point_min_limit'); //最低使用额度: 如果拥有的积分小于该值, 不可使用
-            if ($min_use_limit_point > 0 && $pay_points < $min_use_limit_point) {
-                $this->ajaxReturn(['status' => 0, 'msg' => '您使用的积分必须大于'.$min_use_limit_point.'才可以使用', 'result' => []]);
-            }
-        }
-        //获取拼单信息，并检查拼单,是否能拼
-        $TeamFoundLogic = new TeamFoundLogic();
-        $teamFollow = TeamFollow::get(['order_id' => $order_id, 'follow_user_id' => $this->user_id]);
-        if ($teamFollow) {
-            $teamFound = $teamFollow->teamFound;
-            if (empty($teamFound)) {
-                $this->ajaxReturn(['status' => 0, 'msg' => '团长的单不翼而飞了', 'result' => []]);
-            } else {
-                $TeamFoundLogic->setTeam($team);
-                $TeamFoundLogic->setTeamFound($teamFound);
-                $IsCanFollow = $TeamFoundLogic->TeamFoundIsCanFollow();
-                if($IsCanFollow['status'] != 1){
-                    $this->ajaxReturn(['status' => 0, 'msg' => $IsCanFollow['msg'], 'result' => '']);
-                }
-            }
-        }
-        $couponLogic = new CouponLogic();
-        $TeamOrderLogic = new TeamOrderLogic();
-        $TeamOrderLogic->setUserId($this->user_id);
-        $TeamOrderLogic->setOrder($order);
-        $TeamOrderLogic->setOrderGoods($orderGoods);
-        $TeamOrderLogic->setGoods($orderGoods->goods);
-        $TeamOrderLogic->changeNum($goods_num); //购买数量
-        $TeamOrderLogic->useCouponById($coupon_id); //使用优惠券
-        if(empty($order['shipping_code']) && empty($order['province'])){
-            $TeamOrderLogic->useShipping($shipping_code, $userAddress); //选择物流
-        }
-        $TeamOrderLogic->useUserMoney($user_money);//使用余额
-        $TeamOrderLogic->usePayPoints($pay_points);//使用积分
-        $finalOrder = $TeamOrderLogic->getOrder();
-        $finalOrderGoods = $TeamOrderLogic->getOrderGoods();
-        // 确认订单
-        if ($act == 'submit_order') {
-            if($user_money>0 || $pay_points){
-                if($this->user['is_lock'] == 1){
-                    $this->ajaxReturn(['status' => 0, 'msg' => '账号异常已被锁定，不能使用积分或余额支付！', 'result' => []]);// 用户被冻结不能使用余额支付
-                }
-                if(empty($this->user['paypwd'])){
-                    $this->ajaxReturn(['status' => 0, 'msg' => '请先设置支付密码！', 'result' => []]);
-                }
-                if(empty($pay_pwd)){
-                    $this->ajaxReturn(['status' => 0, 'msg' => '请输入支付密码！', 'result' => []]);
-                }
-                if(encrypt($pay_pwd) != $this->user['paypwd']){
-                    $this->ajaxReturn(['status' => 0, 'msg' => '支付密码错误！', 'result' => []]);
-                }
-            }
-            $finalOrder->user_note = $user_note;
-            $finalOrder->save();
-            $finalOrderGoods->save();
-            $TeamOrderLogic->deductCouponById($coupon_id);//扣除优惠券
-            $integral = $finalOrder->integral - (int)$orderInfo['integral'];
-            if($integral > 0){
-                Db::name('users')->where('user_id',$this->user_id)->setDec('pay_points',$integral);//扣除积分
-            }
-            $user_money = $finalOrder->user_money - (float)$orderInfo['user_money'];
-            if($user_money > 0){
-                Db::name('users')->where('user_id',$this->user_id)->setDec('user_money',$user_money);//扣除余额
-            }
-            $TeamOrderLogic->accountLog($integral, $user_money); //记录log 日志
-            $TeamOrderLogic->pushUserMsg();// 如果有微信公众号 则推送一条消息到微信
-            $TeamOrderLogic->pushSellerMsg();//用户下单, 发送短信给商家
-            // 如果应付金额为0  可能是余额支付 + 积分 + 优惠券 这里订单支付状态直接变成已支付
-            $msg = '确认订单成功';
-            if ($finalOrder['order_amount'] == 0) {
-                update_pay_status($finalOrder['order_sn']); // 这里刚刚下的订单必须从主库里面去查
-                $msg = '支付成功';
-            }
-            $this->ajaxReturn(['status' => 1, 'msg' => $msg, 'result' => ['order_amount'=>$finalOrder['order_amount']]]);
-        }else{
-            $userCouponList = $couponLogic->getUserAbleCouponList($this->user_id, [$orderGoods['goods_id']], [$orderGoods['goods']['cat_id']]);//用户可用的优惠券列表
-            $userCartCouponList = $TeamOrderLogic->getCouponOrderList($userCouponList);
-            $result = [
-                'order'=>$finalOrder,
-                'order_goods'=>$finalOrderGoods,
-                'couponList'=>$userCartCouponList
-            ];
-            $this->ajaxReturn(['status' => 1, 'msg' => '计算成功', 'result' => $result]);
+        }catch (TpshopException $t){
+            $error = $t->getErrorArr();
+            $this->ajaxReturn($error);
         }
 
     }

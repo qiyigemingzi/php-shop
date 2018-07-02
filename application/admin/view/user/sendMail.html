@@ -5,9 +5,9 @@
     <title>收货地址-{$tpshop_config['shop_info_store_title']}</title>
     <meta http-equiv="keywords" content="{$tpshop_config['shop_info_store_keyword']}" />
     <meta name="description" content="{$tpshop_config['shop_info_store_desc']}" />
-    <!--<link rel="stylesheet" href="__STATIC__/css/edit_address.css" type="text/css">-->
+    <link rel="stylesheet" href="__STATIC__/css/edit_address.css" type="text/css">
     <script src="__PUBLIC__/js/jquery-1.10.2.min.js"></script>
-    <script src="__PUBLIC__/js/slider.js"></script>
+    <script src="__STATIC__/js/slider.js"></script>
 	<script src="__PUBLIC__/js/layer/layer-min.js"></script><!--弹窗js 参考文档 http://layer.layui.com/-->
 </head>
 <style type="text/css">
@@ -46,6 +46,11 @@
                             </div>
                         </td>
                     </tr>
+                        <else/>
+                        <tr>
+                            <td align="right" valign="top">邮箱地址：</td>
+                            <td><input name="email" placeholder="邮箱地址" maxlength="100" /></td>
+                        </tr>
                     </if>
                     <tr>
                         <td><div>&nbsp;</div></td>
@@ -53,7 +58,7 @@
                     </tr>
                     <tr>
                         <td align="right" valign="top">邮箱标题：</td>
-                        <td><input name="title" id="title" maxlength="100" placeholder="邮箱标题" maxlength="100" /></td>
+                        <td><input name="title" id="title" placeholder="邮箱标题" maxlength="100" /></td>
                     </tr>
                     <tr>
                         <td><div>&nbsp;</div></td>
@@ -81,7 +86,6 @@
     function checkForm(){
         var text = $('#text').val();
         var title = $('#title').val();
-        var user = $("input[name='user[]']").val();
         var error = '';
         if(text == ''){
             error += '邮件内容不能为空 <br/>';
@@ -89,9 +93,12 @@
         if(title == ''){
             error += '邮件标题不能为空 <br/>';
         }
-        if((typeof(user))  == "undefined"){
-            error += '所选的会员没有邮箱 <br/>';
-        }
+        <if condition="count($users) eq 0">
+            var email = $("input[name='email']").val();
+            if(!checkEmail(email)){
+                error += '邮箱地址有误 <br/>';
+            }
+        </if>
         if(error){
 			layer.alert(error, {icon: 2});
             return false;

@@ -7,7 +7,7 @@
  * ----------------------------------------------------------------------------
  * 这不是一个自由软件！您只能在不用于商业目的的前提下对程序代码进行修改和使用 .
  * 不允许对程序代码以任何形式任何目的的再发布。
- * 采用TP5助手函数可实现单字母函数M D U等,也可db::name方式,可双向兼容
+ * 采用最新Thinkphp5助手函数特性实现单字母函数M D U等简写方式
  * ============================================================================
  * Author: JY
  * Date: 2015-09-23
@@ -88,15 +88,15 @@ class Api extends Base {
     }
     
     /*
-     * 获取地区
+     * 获取下级分类
      */
     public function get_category(){
         $parent_id = I('get.parent_id/d'); // 商品分类 父id
-            $list = M('goods_category')->where("parent_id", $parent_id)->select();
-        
-        foreach($list as $k => $v)
-            $html .= "<option value='{$v['id']}'>{$v['name']}</option>";        
-        exit($html);
+        $list = M('goods_category')->where("parent_id", $parent_id)->select();
+        if($list){
+            $this->ajaxReturn(['status'=>1 ,'msg'=>'获取成功！','result'=>$list]);
+        }
+        $this->ajaxReturn(['status'=>-1 ,'msg'=>'获取失败！']);
     }  
     
     
@@ -207,12 +207,34 @@ class Api extends Base {
      */
     public function queryExpress()
     {
-        $shipping_code = input('shipping_code');
-        $invoice_no = input('invoice_no');
-        if(empty($shipping_code) || empty($invoice_no)){
-            return json(['status'=>0,'message'=>'参数有误','result'=>'']);
-        }
-        return json(queryExpress($shipping_code,$invoice_no));
+    	$express_switch = tpCache('express.express_switch');
+    	if($express_switch == 1){
+    		require_once(PLUGIN_PATH . 'kdniao/kdniao.php');
+    		$kdniao = new \kdniao();
+    		$data['OrderCode'] = empty(I('order_sn')) ? date('YmdHis') : I('order_sn');
+    		$data['ShipperCode'] = I('shipping_code');
+    		$data['LogisticCode'] = I('invoice_no');
+    		$res = $kdniao->getOrderTracesByJson(json_encode($data));
+    		$res =  json_decode($res, true);
+    		if($res['State'] == 3){
+    			foreach ($res['Traces'] as $val){
+    				$tmp['context'] = $val['AcceptStation'];
+    				$tmp['time'] = $val['AcceptTime'];
+    				$res['data'][] = $tmp;
+    			}
+    			$res['status'] = "200";
+    		}else{
+    			$res['message'] = $res['Reason'];
+    		}
+    		return json($res);
+    	}else{
+    		$shipping_code = input('shipping_code');
+    		$invoice_no = input('invoice_no');
+    		if(empty($shipping_code) || empty($invoice_no)){
+    			return json(['status'=>0,'message'=>'参数有误','result'=>'']);
+    		}
+    		return json(queryExpress($shipping_code,$invoice_no));
+    	}
     }
     
     /**

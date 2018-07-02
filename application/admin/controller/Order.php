@@ -7,13 +7,19 @@
  * ----------------------------------------------------------------------------
  * 这不是一个自由软件！您只能在不用于商业目的的前提下对程序代码进行修改和使用 .
  * 不允许对程序代码以任何形式任何目的的再发布。
- * 采用TP5助手函数可实现单字母函数M D U等,也可db::name方式,可双向兼容
+ * 采用最新Thinkphp5助手函数特性实现单字母函数M D U等简写方式
  * ============================================================================
  * Author: 当燃
  * Date: 2015-09-09
  */
 namespace app\admin\controller;
 use app\admin\logic\OrderLogic;
+use app\admin\logic\RefundLogic;
+use app\admin\logic\KdniaoLogic;
+use app\common\logic\PlaceOrder;
+use app\common\logic\Pay;
+use app\common\model\OrderGoods;
+use app\common\util\TpshopException;
 use think\AjaxPage;
 use think\Page;
 use think\Db;
@@ -41,9 +47,6 @@ class Order extends Base {
      *订单首页
      */
     public function index(){
-    	$begin = date('Y-m-d',strtotime("-1 year"));//30天前
-    	$end = date('Y/m/d',strtotime('+1 days')); 	
-    	$this->assign('timegap',$begin.'-'.$end);
         return $this->fetch();
     }
 
@@ -51,18 +54,9 @@ class Order extends Base {
      *Ajax首页
      */
     public function ajaxindex(){
-        $orderLogic = new OrderLogic();       
-        $timegap = I('timegap');
-        if($timegap){
-        	$gap = explode('-', $timegap);
-        	$begin = strtotime($gap[0]);
-        	$end = strtotime($gap[1]);
-        }else{
-            //@new 新后台UI参数
-            $begin = strtotime(I('add_time_begin'));
-            $end = strtotime(I('add_time_end'));
-        }
-        
+        $orderLogic = new OrderLogic();
+        $begin = $this->begin;
+        $end = $this->end;
         // 搜索条件
         $condition = array();
         $keyType = I("keytype");
@@ -74,7 +68,7 @@ class Order extends Base {
         if($begin && $end){
         	$condition['add_time'] = array('between',"$begin,$end");
         }
-        $condition['order_prom_type'] = array('lt',5);
+        $condition['prom_type'] = array('lt',5);
         $order_sn = ($keyType && $keyType == 'order_sn') ? $keywords : I('order_sn') ;
         $order_sn ? $condition['order_sn'] = trim($order_sn) : false;
         
@@ -207,6 +201,7 @@ exit("请联系TPshop官网客服购买高级版支持此功能");
     	$shipping_status = I('shipping_status');
     	$condition['shipping_status'] = empty($shipping_status) ? array('neq',1) : $shipping_status;
         $condition['order_status'] = array('in','1,2,4');
+        $condition['prom_type'] = ['neq',5];
     	$count = M('order')->where($condition)->count();
     	$Page  = new AjaxPage($count,10);
     	//搜索条件下 分页赋值
@@ -224,10 +219,13 @@ exit("请联系TPshop官网客服购买高级版支持此功能");
     }
     
     public function refund_order_list(){
-    	$orderLogic = new OrderLogic();
-    	$condition = array();
     	I('consignee') ? $condition['consignee'] = trim(I('consignee')) : false;
     	I('order_sn') != '' ? $condition['order_sn'] = trim(I('order_sn')) : false;
+    	I('mobile') != '' ? $condition['mobile'] = trim(I('mobile')) : false;
+        $prom_type = input('prom_type');
+        if($prom_type){
+            $condition['prom_type'] = $prom_type;
+        }
     	$condition['shipping_status'] = 0;
     	$condition['order_status'] = 3;
     	$condition['pay_status'] = array('gt',0);
@@ -248,26 +246,28 @@ exit("请联系TPshop官网客服购买高级版支持此功能");
     }
     
     public function refund_order_info($order_id){
-    	$orderLogic = new OrderLogic();
-    	$order = $orderLogic->getOrderInfo($order_id);
-    	$orderGoods = $orderLogic->getOrderGoods($order_id);
+        $orderModel = new \app\common\model\Order();
+        $orderObj = $orderModel::get(['order_id'=>$order_id]);
+        $order =$orderObj->append(['full_address','orderGoods'])->toArray();
     	$this->assign('order',$order);
-    	$this->assign('orderGoods',$orderGoods);
     	return $this->fetch();
     }
 
     //取消订单退款原路退回
     public function refund_order(){
         $data = I('post.');
-        $orderLogic = new OrderLogic();
-        $order = $orderLogic->getOrderInfo($data['order_id']);
+        $orderModel = new \app\common\model\Order();
+        $orderObj = $orderModel::get(['order_id'=>$data['order_id']]);
+        $order =$orderObj->append(['full_address'])->toArray();
         if(!order){
             $this->error('订单不存在或参数错误');
         }
         if($data['pay_status'] == 3){
+            $refundLogic = new RefundLogic();
             if($data['refund_type'] == 1){
             	//取消订单退款退余额
-                if(updateRefundOrder($order,1)){
+          
+                if($refundLogic->updateRefundOrder($order,1)){
                     $this->success('成功退款到账户余额');
                 }else{
                     $this->error('退款失败');
@@ -290,36 +290,18 @@ exit("请联系TPshop官网客服购买高级版支持此功能");
 
     /**
      * 订单详情
-     * @param int $id 订单id
+     * @param $order_id
+     * @return mixed
      */
     public function detail($order_id){
-        $orderLogic = new OrderLogic();
-        $order = $orderLogic->getOrderInfo($order_id);
-        $orderGoods = $orderLogic->getOrderGoods($order_id);
-        $button = $orderLogic->getOrderButton($order);
-        // 获取操作记录
-        $action_log = M('order_action')->where(array('order_id'=>$order_id))->order('log_time desc')->select();
-        $has_user = false;
-        $adminIds = [];
-        //查找用户昵称
-        foreach ($action_log as $k => $v){
-            if ($v['action_user']) {
-                $adminIds[$k] = $v['action_user'];
-            } else {
-                $has_user = true;
-            }
-        }
-        if($adminIds && count($adminIds) > 0){
-            $admins = M("admin")->where("admin_id in (".implode(",",$adminIds).")")->getField("admin_id , user_name", true);
-        }
-        if($has_user){
-            $user = M("users")->field('user_id,nickname')->where(['user_id'=>$order['user_id']])->find();
-        }
-    	$this->assign('admins',$admins);  
-        $this->assign('user', $user);
+        $orderModel = new \app\common\model\Order();
+        $orderObj = $orderModel::get(['order_id'=>$order_id]);
+        $order =$orderObj->append(['full_address','orderGoods','adminOrderButton'])->toArray();
+        $orderGoods =$order['orderGoods'];
+        $express = Db::name('delivery_doc')->where("order_id" , $order_id)->select();  //发货信息（可能多个）
+        $user = Db::name('users')->where(['user_id'=>$order['user_id']])->find();
         $this->assign('order',$order);
-        $this->assign('action_log',$action_log);
-        $this->assign('orderGoods',$orderGoods);
+        $this->assign('user',$user);
         $split = count($orderGoods) >1 ? 1 : 0;
         foreach ($orderGoods as $val){
         	if($val['goods_num']>1){
@@ -327,128 +309,57 @@ exit("请联系TPshop官网客服购买高级版支持此功能");
         	}
         }
         $this->assign('split',$split);
-        $this->assign('button',$button);
+        $this->assign('express',$express);
         return $this->fetch();
     }
 
     /**
-     * 订单编辑
-     * @param int $id 订单id
+     * 获取订单操作记录
      */
-    public function edit_order(){
-    	$order_id = I('order_id');
-        $orderLogic = new OrderLogic();
-        $order = $orderLogic->getOrderInfo($order_id);
-        if($order['shipping_status'] != 0){
-            $this->error('已发货订单不允许编辑');
-            exit;
-        }
-
-        $orderGoods = $orderLogic->getOrderGoods($order_id);
-
-       	if(IS_POST)
-        {
-            $order['consignee'] = I('consignee');// 收货人
-            $order['province'] = I('province'); // 省份
-            $order['city'] = I('city'); // 城市
-            $order['district'] = I('district'); // 县
-            $order['address'] = I('address'); // 收货地址
-            $order['mobile'] = I('mobile'); // 手机
-            $order['invoice_title'] = I('invoice_title');// 发票
-            $order['admin_note'] = I('admin_note'); // 管理员备注
-            $order['admin_note'] = I('admin_note'); //
-            $order['shipping_code'] = I('shipping');// 物流方式
-            $order['shipping_name'] = M('plugin')->where(array('status'=>1,'type'=>'shipping','code'=>I('shipping')))->getField('name');
-            $order['pay_code'] = I('payment');// 支付方式
-            $order['pay_name'] = M('plugin')->where(array('status'=>1,'type'=>'payment','code'=>I('payment')))->getField('name');
-            $goods_id_arr = I("goods_id/a");
-            $new_goods = $old_goods_arr = array();
-            //################################订单添加商品
-            if($goods_id_arr){
-            	$new_goods = $orderLogic->get_spec_goods($goods_id_arr);
-            	foreach($new_goods as $key => $val)
-            	{
-            		$val['order_id'] = $order_id;
-            		$rec_id = M('order_goods')->add($val);//订单添加商品
-            		if(!$rec_id)
-            			$this->error('添加失败');
-            	}
-            }
-
-            //################################订单修改删除商品
-            $old_goods = I('old_goods/a');
-            foreach ($orderGoods as $val){
-            	if(empty($old_goods[$val['rec_id']])){
-            		M('order_goods')->where("rec_id=".$val['rec_id'])->delete();//删除商品
-            	}else{
-            		//修改商品数量
-            		if($old_goods[$val['rec_id']] != $val['goods_num']){
-            			$val['goods_num'] = $old_goods[$val['rec_id']];
-            			M('order_goods')->where("rec_id=".$val['rec_id'])->save(array('goods_num'=>$val['goods_num']));
-            		}
-            		$old_goods_arr[] = $val;
-            	}
-            }
-
-            $goodsArr = array_merge($old_goods_arr,$new_goods);
-            $result = calculate_price($order['user_id'],$goodsArr,$order['shipping_code'],0,$order['province'],$order['city'],$order['district'],0,0,0);
-            if($result['status'] < 0)
-            {
-            	$this->error($result['msg']);
-            }
-
-            //################################修改订单费用
-            $order['goods_price']    = $result['result']['goods_price']; // 商品总价
-            $order['shipping_price'] = $result['result']['shipping_price'];//物流费
-            $order['order_amount']   = $result['result']['order_amount']; // 应付金额
-            $order['total_amount']   = $result['result']['total_amount']; // 订单总价
-            $o = M('order')->where('order_id='.$order_id)->save($order);
-
-            $l = $orderLogic->orderActionLog($order_id,'修改订单','修改订单');//操作日志
-            if($o && $l){
-            	$this->success('修改成功',U('Admin/Order/editprice',array('order_id'=>$order_id)));
+    public function getOrderAction(){
+        $order_id = input('order_id/d',0);
+        $order_id <= 0 && $this->ajaxReturn(['status'=>1,'msg'=>'参数错误！！']);
+        $orderModel = new \app\common\model\Order();
+        $orderObj = $orderModel::get(['order_id'=>$order_id]);
+        $order = $orderObj->toArray();
+        // 获取操作记录
+        $action_log = Db::name('order_action')->where(['order_id'=>$order_id])->order('log_time desc')->select();
+        $admins = M("admin")->getField("admin_id , user_name", true);
+        $user = M("users")->field('user_id,nickname')->where(['user_id'=>$order['user_id']])->find();
+        //查找用户昵称
+        foreach ($action_log as $k => $v){
+            if ($v['action_user'] == 0){
+                $action_log["$k"]['action_user_name'] = '用户:'.$user['nickname'];
             }else{
-            	$this->success('修改失败',U('Admin/Order/detail',array('order_id'=>$order_id)));
+                $action_log["$k"]['action_user_name'] = '管理员:'.$admins[$v['action_user']];
             }
-            exit;
+            $action_log["$k"]["log_time"] = date('Y-m-d H:i:s',$v['log_time']);
+            $action_log["$k"]["order_status"] = $this->order_status[$v['order_status']];
+            $action_log["$k"]["pay_status"] = $this->pay_status[$v['pay_status']];
+            $action_log["$k"]["shipping_status"] = $this->shipping_status[$v['shipping_status']];
         }
-        // 获取省份
-        $province = M('region')->where(array('parent_id'=>0,'level'=>1))->select();
-        //获取订单城市
-        $city =  M('region')->where(array('parent_id'=>$order['province'],'level'=>2))->select();
-        //获取订单地区
-        $area =  M('region')->where(array('parent_id'=>$order['city'],'level'=>3))->select();
-        //获取支付方式
-        $payment_list = M('plugin')->where(array('status'=>1,'type'=>'payment'))->select();
-        //获取配送方式
-        $shipping_list = M('plugin')->where(array('status'=>1,'type'=>'shipping'))->select();
-
-        $this->assign('order',$order);
-        $this->assign('province',$province);
-        $this->assign('city',$city);
-        $this->assign('area',$area);
-        $this->assign('orderGoods',$orderGoods);
-        $this->assign('shipping_list',$shipping_list);
-        $this->assign('payment_list',$payment_list);
-        return $this->fetch();
+        $this->ajaxReturn(['status'=>1,'msg'=>'参数错误！！','data'=>$action_log]);
     }
+    
+    
 
     /*
      * 拆分订单
      */
     public function split_order(){
     	$order_id = I('order_id');
-    	$orderLogic = new OrderLogic();
-    	$order = $orderLogic->getOrderInfo($order_id);
+        $orderModel = new \app\common\model\Order();
+        $orderObj = $orderModel::get(['order_id'=>$order_id]);
+        $order =$orderObj->append(['full_address','orderGoods'])->toArray();
     	if($order['shipping_status'] != 0){
     		$this->error('已发货订单不允许编辑');
     		exit;
     	}
-    	$orderGoods = $orderLogic->getOrderGoods($order_id);
+    	$orderGoods = $order['orderGoods'];
     	if(IS_POST){
-    		$data = I('post.');
     		//################################先处理原单剩余商品和原订单信息
     		$old_goods = I('old_goods/a');
+            $oldArr = [];
 
     		foreach ($orderGoods as $val){
     			if(empty($old_goods[$val['rec_id']])){
@@ -463,16 +374,21 @@ exit("请联系TPshop官网客服购买高级版支持此功能");
     			}
     			$all_goods[$val['rec_id']] = $val;//所有商品信息
     		}
-    		$result = calculate_price($order['user_id'],$oldArr,$order['shipping_code'],0,$order['province'],$order['city'],$order['district'],0,0,0);
-    		if($result['status'] < 0)
-    		{
-    			$this->error($result['msg']);
-    		}
+            $oldPay = new Pay();
+            try{
+                $oldPay->setUserId($order['user_id']);
+                $oldPay->payOrder($oldArr);
+                $oldPay->delivery($order['district']);
+                $oldPay->orderPromotion();
+            } catch (TpshopException $t) {
+                $error = $t->getErrorArr();
+                $this->error($error['msg']);
+            }
     		//修改订单费用
-    		$res['goods_price']    = $result['result']['goods_price']; // 商品总价
-    		$res['order_amount']   = $result['result']['order_amount']; // 应付金额
-    		$res['total_amount']   = $result['result']['total_amount']; // 订单总价
-    		M('order')->where("order_id=".$order_id)->save($res);
+    		$res['goods_price']    = $oldPay->getGoodsPrice(); // 商品总价
+    		$res['order_amount']   = $oldPay->getOrderAmount(); // 应付金额
+    		$res['total_amount']   = $oldPay->getTotalAmount(); // 订单总价
+//    		M('order')->where("order_id=".$order_id)->save($res);
 			//################################原单处理结束
 
     		//################################新单处理
@@ -491,18 +407,23 @@ exit("请联系TPshop官网客服购买高级版支持此功能");
     		}
 
     		foreach($brr as $goods){
-    			$result = calculate_price($order['user_id'],$goods,$order['shipping_code'],0,$order['province'],$order['city'],$order['district'],0,0,0);
-    			if($result['status'] < 0)
-    			{
-    				$this->error($result['msg']);
-    			}
+                $newPay = new Pay();
+                try{
+                    $newPay->setUserId($order['user_id']);
+                    $newPay->payGoodsList($goods);
+                    $newPay->delivery($order['district']);
+                    $newPay->orderPromotion();
+                } catch (TpshopException $t) {
+                    $error = $t->getErrorArr();
+                    $this->error($error['msg']);
+                }
     			$new_order = $order;
     			$new_order['order_sn'] = date('YmdHis').mt_rand(1000,9999);
     			$new_order['parent_sn'] = $order['order_sn'];
     			//修改订单费用
-    			$new_order['goods_price']    = $result['result']['goods_price']; // 商品总价
-    			$new_order['order_amount']   = $result['result']['order_amount']; // 应付金额
-    			$new_order['total_amount']   = $result['result']['total_amount']; // 订单总价
+    			$new_order['goods_price']    = $newPay->getGoodsPrice(); // 商品总价
+    			$new_order['order_amount']   = $newPay->getOrderAmount(); // 应付金额
+    			$new_order['total_amount']   = $newPay->getTotalAmount(); // 订单总价
     			$new_order['add_time'] = time();
     			unset($new_order['order_id']);
     			$new_order_id = DB::name('order')->insertGetId($new_order);//插入订单表
@@ -530,8 +451,9 @@ exit("请联系TPshop官网客服购买高级版支持此功能");
      * 价钱修改
      */
     public function editprice($order_id){
-        $orderLogic = new OrderLogic();
-        $order = $orderLogic->getOrderInfo($order_id);
+        $orderModel = new \app\common\model\Order();
+        $orderObj = $orderModel::get(['order_id'=>$order_id]);
+        $order = $orderObj->toArray();
         $this->editable($order);
         if(IS_POST){
         	$admin_id = session('admin_id');
@@ -541,7 +463,7 @@ exit("请联系TPshop官网客服购买高级版支持此功能");
             }
             $update['discount'] = I('post.discount');
             $update['shipping_price'] = I('post.shipping_price');
-			$update['order_amount'] = $order['goods_price'] + $update['shipping_price'] - $update['discount'] - $order['user_money'] - $order['integral_money'] - $order['coupon_price'];
+			$update['order_amount'] = $order['order_amount']+$update['shipping_price']-$update['discount']-$order['user_money']-$order['integral_money']-$order['coupon_price']-$order['shipping_price'];
             $row = M('order')->where(array('order_id'=>$order_id))->save($update);
             if(!$row){
                 $this->success('没有更新数据',U('Admin/Order/editprice',array('order_id'=>$order_id)));
@@ -594,21 +516,47 @@ exit("请联系TPshop官网客服购买高级版支持此功能");
 
     /**
      * 订单打印
-     * @param int $id 订单id
+     * @param string $id
+     * @return mixed
      */
-    public function order_print(){
-    	$order_id = I('order_id');
-        $orderLogic = new OrderLogic();
-        $order = $orderLogic->getOrderInfo($order_id);
+    public function order_print($id=''){
+        if($id){
+            $order_id = $id;
+        }else{
+            $order_id = I('order_id');
+        }
+        $orderModel = new \app\common\model\Order();
+        $orderObj = $orderModel::get(['order_id'=>$order_id]);
+        $order =$orderObj->append(['full_address','orderGoods'])->toArray();
         $order['province'] = getRegionName($order['province']);
         $order['city'] = getRegionName($order['city']);
         $order['district'] = getRegionName($order['district']);
         $order['full_address'] = $order['province'].' '.$order['city'].' '.$order['district'].' '. $order['address'];
-        $orderGoods = $orderLogic->getOrderGoods($order_id);
+        if($id){
+            return $order;
+        }else{
+            $shop = tpCache('shop_info');
+            $this->assign('order',$order);
+            $this->assign('shop',$shop);
+            $template = I('template','picking');
+            return $this->fetch($template);
+        }
+    }
+
+    /*
+     *批量打印发货单
+     */
+    public function delivery_print(){
+        $ids =input('print_ids');
+        $order_ids=trim($ids,',');
+        $orderModel= new \app\common\model\Order();
+        $orderObj = $orderModel->whereIn('order_id',$order_ids)->select();
+        if ($orderObj){
+            $order = collection($orderObj)->append(['orderGoods','full_address'])->toArray();
+        }
         $shop = tpCache('shop_info');
         $this->assign('order',$order);
         $this->assign('shop',$shop);
-        $this->assign('orderGoods',$orderGoods);
         $template = I('template','print');
         return $this->fetch($template);
     }
@@ -616,17 +564,22 @@ exit("请联系TPshop官网客服购买高级版支持此功能");
     /**
      * 快递单打印
      */
-    public function shipping_print(){
-        $order_id = I('get.order_id');
-        $orderLogic = new OrderLogic();
-        $order = $orderLogic->getOrderInfo($order_id);
-        //查询是否存在订单及物流
-        $shipping = M('plugin')->where(array('code'=>$order['shipping_code'],'type'=>'shipping'))->find();
-        if(!$shipping){
-        	$this->error('物流插件不存在');
+    public function shipping_print($id=''){
+        if($id){
+            $order_id = $id;
+        }else{
+            $order_id = I('get.order_id');
         }
-		if(empty($shipping['config_value'])){
-			$this->error('请设置'.$shipping['name'].'打印模板');
+        $orderModel = new \app\common\model\Order();
+        $orderObj = $orderModel::get(['order_id'=>$order_id]);
+        $order =$orderObj->append(['full_address'])->toArray();
+        //查询是否存在订单及物流
+        $shipping = Db::name('shipping')->where('shipping_code',$order['shipping_code'])->find();
+        if(!$shipping){
+        	$this->error('快递公司不存在');
+        }
+		if(empty($shipping['template_html'])){
+			$this->error('请设置'.$shipping['shipping_name'].'打印模板');
 		}
         $shop = tpCache('shop_info');//获取网站信息
         $shop['province'] = empty($shop['province']) ? '' : getRegionName($shop['province']);
@@ -636,12 +589,6 @@ exit("请联系TPshop官网客服购买高级版支持此功能");
         $order['province'] = getRegionName($order['province']);
         $order['city'] = getRegionName($order['city']);
         $order['district'] = getRegionName($order['district']);
-        if(empty($shipping['config'])){
-        	$config = array('width'=>840,'height'=>480,'offset_x'=>0,'offset_y'=>0);
-        	$this->assign('config',$config);
-        }else{
-        	$this->assign('config',unserialize($shipping['config']));
-        }
         $template_var = array("发货点-名称", "发货点-联系人", "发货点-电话", "发货点-省份", "发货点-城市",
         		 "发货点-区县", "发货点-手机", "发货点-详细地址", "收件人-姓名", "收件人-手机", "收件人-电话",
         		"收件人-省份", "收件人-城市", "收件人-区县", "收件人-邮编", "收件人-详细地址", "时间-年", "时间-月",
@@ -651,9 +598,34 @@ exit("请联系TPshop官网客服购买高级版支持此功能");
         	$order['province'],$order['city'],$order['district'],$order['zipcode'],$order['address'],date('Y'),date('M'),
         	date('d'),date('Y-m-d'),$order['order_sn'],$order['admin_note'],$order['shipping_price'],
         );
-        $shipping['config_value'] = str_replace($template_var,$content_var, $shipping['config_value']);
-        $this->assign('shipping',$shipping);
-        return $this->fetch("Plugin/print_express");
+        $shipping['template_html_replace'] = str_replace($template_var, $content_var, $shipping['template_html']);
+        if($id){
+            return $shipping;
+        }else{
+            $shippings[0]=$shipping;
+            $this->assign('shipping',$shippings);
+            return $this->fetch("print_express");
+        }
+
+    }
+
+    /*
+     *批量打印快递单
+     */
+    public function shipping_print_batch(){
+        $ids=I('post.ids3');
+        $ids=substr($ids,0,-1);
+        $ids=explode(',', $ids);
+        if(!is_numeric($ids[0])){
+            unset($ids[0]);
+        }
+
+        $shippings=array();
+        foreach ($ids as $k => $v) {
+            $shippings[$k]=$this->shipping_print($v);
+        }
+        $this->assign('shipping',$shippings);
+        return $this->fetch("print_express");
     }
 
     /**
@@ -663,30 +635,57 @@ exit("请联系TPshop官网客服购买高级版支持此功能");
         $orderLogic = new OrderLogic();
 		$data = I('post.');
 		$res = $orderLogic->deliveryHandle($data);
-		if($res){
+		if($res['status'] == 1){
+			if($data['send_type'] == 2 && !empty($res['printhtml'])){
+				$this->assign('printhtml',$res['printhtml']);
+				return $this->fetch('print_online');
+			}
 			$this->success('操作成功',U('Admin/Order/delivery_info',array('order_id'=>$data['order_id'])));
 		}else{
-			$this->success('操作失败',U('Admin/Order/delivery_info',array('order_id'=>$data['order_id'])));
+			$this->error($res['msg'],U('Admin/Order/delivery_info',array('order_id'=>$data['order_id'])));
 		}
     }
 
+    public function delivery_info($id=''){
+        if($id){
+           $order_id=$id; 
+        }else{
+           $order_id = I('order_id');
+        }
 
-    public function delivery_info(){
-    	$order_id = I('order_id');
-    	$orderLogic = new OrderLogic();
-    	$order = $orderLogic->getOrderInfo($order_id);
-    	$orderGoods = $orderLogic->getOrderGoods($order_id,2);
-        if(!$orderGoods)$this->error('此订单商品已完成退货或换货');//已经完成售后的不能再发货
-		$delivery_record = M('delivery_doc')->alias('d')->join('__ADMIN__ a','a.admin_id = d.admin_id')->where('d.order_id='.$order_id)->select();
-		if($delivery_record){
-			$order['invoice_no'] = $delivery_record[count($delivery_record)-1]['invoice_no'];
-		}
-		$this->assign('order',$order);
-		$this->assign('orderGoods',$orderGoods);
-		$this->assign('delivery_record',$delivery_record);//发货记录
-		$shipping_list = M('plugin')->where(array('status'=>1,'type'=>'shipping'))->select();
-		$this->assign('shipping_list',$shipping_list);
-    	return $this->fetch();
+    	$orderGoodsMdel = new OrderGoods();
+        $orderModel = new \app\common\model\Order();
+        $orderObj = $orderModel->where(['order_id'=>$order_id])->find();
+        $order =$orderObj->append(['full_address'])->toArray();
+    	$orderGoods = $orderGoodsMdel::all(['order_id'=>$order_id,'is_send'=>['lt',2]]);
+        if($id){
+            if(!$orderGoods){
+                $this->error('所选订单有商品已完成退货或换货');//已经完成售后的不能再发货
+            }
+        }else{
+            if(!$orderGoods){
+                $this->error('此订单商品已完成退货或换货');//已经完成售后的不能再发货  
+            }
+        }
+
+        if($id){ 
+            $order['orderGoods']=$orderGoods;
+            $order['goods_num']=count($orderGoods);
+            return $order;
+        }else{
+            $delivery_record = M('delivery_doc')->alias('d')->join('__ADMIN__ a','a.admin_id = d.admin_id')->where('d.order_id='.$order_id)->select();
+            if($delivery_record){
+                $order['invoice_no'] = $delivery_record[count($delivery_record)-1]['invoice_no'];
+            }
+            $this->assign('order',$order);
+            $this->assign('orderGoods',$orderGoods);
+            $this->assign('delivery_record',$delivery_record);//发货记录
+            $shipping_list = Db::name('shipping')->field('shipping_name,shipping_code')->where('')->select();
+            $this->assign('shipping_list',$shipping_list);
+            $express_switch = tpCache('express.express_switch');
+            $this->assign('express_switch',$express_switch);
+            return $this->fetch();    
+        }
     }
 
     /**
@@ -696,6 +695,21 @@ exit("请联系TPshop官网客服购买高级版支持此功能");
         return $this->fetch();
     }
 
+    /*
+    *批量发货
+    */
+    public function delivery_batch(){
+		header("Content-type: text/html; charset=utf-8");
+exit("请联系TPshop官网客服购买高级版支持此功能");
+    }
+
+    /*
+    *批量发货处理 
+    */
+    public function delivery_batch_handle(){
+		header("Content-type: text/html; charset=utf-8");
+exit("请联系TPshop官网客服购买高级版支持此功能");
+    }
 
     /**
      * 删除某个退换货申请
@@ -711,50 +725,59 @@ exit("请联系TPshop官网客服购买高级版支持此功能");
      */
     public function return_info()
     {
-        $orderLogic = new OrderLogic();
         $return_id = I('id');
         $return_goods = M('return_goods')->where("id= $return_id")->find();
-        if(!$return_goods)
-        {
-            $this->error('非法操作!');
-            exit;
-        }
-        $user = M('users')->where("user_id = {$return_goods[user_id]}")->find();
-        $goods = M('goods')->where("goods_id = {$return_goods[goods_id]}")->find();
-        $type_msg = array('仅退款','退货退款','换货');
-        $status_msg = C('REFUND_STATUS');
-        if(IS_POST)
-        {
-            $data = I('post.');
-            if($return_goods['type'] == 2 && $return_goods['is_receive'] == 1){
-            	$data['seller_delivery']['express_time'] = date('Y-m-d H:i:s');
-            	$data['seller_delivery'] = serialize($data['seller_delivery']); //换货的物流信息
-            }
-            $note ="退换货:{$type_msg[$return_goods['type']]}, 状态:{$status_msg[$data['status']]},处理备注：{$data['remark']}";
-            $result = M('return_goods')->where("id= $return_id")->save($data);
-            if($result && $data['status']==1)
-            {
-                //审核通过才更改订单商品状态，进行退货，退款时要改对应商品修改库存
-                $order = \app\common\model\Order::get($return_goods['order_id']);
-                $commonOrderLogic = new \app\common\logic\OrderLogic();
-                $commonOrderLogic->alterReturnGoodsInventory($order,$return_goods['rec_id']); //审核通过，恢复原来库存
-                if($return_goods['type'] < 2){
-                    $orderLogic->disposereRurnOrderCoupon($return_goods); // 是退货可能要处理优惠券
-                }
-            }
-            $orderLogic->orderActionLog($return_goods['order_id'],'退换货',$note);
-            $this->success('修改成功!');
-            exit;
-        }
+        !$return_goods && $this->error('非法操作!');
+        $user = M('users')->where(['user_id' => $return_goods['user_id']])->find();
+        $order = M('order')->where(array('order_id'=>$return_goods['order_id']))->find();
+        $order['goods'] = M('order_goods')->where(['rec_id' => $return_goods['rec_id']])->find();
+        $return_goods['delivery'] = unserialize($return_goods['delivery']);  //订单的物流信息，服务类型为换货会显示
         $return_goods['seller_delivery'] = unserialize($return_goods['seller_delivery']);  //订单的物流信息，服务类型为换货会显示
         if($return_goods['imgs']) $return_goods['imgs'] = explode(',', $return_goods['imgs']);
         $this->assign('id',$return_id); // 用户
         $this->assign('user',$user); // 用户
-        $this->assign('goods',$goods);// 商品
         $this->assign('return_goods',$return_goods);// 退换货
-        $order = M('order')->where(array('order_id'=>$return_goods['order_id']))->find();
         $this->assign('order',$order);//退货订单信息
+        $this->assign('return_type',C('RETURN_TYPE'));//退货订单信息
+        $this->assign('refund_status',C('REFUND_STATUS'));
         return $this->fetch();
+    }
+
+    /**
+     *修改退货状态
+     */
+    public function checkReturniInfo()
+    {
+        $orderLogic = new OrderLogic();
+        $post_data = I('post.');
+        $return_goods = Db::name('return_goods')->where(['id'=>$post_data['id']])->find();
+        !$return_goods && $this->ajaxReturn(['status'=>-1,'msg'=>'非法操作!']);
+        $type_msg = C('RETURN_TYPE');
+        $status_msg = C('REFUND_STATUS');
+        switch ($post_data['status']){
+            case 1 :$post_data['checktime'] = time();break;
+            case 3 :$post_data['receivetime'] = time();break;  //卖家收货时间
+            default;
+        }
+        if($return_goods['type'] > 0  && $post_data['status'] == 4){
+            $post_data['seller_delivery']['express_time'] = date('Y-m-d H:i:s');
+            $post_data['seller_delivery'] = serialize($post_data['seller_delivery']); //换货的物流信息
+            Db::name('order_goods')->where(['rec_id'=>$return_goods['rec_id']])->save(['is_send'=>2]);
+        }
+        $note ="退换货:{$type_msg[$return_goods['type']]}, 状态:{$status_msg[$post_data['status']]},处理备注：{$post_data['remark']}";
+        $result = M('return_goods')->where(['id'=>$post_data['id']])->save($post_data);
+        if($result && $post_data['status']==1)
+        {
+            //审核通过才更改订单商品状态，进行退货，退款时要改对应商品修改库存
+            $order = \app\common\model\Order::get($return_goods['order_id']);
+            $commonOrderLogic = new \app\common\logic\OrderLogic();
+            $commonOrderLogic->alterReturnGoodsInventory($order,$return_goods['rec_id']); //审核通过，恢复原来库存
+            if($return_goods['type'] < 2){
+                $orderLogic->disposereRurnOrderCoupon($return_goods); // 是退货可能要处理优惠券
+            }
+        }
+        $orderLogic->orderActionLog($return_goods['order_id'],'退换货',$note);
+        $this->ajaxReturn(['status'=>1,'msg'=>'修改成功','url'=>'']);
     }
 
     //售后退款原路退回
@@ -771,8 +794,9 @@ exit("请联系TPshop官网客服购买高级版支持此功能");
     			$payment_obj =  new \weixin();
     			$data = array('transaction_id'=>$order['transaction_id'],'total_fee'=>$order['order_amount'],'refund_fee'=>$return_goods['refund_money']);
     			$result = $payment_obj->payment_refund($data);
-    			if($result['return_code'] == 'SUCCESS'  && $result['result_code' == 'SUCCESS']){
-    				updateRefundGoods($return_goods['rec_id']);//订单商品售后退款
+    			if($result['return_code'] == 'SUCCESS'  && $result['result_code'] == 'SUCCESS'){
+    			    $orderLogic = new OrderLogic();
+    				$orderLogic->updateRefundGoods($return_goods['rec_id']);//订单商品售后退款
     				$this->success('退款成功');
     			}else{
     				$this->error($result['return_msg']);
@@ -796,9 +820,9 @@ exit("请联系TPshop官网客服购买高级版支持此功能");
     public function refund_balance(){
 		$data = I('POST.'); 
 		$return_goods = M('return_goods')->where(array('rec_id'=>$data['rec_id']))->find();
-		if(empty($return_goods)) $this->ajaxReturn(['status'=>0,'msg'=>"参数有误"]); 
-		M('return_goods')->where(array('rec_id'=>$data['rec_id']))->save($data);
-		updateRefundGoods($data['rec_id'],1);//售后商品退款
+		if(empty($return_goods)) $this->ajaxReturn(['status'=>0,'msg'=>"参数有误"]);
+		$orderLogic = new OrderLogic();
+		$orderLogic->updateRefundGoods($data['rec_id'],1);//售后商品退款
 		$this->ajaxReturn(['status'=>1,'msg'=>"操作成功",'url'=>U("Admin/Order/return_list")]);
 		
     }
@@ -846,52 +870,45 @@ exit("请联系TPshop官网客服购买高级版支持此功能");
         	 $a = $orderLogic->orderProcessHandle($order_id,$action,array('note'=>I('note'),'admin_id'=>0));
         	 if($res !== false && $a !== false){
                  if ($action == 'remove') {
-                     exit(json_encode(array('status' => 1, 'msg' => '操作成功', 'data' => array('url' => U('admin/order/index')))));
+                     $this->ajaxReturn(['status' => 1, 'msg' => '操作成功', 'url' => U('Order/index')]);
                  }
-        	 	exit(json_encode(array('status' => 1,'msg' => '操作成功')));
+                 $this->ajaxReturn(['status' => 1,'msg' => '操作成功','url' => U('Order/detail',array('order_id'=>$order_id))]);
         	 }else{
                  if ($action == 'remove') {
-                     exit(json_encode(array('status' => 0, 'msg' => '操作失败', 'data' => array('url' => U('admin/order/index')))));
+                     $this->ajaxReturn(['status' => 0, 'msg' => '操作失败', 'url' => U('Order/index')]);
                  }
-        	 	exit(json_encode(array('status' => 0,'msg' => '操作失败')));
+        	 	$this->ajaxReturn(['status' => 0,'msg' => '操作失败','url' => U('Order/index')]);
         	 }
         }else{
-        	$this->error('参数错误',U('Admin/Order/detail',array('order_id'=>$order_id)));
+        	$this->ajaxReturn(['status' => 0,'msg' => '参数错误','url' => U('Order/index')]);
         }
     }
     
     public function order_log(){
-    	$timegap = urldecode(I('timegap'));
-    	if($timegap){
-    		$gap = explode('-', $timegap);
-            $timegap_begin = $gap[0];
-            $timegap_end = $gap[1];
-    		$begin = strtotime($timegap_begin);
-    		$end = strtotime($timegap_end);
-    	}else{
-    	    //@new 兼容新模板
-            $timegap_begin = urldecode(I('timegap_begin'));
-            $timegap_end = urldecode(I('timegap_end'));
-    	    $begin = strtotime($timegap_begin);
-    	    $end = strtotime($timegap_end);
-    	}
+    	$order_sn = I('order_sn');
     	$condition = array();
-    	$log =  M('order_action');
-    	if($begin && $end){
-    		$condition['log_time'] = array('between',"$begin,$end");
-    	}
+        $begin = $this->begin;
+        $end = $this->end;
+        $condition['log_time'] = array('between',"$begin,$end");
+        if($order_sn){   //搜索订单号
+            $order_id_arr = Db::name('order')->where(['order_sn' => $order_sn])->getField('order_id',true);
+            $order_ids =implode(',',$order_id_arr);
+            $condition['order_id']=['in',$order_ids];
+            $this->assign('order_sn',$order_sn);
+        }
+
     	$admin_id = I('admin_id');
 		if($admin_id >0 ){
 			$condition['action_user'] = $admin_id;
 		}
-    	$count = $log->where($condition)->count();
+    	$count = M('order_action')->where($condition)->count();
     	$Page = new Page($count,20);
 
     	foreach($condition as $key=>$val) {
     		$Page->parameter[$key] = urlencode($begin.'_'.$end);
     	}
     	$show = $Page->show();
-    	$list = $log->where($condition)->order('action_id desc')->limit($Page->firstRow.','.$Page->listRows)->select();
+    	$list = M('order_action')->where($condition)->order('action_id desc')->limit($Page->firstRow.','.$Page->listRows)->select();
         $orderIds = [];
         foreach ($list as $log) {
             if (!$log['action_user']) {
@@ -901,8 +918,6 @@ exit("请联系TPshop官网客服购买高级版支持此功能");
         if ($orderIds) {
             $users = M("users")->alias('u')->join('__ORDER__ o', 'o.user_id = u.user_id')->getField('o.order_id,u.nickname');
         }
-        $this->assign('timegap_begin',$timegap_begin);
-        $this->assign('timegap_end',$timegap_end);
         $this->assign('users',$users);
     	$this->assign('list',$list);
     	$this->assign('pager',$Page);
@@ -929,9 +944,9 @@ exit("请联系TPshop官网客服购买高级版支持此功能");
     	//搜索条件
         $consignee = I('consignee');
         $order_sn =  I('order_sn');
-        $timegap = I('timegap');
         $order_status = I('order_status');
         $order_ids = I('order_ids');
+        $prom_type = I('prom_type'); //订单类型
         $where = array();//搜索条件
         if($consignee){
             $where['consignee'] = ['like','%'.$consignee.'%'];
@@ -939,15 +954,13 @@ exit("请联系TPshop官网客服购买高级版支持此功能");
         if($order_sn){
             $where['order_sn'] = $order_sn;
         }
+        $prom_type != '' ? $where['prom_type'] = $prom_type : $where['prom_type'] = ['lt',5];
         if($order_status){
             $where['order_status'] = $order_status;
         }
-        if($timegap){
-            $gap = explode('-', $timegap);
-            $begin = strtotime($gap[0]);
-            $end = strtotime($gap[1]);
-            $where['add_time'] = ['between',[$begin, $end]];
-        }
+        $begin = $this->begin;
+        $end = $this->end;
+        $where['add_time'] = ['between',[$begin, $end]];
         if($order_ids){
             $where['order_id'] = ['in', $order_ids];
         }
@@ -1018,10 +1031,13 @@ exit("请联系TPshop官网客服购买高级版支持此功能");
         $order_by = I('order_by') ? I('order_by') : 'addtime';
         $sort_order = I('sort_order') ? I('sort_order') : 'desc';
         $status =  I('status');
-
-        $where = " 1 = 1 ";
-        $order_sn && $where.= " and order_sn like '%$order_sn%' ";
-        empty($order_sn)&& !empty($status) && $where.= " and status = '$status' ";
+        $where = [];
+        if($order_sn){
+            $where['order_sn'] =['like', '%'.$order_sn.'%'];
+        }
+        if($status != ''){
+            $where['status'] = $status;
+        }
         $count = M('return_goods')->where($where)->count();
         $Page  = new AjaxPage($count,13);
         $show = $Page->show();
@@ -1031,100 +1047,189 @@ exit("请联系TPshop官网客服购买高级版支持此功能");
             $goods_list = M('goods')->where("goods_id in (".implode(',', $goods_id_arr).")")->getField('goods_id,goods_name');
         }
         $state = C('REFUND_STATUS');
+        $return_type = C('RETURN_TYPE');
         $this->assign('state',$state);
+        $this->assign('return_type',$return_type);
         $this->assign('goods_list',$goods_list);
         $this->assign('list',$list);
         $this->assign('pager',$Page);
         $this->assign('page',$show);// 赋值分页输出
         return $this->fetch();
     }
-    
+
     /**
-     * 添加一笔订单
+     * 添加订单
      */
     public function add_order()
     {
-        $order = array();
         //  获取省份
         $province = M('region')->where(array('parent_id'=>0,'level'=>1))->select();
-        //  获取订单城市
-        $city =  M('region')->where(array('parent_id'=>$order['province'],'level'=>2))->select();
-        //  获取订单地区
-        $area =  M('region')->where(array('parent_id'=>$order['city'],'level'=>3))->select();
-        //  获取配送方式
-        $shipping_list = M('plugin')->where(array('status'=>1,'type'=>'shipping'))->select();
-        //  获取支付方式
-        $payment_list = M('plugin')->where(array('status'=>1,'type'=>'payment'))->select();
+        $this->assign('province',$province);
+        return $this->fetch();
+    }
+
+    /**
+     * 提交添加订单
+     */
+    public function addOrder(){
+            $user_id = I('user_id');// 用户id 可以为空
+            $admin_note = I('admin_note'); // 管理员备注
+            //收货信息
+            $user  = Db::name('users')->where(['user_id'=>$user_id])->find();
+            $address['consignee'] = I('consignee');// 收货人
+            $address['province'] = I('province'); // 省份
+            $address['city'] = I('city'); // 城市
+            $address['district'] = I('district'); // 县
+            $address['address'] = I('address'); // 收货地址
+            $address['mobile'] = I('mobile'); // 手机
+            $address['zipcode'] = I('zipcode'); // 邮编
+            $address['email'] = $user['email']; // 邮编
+            $invoice_title = I('invoice_title');// 发票抬头
+            $taxpayer = I('taxpayer');// 纳税人识别号
+
+            $goods_id_arr = I("goods_id/a");
+            $orderLogic = new OrderLogic();
+            $order_goods = $orderLogic->get_spec_goods($goods_id_arr);
+            $pay = new Pay();
+            try{
+                $pay->setUserId($user_id);
+                $pay->payGoodsList($order_goods);
+                $pay->delivery($address['district']);
+                $pay->orderPromotion();
+            } catch (TpshopException $t) {
+                $error = $t->getErrorArr();
+                $this->error($error['msg']);
+            }
+            $placeOrder = new PlaceOrder($pay);
+            $placeOrder->setUserAddress($address);
+            $placeOrder->setInvoiceTitle($invoice_title);
+            $placeOrder->setTaxpayer($taxpayer);
+            $placeOrder->addNormalOrder();
+            $order = $placeOrder->getOrder();
+            if($order) {
+                M('order_action')->add([
+                    'order_id'      => $order['order_id'],
+                    'action_user'   => session('admin_id'),
+                    'order_status'  => 0,  //待支付
+                    'shipping_status' => 0, //待确认
+                    'action_note'   => $admin_note,
+                    'status_desc'   => '提交订单',
+                    'log_time'      => time()
+                ]);
+                $this->success('添加商品成功',U("Admin/Order/detail",array('order_id'=>$order['order_id'])));
+            } else{
+                $this->error('添加失败');
+            }
+    }
+
+
+    /**
+     * 订单编辑
+     * @return mixed
+     */
+    public function edit_order(){
+        $order_id = I('order_id');
+        $orderLogic = new OrderLogic();
+        $orderModel = new \app\common\model\Order();
+        $orderObj = $orderModel->where(['order_id'=>$order_id])->find();
+        $order =$orderObj->append(['full_address','orderGoods'])->toArray();
+        if($order['shipping_status'] != 0){
+            $this->error('已发货订单不允许编辑');
+            exit;
+        }
+        $orderGoods = $order['orderGoods'];
         if(IS_POST)
         {
-            $order['user_id'] = I('user_id');// 用户id 可以为空
             $order['consignee'] = I('consignee');// 收货人
             $order['province'] = I('province'); // 省份
             $order['city'] = I('city'); // 城市
             $order['district'] = I('district'); // 县
             $order['address'] = I('address'); // 收货地址
-            $order['mobile'] = I('mobile'); // 手机           
+            $order['mobile'] = I('mobile'); // 手机
             $order['invoice_title'] = I('invoice_title');// 发票
-            $order['admin_note'] = I('admin_note'); // 管理员备注            
-            $order['order_sn'] = date('YmdHis').mt_rand(1000,9999); // 订单编号;
-            $order['admin_note'] = I('admin_note'); // 
-            $order['add_time'] = time(); //                    
+            $order['taxpayer'] = I('taxpayer');// 纳税人识别号
+            $order['admin_note'] = I('admin_note'); // 管理员备注
+            $order['admin_note'] = I('admin_note'); //
             $order['shipping_code'] = I('shipping');// 物流方式
-            $order['shipping_name'] = M('plugin')->where(array('status'=>1,'type'=>'shipping','code'=>I('shipping')))->getField('name');            
-            $order['pay_code'] = I('payment');// 支付方式            
-            $order['pay_name'] = M('plugin')->where(array('status'=>1,'type'=>'payment','code'=>I('payment')))->getField('name');            
-                            
+            $order['shipping_name'] = Db::name('shipping')->where('shipping_code',I('shipping'))->getField('shipping_name');
+            $order['pay_code'] = I('payment');// 支付方式
+            $order['pay_name'] = M('plugin')->where(array('status'=>1,'type'=>'payment','code'=>I('payment')))->getField('name');
             $goods_id_arr = I("goods_id/a");
-            $orderLogic = new OrderLogic();
-            $order_goods = $orderLogic->get_spec_goods($goods_id_arr);          
-            $result = calculate_price($order['user_id'],$order_goods,$order['shipping_code'],0,$order[province],$order[city],$order[district],0,0,0);      
-            if($result['status'] < 0)	
-            {
-                 $this->error($result['msg']);      
-            } 
-           
-           $order['goods_price']    = $result['result']['goods_price']; // 商品总价
-           $order['shipping_price'] = $result['result']['shipping_price']; //物流费
-           $order['order_amount']   = $result['result']['order_amount']; // 应付金额
-           $order['total_amount']   = $result['result']['total_amount']; // 订单总价
-           
-            // 添加订单
-            $order_id = M('order')->add($order);
-            $order_insert_id = DB::getLastInsID();
-            if($order_id)
-            {
-                foreach($order_goods as $key => $val)
+            $new_goods = $old_goods_arr = array();
+            //################################订单添加商品
+            if($goods_id_arr){
+                $new_goods = $orderLogic->get_spec_goods($goods_id_arr);
+                foreach($new_goods as $key => $val)
                 {
                     $val['order_id'] = $order_id;
-                    $rec_id = M('order_goods')->add($val);
+                    $rec_id = M('order_goods')->add($val);//订单添加商品
                     if(!$rec_id)
-                        $this->error('添加失败');                                  
+                        $this->error('添加失败');
                 }
-  
-                M('order_action')->add([
-                    'order_id'      => $order_id,
-                    'action_user'   => session('admin_id'),
-                    'order_status'  => 0,  //待支付
-                    'shipping_status' => 0, //待确认
-                    'action_note'   => $order['admin_note'],
-                    'status_desc'   => '提交订单',
-                    'log_time'      => time()
-                ]);
-                $this->success('添加商品成功',U("Admin/Order/detail",array('order_id'=>$order_insert_id)));
-                exit();
             }
-            else{
-                $this->error('添加失败');
-            }                
-        }     
-        $this->assign('shipping_list',$shipping_list);
-        $this->assign('payment_list',$payment_list);
+
+            //################################订单修改删除商品
+            $old_goods = I('old_goods/a');
+            foreach ($orderGoods as $val){
+                if(empty($old_goods[$val['rec_id']])){
+                    M('order_goods')->where("rec_id=".$val['rec_id'])->delete();//删除商品
+                }else{
+                    //修改商品数量
+                    if($old_goods[$val['rec_id']] != $val['goods_num']){
+                        $val['goods_num'] = $old_goods[$val['rec_id']];
+                        M('order_goods')->where("rec_id=".$val['rec_id'])->save(array('goods_num'=>$val['goods_num']));
+                    }
+                    $old_goods_arr[] = $val;
+                }
+            }
+
+            $goodsArr = array_merge($old_goods_arr,$new_goods);
+            $pay = new Pay();
+            try{
+                $pay->setUserId($order['user_id']);
+                $pay->payOrder($goodsArr);
+                $pay->delivery($order['district']);
+                $pay->orderPromotion();
+            } catch (TpshopException $t) {
+                $error = $t->getErrorArr();
+                $this->error($error['msg']);
+            }
+            //################################修改订单费用
+            $order['goods_price']    = $pay->getGoodsPrice(); // 商品总价
+            $order['shipping_price'] = $pay->getShippingPrice();//物流费
+            $order['order_amount']   = $pay->getOrderAmount(); // 应付金额
+            $order['total_amount']   = $pay->getTotalAmount(); // 订单总价
+            $o = M('order')->where('order_id='.$order_id)->save($order);
+
+            $l = $orderLogic->orderActionLog($order_id,'修改订单','修改订单');//操作日志
+            if($o && $l){
+                $this->success('修改成功',U('Admin/Order/editprice',array('order_id'=>$order_id)));
+            }else{
+                $this->success('修改失败',U('Admin/Order/detail',array('order_id'=>$order_id)));
+            }
+            exit;
+        }
+        // 获取省份
+        $province = M('region')->where(array('parent_id'=>0,'level'=>1))->select();
+        //获取订单城市
+        $city =  M('region')->where(array('parent_id'=>$order['province'],'level'=>2))->select();
+        //获取订单地区
+        $area =  M('region')->where(array('parent_id'=>$order['city'],'level'=>3))->select();
+        //获取支付方式
+        $payment_list = M('plugin')->where(array('status'=>1,'type'=>'payment'))->select();
+        //获取配送方式
+        $shipping_list = Db::name('shipping')->field('shipping_name,shipping_code')->where('')->select();
+
+        $this->assign('order',$order);
         $this->assign('province',$province);
         $this->assign('city',$city);
-        $this->assign('area',$area);        
+        $this->assign('area',$area);
+        $this->assign('orderGoods',$orderGoods);
+        $this->assign('shipping_list',$shipping_list);
+        $this->assign('payment_list',$payment_list);
         return $this->fetch();
     }
-    
+
     /**
      * 选择搜索商品
      */
@@ -1134,7 +1239,7 @@ exit("请联系TPshop官网客服购买高级版支持此功能");
     	$categoryList =  M("goods_category")->select();
     	$this->assign('categoryList',$categoryList);
     	$this->assign('brandList',$brandList);
-    	$where = ' is_on_sale = 1 and is_virtual =' . I('is_virtual/d',0);//搜索条件
+    	$where = 'exchange_integral = 0 and is_on_sale = 1 and is_virtual =' . I('is_virtual/d',0);//搜索条件
     	I('intro')  && $where = "$where and ".I('intro')." = 1";
     	if(I('cat_id')){
     		$this->assign('cat_id',I('cat_id'));    		
@@ -1180,5 +1285,20 @@ exit("请联系TPshop官网客服购买高级版支持此功能");
     public function ajaxOrderNotice(){
         $order_amount = M('order')->where("order_status=0 and (pay_status=1 or pay_code='cod')")->count();
         echo $order_amount;
+    }
+
+    /**
+     * 删除订单日志
+     */
+    public function delOrderLogo(){
+        $ids = I('ids');
+        empty($ids) &&  $this->ajaxReturn(['status' => -1,'msg' =>"非法操作！",'url'  =>'']);
+        $order_ids = rtrim($ids,",");
+        $res = Db::name('order_action')->whereIn('order_id',$order_ids)->delete();
+        if($res !== false){
+            $this->ajaxReturn(['status' => 1,'msg' =>"删除成功！",'url'  =>'']);
+        }else{
+            $this->ajaxReturn(['status' => -1,'msg' =>"删除失败",'url'  =>'']);
+        }
     }
 }

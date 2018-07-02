@@ -8,7 +8,7 @@
  * 这不是一个自由软件！您只能在不用于商业目的的前提下对程序代码进行修改和使用 .
  * 不允许对程序代码以任何形式任何目的的再发布。
  * 个人学习免费, 如果商业用途务必到TPshop官网购买授权.
- * 采用TP5助手函数可实现单字母函数M D U等,也可db::name方式,可双向兼容
+ * 采用最新Thinkphp5助手函数特性实现单字母函数M D U等简写方式
  * ============================================================================
  * $Author: IT宇宙人 2015-08-10 $
  *
@@ -64,16 +64,18 @@ class Index extends Base {
         	$cat_path = explode('_', $v['parent_id_path']);
         	$hot_cate[$cat_path[1]][] = $v;
         }
-        
         foreach ($this->cateTrre as $k=>$v){
             if($v['is_hot']==1){
         		$v['hot_goods'] = empty($hot_goods[$k]) ? '' : $hot_goods[$k];
         		$v['recommend_goods'] = empty($recommend_goods[$k]) ? '' : $recommend_goods[$k];
-        		$v['hot_cate'] = empty($hot_cate[$k]) ? '' : $hot_cate[$k];
-        		$cateList[] = $v;
-        	}
+        		$v['hot_cate'] = empty($hot_cate[$k]) ? array() : $hot_cate[$k];
+        		$cateList[]=$goods_category_tree[] = $v;
+        	}else{
+                $goods_category_tree[] = $v;
+            }
         }
         $this->assign('cateList',$cateList);
+        $this->assign('goods_category_tree',$goods_category_tree);
         return $this->fetch();
     }
  
@@ -112,7 +114,7 @@ class Index extends Base {
         $back_img = input('get.back_img', '');
         $valid_date = input('get.valid_date', 0);
         
-        $qr_code_path = './public/upload/qr_code/';
+        $qr_code_path = UPLOAD_PATH.'qr_code/';
         if (!file_exists($qr_code_path)) {
             mkdir($qr_code_path);
         }
@@ -181,7 +183,7 @@ class Index extends Base {
         imagedestroy($qrHandle);
         exit;
     }
-
+    
     // 验证码
     public function verify()
     {
@@ -220,7 +222,8 @@ class Index extends Base {
     public function ajax_favorite(){
         $p = I('p/d',1);
         $i = I('i',5); //显示条数
-        $where = ['is_recommend'=>1,'is_on_sale'=>1,'virtual_indate'=>['exp',' = 0 OR virtual_indate > '.time()]];
+        $time = time();
+        $where = ['is_recommend'=> 1 ,'is_on_sale'=>1 , 'is_virtual' => ['exp' ,"=0 or virtual_indate > $time"]];
         $favourite_goods = Db::name('goods')->where($where)->order('goods_id DESC')->page($p,$i)->cache(true,TPSHOP_CACHE_TIME)->select();//首页推荐商品
         $this->assign('favourite_goods',$favourite_goods);
         return $this->fetch();

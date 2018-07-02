@@ -7,7 +7,7 @@
  * ----------------------------------------------------------------------------
  * 这不是一个自由软件！您只能在不用于商业目的的前提下对程序代码进行修改和使用 .
  * 不允许对程序代码以任何形式任何目的的再发布。
- * 采用TP5助手函数可实现单字母函数M D U等,也可db::name方式,可双向兼容
+ * 采用最新Thinkphp5助手函数特性实现单字母函数M D U等简写方式
  * ============================================================================
  * Author: dyr
  * Date: 2016-08-19
@@ -110,8 +110,7 @@ class Pickup extends Base {
 		//获取省份
 		$p = M('region')->where(array('parent_id'=>0,'level'=> 1))->select();
 		$c = M('region')->where(array('parent_id'=>$pickup['province_id'],'level'=> 2))->select();
-		$d = M('region')->where(array('parent_id'=>$pickup['city_id'],'level'=> 3))->select();
-
+		$d = M('region')->where(array('parent_id'=>$pickup['city_id']))->select();
 		$suppliers = M('suppliers')->where(array('is_check'=>1))->select();
 
 		$this->assign('province',$p);

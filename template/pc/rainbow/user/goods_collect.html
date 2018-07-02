@@ -76,10 +76,10 @@
                                         </li>
 										<li class="sx5">
 											<div class="adhscar">
-												<if condition="$list.is_virtual eq 1">
+												<if condition="$list['is_on_sale'] eq 1">
 													<a class="add_p_shop" href="{:U('Home/Goods/goodsInfo',array('id'=>$list['goods_id']))}">查看详情</a>
-													<else/>
-													<a class="add_p_shop" onclick="AjaxAddCart({$list[goods_id]},1);">加入购物车</a>
+												<!--
+												<a class="add_p_shop" onclick="AjaxAddCart({$list[goods_id]},1);">加入购物车</a>-->
 												</if>
 												<a class="dele_g" onclick="del_all({$list[collect_id]})" href="javascript:">删除</a>
 											</div>

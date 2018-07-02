@@ -8,6 +8,7 @@
  * 这不是一个自由软件！您只能在不用于商业目的的前提下对程序代码进行修改和使用 .
  * 不允许对程序代码以任何形式任何目的的再发布。
  * 如果商业用途务必到官方购买正版授权, 以免引起不必要的法律纠纷.
+ * 采用最新Thinkphp5助手函数特性实现单字母函数M D U等简写方式
  * ============================================================================
  * 订单以及售后中心
  * @author soubao 当燃
@@ -40,8 +41,8 @@ class Order extends Base {
             $user_message_count = $messageLogic->getUserMessageCount();
             $this->assign('user_message_count', $user_message_count);
         }else{
-        	header("location:".U('Home/User/login'));
-        	exit;
+            redirect()->remember();
+            $this->redirect('User/login');
         }
         //用户中心面包屑导航
         $navigate_user = navigate_user();
@@ -66,7 +67,7 @@ class Order extends Base {
            $bind['search_key1'] = "%$search_key%";
            $bind['search_key2'] = "%$search_key%";
        }
-        $where.=' and order_prom_type < 5 ';//虚拟拼团订单不列出来
+        $where.=' and prom_type < 5 ';//虚拟拼团订单不列出来
         $count = M('order')->where($where)->bind($bind)->count();
         $Page = new Page($count,10);
 
@@ -82,8 +83,8 @@ class Order extends Base {
             //$order_list[$k]['total_fee'] = $v['goods_amount'] + $v['shipping_fee'] - $v['integral_money'] -$v['bonus'] - $v['discount']; //订单总额
             $data = $model->get_order_goods($v['order_id']);
             $order_list[$k]['goods_list'] = $data['result'];
-            if($order_list[$k]['order_prom_type'] == 4){
-                $pre_sell_item =  M('goods_activity')->where(array('act_id'=>$order_list[$k]['order_prom_id']))->find();
+            if($order_list[$k]['prom_type'] == 4){
+                $pre_sell_item =  M('goods_activity')->where(array('act_id'=>$order_list[$k]['prom_id']))->find();
                 $pre_sell_item = array_merge($pre_sell_item,unserialize($pre_sell_item['ext_info']));
                 $order_list[$k]['pre_sell_is_finished'] = $pre_sell_item['is_finished'];
                 $order_list[$k]['pre_sell_retainage_start'] = $pre_sell_item['retainage_start'];
@@ -115,15 +116,15 @@ class Order extends Base {
             exit;
         }
         $order_info = set_btn_order_status($order_info);  // 添加属性  包括按钮显示属性 和 订单状态显示属性
-        if($order_info['order_prom_type'] == 5){   //虚拟订单
+        if($order_info['prom_type'] == 5){   //虚拟订单
             $this->redirect(U('virtual/virtual_order',['order_id'=>$id]));
         }
         //获取订单商品
         $model = new UsersLogic();
         $data = $model->get_order_goods($order_info['order_id']);
         $order_info['goods_list'] = $data['result'];
-        if($order_info['order_prom_type'] == 4){
-            $pre_sell_item =  M('goods_activity')->where(array('act_id'=>$order_info['order_prom_id']))->find();
+        if($order_info['prom_type'] == 4){
+            $pre_sell_item =  M('goods_activity')->where(array('act_id'=>$order_info['prom_id']))->find();
             $pre_sell_item = array_merge($pre_sell_item,unserialize($pre_sell_item['ext_info']));
             $order_info['pre_sell_is_finished'] = $pre_sell_item['is_finished'];
             $order_info['pre_sell_retainage_start'] = $pre_sell_item['retainage_start'];
@@ -170,13 +171,11 @@ class Order extends Base {
      * 取消订单
      */
     public function cancel_order(){
-        $id = I('get.id/d');
+        $id = I('id/d');
         //检查是否有积分，余额支付
         $logic = new OrderLogic();
         $data = $logic->cancel_order($this->user_id,$id);
-        if($data['status'] < 0)
-            $this->error($data['msg']);
-        $this->success($data['msg']);
+        $this->ajaxReturn($data);
     }
 
     public function cancel_order_info(){
@@ -390,6 +389,7 @@ class Order extends Base {
         $return_address = M('region')->where("id in (".implode(',', $region_id).")")->getField('id,name');
         $order_info = array_merge($order,$order_goods);  //合并数组
         $this->assign('return_address', $return_address);
+        $this->assign('return_type', C('RETURN_TYPE'));
         $this->assign('goods', $order_goods);
     	$this->assign('order',$order);
         return $this->fetch();
@@ -430,11 +430,20 @@ class Order extends Base {
         $ReturnGoodsModel = new \app\common\model\ReturnGoods();
         $return_goods=$ReturnGoodsModel::get(['id' => $id,'user_id'=>$this->user_id]);
         if(empty($return_goods)) $this->error('参数错误');
+        if(IS_POST){
+            $data = I('post.');
+            $data['delivery'] = serialize($data['delivery']);
+            $data['status'] = 2;
+            M('return_goods')->where(['id'=>$data['id'],'user_id'=>$this->user_id])->save($data);
+            $this->success('发货提交成功',U('Home/Order/return_goods_info',array('id'=>$data['id'])));
+        }
         $return_goods['seller_delivery'] = unserialize($return_goods['seller_delivery']);  //订单的物流信息，服务类型为换货会显示
+        $return_goods['delivery'] = unserialize($return_goods['delivery']);  //订单的物流信息，服务类型为换货会显示
         if($return_goods['imgs'])
             $return_goods['imgs'] = explode(',', $return_goods['imgs']);
         $goods = M('goods')->where("goods_id", $return_goods['goods_id'])->find();
         $this->assign('state',C('REFUND_STATUS'));
+        $this->assign('return_type', C('RETURN_TYPE'));
         $this->assign('goods',$goods);
         $this->assign('return_goods',$return_goods);
         return $this->fetch();
@@ -535,7 +544,6 @@ class Order extends Base {
     }
 
     /**
-     * @time 2017/2/9
      * 订单商品评价列表
      */
     public function comment_list()
@@ -547,11 +555,11 @@ class Order extends Base {
         } else {
             //查找订单
             $order_comment_where['order_id'] = $order_id;
-            $order_info = M('order')->field('order_sn,order_id,add_time,order_prom_type') ->where($order_comment_where)->find();
+            $order_info = M('order')->field('order_sn,order_id,add_time,prom_type') ->where($order_comment_where)->find();
             //查找评价商品
             $order_comment_where['rec_id'] = $rec_id;
             $order_goods = M('order_goods')
-                ->field('goods_id,is_comment,goods_name,goods_num,goods_price,spec_key_name')
+                ->field('rec_id,goods_id,is_comment,goods_name,goods_num,goods_price,spec_key_name')
                 ->where($order_comment_where)
                 ->find();
             $order_info = array_merge($order_info,$order_goods);
@@ -567,6 +575,7 @@ class Order extends Base {
     {
         $user_info = session('user');
         $comment_img = serialize(I('comment_img/a')); // 上传的图片文件
+        $add['rec_id'] = I('rec_id/d');
         $add['goods_id'] = I('goods_id/d');
         $add['email'] = $user_info['email'];
         $hide_username = I('hide_username');
@@ -579,7 +588,6 @@ class Order extends Base {
         $add['deliver_rank'] = I('deliver_rank');
         $add['goods_rank'] = I('goods_rank');
         $add['is_show'] = 1; //默认显示
-        //$add['content'] = htmlspecialchars(I('post.content'));
         $add['content'] = I('content');
         $add['img'] = $comment_img;
         $add['add_time'] = time();

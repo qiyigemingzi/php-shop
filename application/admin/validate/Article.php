@@ -26,7 +26,8 @@ class Article extends Validate
     protected $rule = [
         'title'     => 'require|checkEmpty',
         'cat_id'    => 'require|checkEmpty',
-        'content'   => 'require|checkContent'
+        'content'   => 'require|checkContent',
+        'link'      => 'url'
     ];
     
     //错误消息
@@ -35,13 +36,14 @@ class Article extends Validate
         'content'  => '内容不能为空',
         'cat_id.require'   => '所属分类缺少参数',
         'cat_id.checkEmpty' => '所属分类必须选择',
-        'article_id.checkArtcileId' => '系统预定义的文章不能删除'
+        'article_id.checkArtcileId' => '系统预定义的文章不能删除',
+        'link.url' => '链接格式错误'
     ];
     
     //验证场景
     protected $scene = [
-        'add'  => ['title', 'cat_id', 'content'],
-        'edit' => ['title', 'cat_id', 'content'],
+        'add'  => ['title', 'cat_id', 'content','link'],
+        'edit' => ['title', 'cat_id', 'content','link'],
         'del'  => ['article_id']
     ];
     

@@ -72,15 +72,19 @@ class VirtualLogic extends Model
             return array('status'=>-1 , 'msg'=>'该商品不允许购买，原因可能：商品下架、不存在、过期等');
         }
     }
-    
+
     /**
      * 虚拟订单列表
+     * @param $user_id
+     * @param $type
+     * @param $search_key
+     * @return array
      */
     public function orderList($user_id, $type, $search_key)
     {
         $order = new \app\common\model\Order();
         //删除的订单不列出来， 作废订单不列出来，虚拟订单不列出来
-        $where = 'user_id=:user_id and deleted = 0 and order_status <> 5 and order_prom_type = 5 ';
+        $where = 'user_id=:user_id and deleted = 0 and order_status <> 5 and prom_type = 5 ';
         $bind['user_id'] = $user_id;
         //条件搜索
         if ($type) {

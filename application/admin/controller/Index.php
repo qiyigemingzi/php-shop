@@ -7,7 +7,7 @@
  * ----------------------------------------------------------------------------
  * 这不是一个自由软件！您只能在不用于商业目的的前提下对程序代码进行修改和使用 .
  * 不允许对程序代码以任何形式任何目的的再发布。
- * 采用TP5助手函数可实现单字母函数M D U等,也可db::name方式,可双向兼容
+ * 采用最新Thinkphp5助手函数特性实现单字母函数M D U等简写方式
  * ============================================================================
  * Author: 当燃      
  * Date: 2015-09-09
@@ -110,7 +110,7 @@ class Index extends Base {
             $id_value = I('id_value'); // 表主键id值
             $field  = I('field'); // 修改哪个字段
             $value  = I('value'); // 修改字段值                        
-            M($table)->where("$id_name = $id_value")->save(array($field=>$value)); // 根据条件保存修改的数据
+            M($table)->where([$id_name => $id_value])->save(array($field=>$value)); // 根据条件保存修改的数据
     }	    
 
     public function about(){

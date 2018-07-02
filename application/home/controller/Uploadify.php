@@ -60,7 +60,6 @@ class Uploadify extends Base {
 		if($action=='del' && !empty($filename) && file_exists($filename)){
 			$fileArr = explode('/', $filename);
 			if($fileArr[3] != cookie('user_id')) return false;
-			dump($fileArr);
 			$size = getimagesize($filename);
 			$filetype = explode('/',$size['mime']);
 			if($filetype[0]!='image'){
@@ -152,62 +151,7 @@ class Uploadify extends Base {
 		}
 		return $files;
 	}
-	
-	public function preview(){
-		// 此页面用来协助 IE6/7 预览图片，因为 IE 6/7 不支持 base64
-		$DIR = 'preview';
-		// Create target dir
-		if (!file_exists($DIR)) {
-			@mkdir($DIR);
-		}
-	
-		$cleanupTargetDir = true; // Remove old files
-		$maxFileAge = 5 * 3600; // Temp file age in seconds
-	
-		if ($cleanupTargetDir) {
-			if (!is_dir($DIR) || !$dir = opendir($DIR)) {
-				die('{"jsonrpc" : "2.0", "error" : {"code": 100, "message": "Failed to open temp directory."}, "id" : "id"}');
-			}
-	
-			while (($file = readdir($dir)) !== false) {
-				$tmpfilePath = $DIR . DIRECTORY_SEPARATOR . $file;
-				// Remove temp file if it is older than the max age and is not the current file
-				if (@filemtime($tmpfilePath) < time() - $maxFileAge) {
-					@unlink($tmpfilePath);
-				}
-			}
-			closedir($dir);
-		}
-	
-		$src = file_get_contents('php://input');
-		if (preg_match("#^data:image/(\w+);base64,(.*)$#", $src, $matches)) {
-			$previewUrl = sprintf(
-					"%s://%s%s",
-					isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] != 'off' ? 'https' : 'http',
-					$_SERVER['HTTP_HOST'],$_SERVER['REQUEST_URI']
-			);
-			$previewUrl = str_replace("preview.php", "", $previewUrl);
-			$base64 = $matches[2];
-			$type = $matches[1];
-			if ($type === 'jpeg') {
-				$type = 'jpg';
-			}
-	
-			$filename = md5($base64).".$type";
-			$filePath = $DIR.DIRECTORY_SEPARATOR.$filename;
-	
-			if (file_exists($filePath)) {
-				die('{"jsonrpc" : "2.0", "result" : "'.$previewUrl.'preview/'.$filename.'", "id" : "id"}');
-			} else {
-				$data = base64_decode($base64);
-				file_put_contents($filePath, $data);
-				die('{"jsonrpc" : "2.0", "result" : "'.$previewUrl.'preview/'.$filename.'", "id" : "id"}');
-			}
-		} else {
-			die('{"jsonrpc" : "2.0", "error" : {"code": 100, "message": "un recoginized source"}}');
-		}
-	}
-	
+
 	public function index(){
 	
 		$CONFIG2 = json_decode(preg_replace("/\/\*[\s\S]+?\*\//", "", file_get_contents("./public/plugins/Ueditor/php/config.json")), true);
@@ -326,12 +270,12 @@ class Uploadify extends Base {
 			// 使用自定义的文件保存规则
 			$info = $file->rule(function ($file) {
 				return  md5(mt_rand());
-			})->move('public/upload/'.$this->savePath);
+			})->move(UPLOAD_PATH.$this->savePath);
 		}
 		if($info){
 			$data = array(
 					'state' => 'SUCCESS',
-					'url' => '/public/upload/'.$this->savePath.$info->getSaveName(),
+					'url' => '/'.UPLOAD_PATH.$this->savePath.$info->getSaveName(),
 					'title' => $info->getFilename(),
 					'original' => $info->getFilename(),
 					'type' => '.' . $info->getExtension(),
@@ -431,7 +375,7 @@ class Uploadify extends Base {
 		ob_end_clean();
 		preg_match("/[\/]([^\/]*)[\.]?[^\.\/]*$/",$imgUrl,$m);
 	
-		$dirname = './public/upload/remote/';
+		$dirname = UPLOAD_PATH.'remote/';
 		$file['oriName'] = $m ? $m[1] : "";
 		$file['filesize'] = strlen($img);
 		$file['ext'] = strtolower(strrchr($config['oriName'],'.'));
@@ -488,7 +432,7 @@ class Uploadify extends Base {
 		$base64Data = $_POST[$fieldName];
 		$img = base64_decode($base64Data);
 	
-		$dirname = './public/upload/scrawl/';
+		$dirname = UPLOAD_PATH.'scrawl/';
 		$file['filesize'] = strlen($img);
 		$file['oriName'] = $config['oriName'];
 		$file['ext'] = strtolower(strrchr($config['oriName'],'.'));
@@ -565,7 +509,7 @@ class Uploadify extends Base {
 			$ossSupportPath = ['comment', 'photo'];
 			if (in_array(I('savepath'), $ossSupportPath) && $ossConfig['oss_switch']) {
 				//商品图片可选择存放在oss
-				$object = 'public/upload/'.$savePath.md5(time()).'.'.pathinfo($file->getInfo('name'), PATHINFO_EXTENSION);
+				$object = UPLOAD_PATH.$savePath.md5(time()).'.'.pathinfo($file->getInfo('name'), PATHINFO_EXTENSION);
 				$ossClient = new \app\common\logic\OssLogic;
 				$return_url = $ossClient->uploadFile($file->getRealPath(), $object);
 				if (!$return_url) {
@@ -579,13 +523,13 @@ class Uploadify extends Base {
 				// 移动到框架应用根目录/public/uploads/ 目录下
 				$info = $file->rule(function ($file) {
 					return  md5(mt_rand()); // 使用自定义的文件保存规则
-				})->move('public/upload/'.$savePath);
+				})->move(UPLOAD_PATH.$savePath);
 				if ($info) {
 					$state = "SUCCESS";
 				} else {
 					$state = "ERROR" . $file->getError();
 				}
-				$return_url = '/public/upload/'.$savePath.$info->getSaveName();
+				$return_url = '/'.UPLOAD_PATH.$savePath.$info->getSaveName();
 			}
 			$return_data['url'] = $return_url;
 		}

@@ -1,58 +1,44 @@
-<include file="public/min-header"/>
-<div class="wrapper">
-	<include file="public/breadcrumb"/>
-    <section class="content">
-        <!-- Main content -->
-        <div class="container-fluid">
-            <div class="pull-right">
-
-                <a href="javascript:history.go(-1)" data-toggle="tooltip" title="" class="btn btn-default" data-original-title="返回"><i class="fa fa-reply"></i></a>
+<include file="public/layout" />
+<body style="background-color: #FFF; overflow: auto;">
+<div id="toolTipLayer" style="position: absolute; z-index: 9999; display: none; visibility: visible; left: 95px; top: 573px;"></div>
+<div id="append_parent"></div>
+<div id="ajaxwaitid"></div>
+<div class="page">
+    <div class="fixed-bar">
+        <div class="item-title"><a class="back" href="javascript:history.back();" title="返回列表"><i class="fa fa-arrow-circle-o-left"></i></a>
+            <div class="subject">
+                <h3>插件管理 - {$plugin.name}配置</h3>
+                <h5>网站系统插件管理</h5>
             </div>
-            <div class="panel panel-default">
-                <div class="panel-heading">
-                    <h3 class="panel-title"><i class="fa fa-list"></i> {$plugin.name}配置</h3>
-                </div>
-                <div class="panel-body">
-
-                    <!--表单数据-->
-                    <form method="post" id="addEditSpecForm" action="">
-                        <!--通用信息-->
-                    <div class="tab-content">                 	  
-                        <div class="tab-pane active" id="tab_tongyong">
-                           
-                            <table class="table table-bordered">
-                                <tbody>
-                                <volist name="plugin.config" id="config">
-                                    <tr>
-                                        <td class="col-sm-2">{$config.label}：</td>
-                                        <td>
-                                            <if condition="$config['type'] eq 'select'">
-                                                <select name="config[{$config['name']}]">
-                                                    <volist name="config.option" id="option" key="o">
-                                                        <option <if condition="$config_value[$config['name']] eq $o">selected</if>  value="{$o}">{$option}</option>
-                                                    </volist>
-                                                </select>
-                                            <elseif condition="$config['type'] eq 'textarea'"/>
-                                                <textarea rows="6" cols="90" name="config[{$config['name']}]">{$config_value[$config['name']]}</textarea>
-                                            <else />
-                                                <input type="{$config['type']}" value="{$config_value[$config['name']]}" name="config[{$config['name']}]"/>
-                                            </if>
-                                        </td>
-                                    </tr>
-                                </volist>
-                                </tbody>                                
-                                </table>
-                        </div>                           
-                    </div>              
-                    <div class="">
-                        <input type="hidden" name="id" value="{$spec.id}">
-                        <button class="btn btn-primary" title="" data-toggle="tooltip" type="submit"  data-original-title="保存"><i class="fa fa-save"></i></button>
-                    </div>
-			    </form><!--表单数据-->
-                </div>
-            </div>
-        </div>    <!-- /.content -->
-    </section>
+        </div>
+    </div>
+    <form class="form-horizontal" id="addEditSpecForm" method="post">
+        <div class="ncap-form-default">
+            <volist name="plugin.config" id="config">
+            <dl class="row">
+                <dt class="tit">
+                    <label>{$config.label}</label>
+                </dt>
+                <dd class="opt">
+                    <if condition="$config['type'] eq 'select'">
+                        <select name="config[{$config['name']}]">
+                            <foreach name="config.option" item="option" key="o">
+                                <option <if condition="$config_value[$config['name']] eq $o">selected</if>  value="{$o}">{$option}</option>
+                            </foreach>
+                        </select>
+                        <elseif condition="$config['type'] eq 'textarea'"/>
+                        <textarea rows="6" cols="90" class="tarea" name="config[{$config['name']}]">{$config_value[$config['name']]}</textarea>
+                        <else />
+                        <input type="{$config['type']}" value="{$config_value[$config['name']]}" name="config[{$config['name']}]" class="input-txt"/>
+                    </if>
+                    <p class="notic" <if condition="$config['name'] eq 'alipay_private_key'">style="color:red;font-weight:bold"</if> >{$config.description|default=$config.label}</p>
+                </dd>
+            </dl>
+            </volist>
+            <div class="bot"><a href="JavaScript:void(0);" onClick=" $('#addEditSpecForm').submit();" class="ncap-btn-big ncap-btn-green" id="submitBtn">确认提交</a></div>
+        </div>
+        <input type="hidden" name="id" value="{$spec.id}">
+    </form>
 </div>
 </body>
 </html>

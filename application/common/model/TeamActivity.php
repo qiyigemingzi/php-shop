@@ -19,10 +19,11 @@ use think\Request;
 class TeamActivity extends Model
 {
     public function specGoodsPrice(){
+//        return $this->hasOne('specGoodsPrice','item_id','item_id')->bind(['price']);
         return $this->hasOne('specGoodsPrice','item_id','item_id');
     }
     public function goods(){
-        return $this->hasOne('goods','goods_id','goods_id');
+        return $this->hasOne('goods','goods_id','goods_id')->bind(['shop_price']);
     }
     public function teamFound(){
         return $this->hasMany('teamFound','team_id','team_id');
