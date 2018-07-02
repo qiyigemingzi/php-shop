@@ -1,19 +1,13 @@
 <?php
 /**
- * tpshop
- * ============================================================================
- * * 版权所有 2015-2027 深圳搜豹网络科技有限公司，并保留所有权利。
- * 网站地址: http://www.tp-shop.cn
- * ----------------------------------------------------------------------------
- * 这不是一个自由软件！您只能在不用于商业目的的前提下对程序代码进行修改和使用 .
- * 不允许对程序代码以任何形式任何目的的再发布。
- * 采用最新Thinkphp5助手函数特性实现单字母函数M D U等简写方式
- * $Author: IT宇宙人 2015-08-10 $
+ * $Author: wuhy
  */
+
+use MongoDB\BSON\Type;
 use think\Log;
 use think\Db;
 /**
- * tpshop检验登陆
+ * 检验登陆
  * @param
  * @return bool
  */
@@ -24,12 +18,16 @@ function is_login(){
         return false;
     }
 }
+
 /**
  * 获取用户信息
  * @param $user_value  用户id 邮箱 手机 第三方id
- * @param int $type  类型 0 user_id查找 1 邮箱查找 2 手机查找 3 第三方唯一标识查找
- * @param string $oauth  第三方来源
+ * @param int $type 类型 0 user_id查找 1 邮箱查找 2 手机查找 3 第三方唯一标识查找
+ * @param string $oauth 第三方来源
  * @return mixed
+ * @throws \think\db\exception\DataNotFoundException
+ * @throws \think\db\exception\ModelNotFoundException
+ * @throws \think\exception\DbException
  */
 function get_user_info($user_value, $type = 0, $oauth = '')
 {
@@ -54,7 +52,7 @@ function get_user_info($user_value, $type = 0, $oauth = '')
 /**
  * 更新会员等级,折扣，消费总额
  * @param $user_id  用户ID
- * @return boolean
+ * @return void
  */
 function update_user_level($user_id){
     $level_info = M('user_level')->order('level_id')->select();
@@ -79,9 +77,10 @@ function update_user_level($user_id){
 
 /**
  *  商品缩略图 给于标签调用 拿出商品表的 original_img 原始图来裁切出来的
- * @param type $goods_id  商品id
- * @param type $width     生成缩略图的宽度
- * @param type $height    生成缩略图的高度
+ * @param type $goods_id 商品id
+ * @param type $width 生成缩略图的宽度
+ * @param type $height 生成缩略图的高度
+ * @return \app\common\logic\type|mixed|string
  */
 function goods_thum_images($goods_id, $width, $height)
 {
@@ -188,7 +187,8 @@ function get_sub_images($sub_img, $goods_id, $width, $height)
 
 /**
  * 刷新商品库存, 如果商品有设置规格库存, 则商品总库存 等于 所有规格库存相加
- * @param type $goods_id  商品id
+ * @param type $goods_id 商品id
+ * @return bool
  */
 function refresh_stock($goods_id){
     $count = M("SpecGoodsPrice")->where("goods_id", $goods_id)->count();
@@ -236,8 +236,9 @@ function minus_stock($order){
 /**
  * 邮件发送
  * @param $to    接收人
- * @param string $subject   邮件标题
- * @param string $content   邮件内容(html模板渲染后的内容)
+ * @param string $subject 邮件标题
+ * @param string $content 邮件内容(html模板渲染后的内容)
+ * @return array
  * @throws Exception
  * @throws phpmailerException
  */
@@ -356,6 +357,7 @@ function queryExpress($postcom , $getNu) {
 /**
  * 获取某个商品分类的 儿子 孙子  重子重孙 的 id
  * @param type $cat_id
+ * @return array|mixed
  */
 function getCatGrandson ($cat_id)
 {
@@ -377,6 +379,7 @@ function getCatGrandson ($cat_id)
 /**
  * 获取某个文章分类的 儿子 孙子  重子重孙 的 id
  * @param type $cat_id
+ * @return array|mixed
  */
 function getArticleCatGrandson ($cat_id)
 {
@@ -432,9 +435,9 @@ function getArticleCatGrandson2($cat_id)
 
 /**
  * 查看某个用户购物车中商品的数量
- * @param type $user_id
- * @param type $session_id
- * @return type 购买数量
+ * @param int $user_id
+ * @param string $session_id
+ * @return float|int 购买数量
  */
 function cart_goods_num($user_id = 0,$session_id = '')
 {
@@ -455,7 +458,8 @@ function cart_goods_num($user_id = 0,$session_id = '')
 /**
  * 获取商品库存
  * @param type $goods_id 商品id
- * @param type $key  库存 key
+ * @param type $key 库存 key
+ * @return
  */
 function getGoodNum($goods_id,$key)
 {
@@ -530,14 +534,16 @@ function tpCache($config_key,$data = array()){
 
 /**
  * 记录帐户变动
- * @param   int     $user_id        用户id
- * @param   float   $user_money     可用余额变动
- * @param   int     $pay_points     消费积分变动
- * @param   string  $desc    变动说明
- * @param   float   distribut_money 分佣金额
+ * @param   int $user_id 用户id
+ * @param int $user_money 可用余额变动
+ * @param   int $pay_points 消费积分变动
+ * @param   string $desc 变动说明
+ * @param int $distribut_money
  * @param int $order_id 订单id
  * @param string $order_sn 订单sn
  * @return  bool
+ * @throws \think\Exception
+ * @throws \think\exception\PDOException
  */
 function accountLog($user_id, $user_money = 0,$pay_points = 0, $desc = '',$distribut_money = 0,$order_id = 0 ,$order_sn = ''){
     /* 插入帐户变动记录 */
@@ -572,10 +578,10 @@ function accountLog($user_id, $user_money = 0,$pay_points = 0, $desc = '',$distr
 /**
  * 订单操作日志
  * 参数示例
- * @param type $order_id  订单id
+ * @param type $order_id 订单id
  * @param type $action_note 操作备注
  * @param type $status_desc 操作状态  提交订单, 付款成功, 取消, 等待收货, 完成
- * @param type $user_id  用户id 默认为管理员
+ * @param int $user_id 用户id 默认为管理员
  * @return boolean
  */
 function logOrder($order_id,$action_note,$status_desc,$user_id = 0)
@@ -626,10 +632,11 @@ function get_user_default_address($user_id){
     $data = M('user_address')->where(array('user_id'=>$user_id,'is_default'=>1))->find();
     return $data;
 }
+
 /**
  * 获取订单状态的 中文描述名称
- * @param type $order_id  订单id
- * @param type $order     订单数组
+ * @param int $order_id 订单id
+ * @param array $order 订单数组
  * @return string
  */
 function orderStatusDesc($order_id = 0, $order = array())
@@ -667,8 +674,8 @@ function orderStatusDesc($order_id = 0, $order = array())
 
 /**
  * 获取订单状态的 显示按钮
- * @param type $order_id  订单id
- * @param type $order     订单数组
+ * @param int $order_id 订单id
+ * @param array $order 订单数组
  * @return array()
  */
 function orderBtn($order_id = 0, $order = array())
@@ -750,6 +757,7 @@ function orderBtn($order_id = 0, $order = array())
 /**
  * 给订单数组添加属性  包括按钮显示属性 和 订单状态显示属性
  * @param type $order
+ * @return array
  */
 function set_btn_order_status($order)
 {
@@ -789,6 +797,9 @@ function rechargevip_rebate($order) {
  * @param $order_sn 订单号
  * @param array $ext 额外参数
  * @return bool|void
+ * @throws \think\Exception
+ * @throws \think\exception\DbException
+ * @throws \think\exception\PDOException
  */
 function update_pay_status($order_sn,$ext=array())
 {
@@ -936,7 +947,9 @@ function confirm_order($id,$user_id = 0){
 
 /**
  * 下单赠送活动：优惠券，积分
- * @param $order|订单数组
+ * @param $order |订单数组
+ * @throws \think\Exception
+ * @throws \think\exception\PDOException
  */
 function order_give($order)
 {
@@ -1008,7 +1021,7 @@ function order_give($order)
 
 /**
  * 获取商品一二三级分类
- * @return type
+ * @return array
  */
 function get_goods_category_tree(){
     $tree = $arr = $result = array();
