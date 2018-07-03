@@ -1,16 +1,4 @@
 <?php
-/**
- * tpshop
- * ============================================================================
- * * 版权所有 2015-2027 深圳搜豹网络科技有限公司，并保留所有权利。
- * 网站地址: http://www.tp-shop.cn
- * ----------------------------------------------------------------------------
- * 这不是一个自由软件！您只能在不用于商业目的的前提下对程序代码进行修改和使用 .
- * 不允许对程序代码以任何形式任何目的的再发布。
- * 采用最新Thinkphp5助手函数特性实现单字母函数M D U等简写方式
- * ============================================================================
- * $Author: IT宇宙人 2015-08-10 $
- */
 namespace app\mobile\controller;
 use app\common\logic\GoodsLogic;
 use app\common\logic\GoodsPromFactory;
@@ -439,7 +427,7 @@ class Goods extends MobileBase {
     public function brandstreet()
     {
         $getnum = 9;   //取出数量
-        $goods=M('goods')->where(array('is_recommend'=>1,'is_on_sale'=>1))->page(1,$getnum)->cache(true,TPSHOP_CACHE_TIME)->select(); //推荐商品
+        $goods=M('goods')->where(array('is_recommend'=>1,'is_on_sale'=>1))->page(1,$getnum)->cache(true,wshop_CACHE_TIME)->select(); //推荐商品
         for($i=0;$i<($getnum/3);$i++){
             //3条记录为一组
             $recommend_goods[] = array_slice($goods,$i*3,3);

@@ -1,6 +1,6 @@
 <link rel="stylesheet" type="text/css" href="__STATIC__/css/base.css"/>
-<link rel="shortcut icon" type="image/x-icon" href="{$tpshop_config.shop_info_store_ico|default='/public/static/images/logo/storeico_default.png'}" media="screen"/>
-<div class="tpshop-tm-hander">
+<link rel="shortcut icon" type="image/x-icon" href="{$wshop_config.shop_info_store_ico|default='/public/static/images/logo/storeico_default.png'}" media="screen"/>
+<div class="wshop-tm-hander">
 	<div class="top-hander">
 		<div class="[w] pr clearfix">
 			<div class="fl">
@@ -69,7 +69,7 @@
 	</div>
 	<div class="nav-middan-z [w] clearfix">
 		<a class="ecsc-logo" href="{:U('Home/index/index')}">
-            <img src="{$tpshop_config.shop_info_store_logo|default='/public/static/images/logo/pc_home_logo_default.png'}" style="width: 159px;height: 58px;">
+            <img src="{$wshop_config.shop_info_store_logo|default='/public/static/images/logo/pc_home_logo_default.png'}" style="width: 159px;height: 58px;">
         </a>
 		<div class="ecsc-search">
 			<form id="searchForm" name="" method="get" action="{:U('Home/Goods/search')}" class="ecsc-search-form">
@@ -148,7 +148,7 @@
                 </script>
 			</form>
 			<div class="keyword clearfix">
-				<foreach name="tpshop_config.hot_keywords" item="wd" key="k">
+				<foreach name="wshop_config.hot_keywords" item="wd" key="k">
 				<a class="key-item" href="{:U('Home/Goods/search',array('q'=>$wd))}" target="_blank">{$wd}</a>
 				</foreach>
 			</div>
@@ -244,11 +244,11 @@
 		</div>
 		<ul class="navitems clearfix" id="navitems">
 			<li <if condition=" CONTROLLER_NAME eq 'Index' ">class="selected"</if>><a href="{:U('Index/index')}">首页</a></li>
-			<tpshop sql="SELECT * FROM `__PREFIX__navigation` where is_show = 1 and position = 'top' ORDER BY `sort` DESC" key="k" item='v'>
+			<wshop sql="SELECT * FROM `__PREFIX__navigation` where is_show = 1 and position = 'top' ORDER BY `sort` DESC" key="k" item='v'>
 			<li <?php if($_SERVER['REQUEST_URI']==str_replace('&amp;','&',$v[url])){ echo "class='selected'";}?>>
        			<a href="{$v[url]}" <if condition="$v[is_new] eq 1">target="_blank" </if> >{$v[name]}</a>
        		</li>
-			</tpshop>
+			</wshop>
 		</ul>
 	</div>
 </div>

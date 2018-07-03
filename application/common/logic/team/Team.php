@@ -1,17 +1,5 @@
 <?php
-/**
- * tpshop
- * ============================================================================
- * 版权所有 2015-2027 深圳搜豹网络科技有限公司，并保留所有权利。
- * 网站地址: http://www.tp-shop.cn
- * ----------------------------------------------------------------------------
- * 这不是一个自由软件！您只能在不用于商业目的的前提下对程序代码进行修改和使用 .
- * 不允许对程序代码以任何形式任何目的的再发布。
- * 如果商业用途务必到官方购买正版授权, 以免引起不必要的法律纠纷.
- * ============================================================================
- * Author: lhb
- * Date: 2017-05-15
- */
+
 
 namespace app\common\logic\team;
 use app\common\model\Order;
@@ -19,7 +7,7 @@ use app\common\model\TeamActivity;
 use app\common\model\TeamFollow;
 use app\common\model\TeamFound;
 use app\common\model\Users;
-use app\common\util\TpshopException;
+use app\common\util\wshopException;
 use think\Db;
 
 /**
@@ -38,6 +26,10 @@ class Team
 
     private $teamGoods;//虚构的商品模型
 
+    /**
+     * @param $team_id
+     * @throws \think\exception\DbException
+     */
     public function setTeamActivityById($team_id)
     {
         if($team_id > 0){
@@ -51,6 +43,10 @@ class Team
         return $this->teamActivity;
     }
 
+    /**
+     * @param $found_id
+     * @throws \think\exception\DbException
+     */
     public function setTeamFoundById($found_id)
     {
         if($found_id){
@@ -59,6 +55,10 @@ class Team
         }
     }
 
+    /**
+     * @param $user_id
+     * @throws \think\exception\DbException
+     */
     public function setUserById($user_id)
     {
         if($user_id > 0){
@@ -155,18 +155,24 @@ class Team
         return $couponNewList;
     }
 
+    /**
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     * @throws wshopException
+     */
     public function buy()
     {
         if (empty($this->teamActivity) || $this->teamActivity['status'] != 1) {
-            throw new TpshopException('拼团购买商品',0,['status' => 0, 'msg' => '该商品拼团活动不存在或者已下架', 'result' => '']);
+            throw new wshopException('拼团购买商品',0,['status' => 0, 'msg' => '该商品拼团活动不存在或者已下架', 'result' => '']);
         }
         if ($this->teamActivity['is_lottery'] == 1) {
-            throw new TpshopException('拼团购买商品',0,['status' => 0, 'msg' => '该商品拼团活动已开奖', 'result' => '']);
+            throw new wshopException('拼团购买商品',0,['status' => 0, 'msg' => '该商品拼团活动已开奖', 'result' => '']);
         }
         $this->teamGoods = $goods = $this->teamActivity->goods;
         $spec_goods_price = $this->teamActivity->specGoodsPrice;
         if (empty($goods) || $goods['is_on_sale'] != 1 || $goods['prom_type'] != 6) {
-            throw new TpshopException('拼团购买商品',0,['status' => 0, 'msg' => '该商品拼团活动不存在或者已下架', 'result' => '']);
+            throw new wshopException('拼团购买商品',0,['status' => 0, 'msg' => '该商品拼团活动不存在或者已下架', 'result' => '']);
         }
         if ($this->teamActivity['item_id'] > 0) {
             $this->teamGoods['spec_key'] = $spec_goods_price['key'];
@@ -176,43 +182,43 @@ class Team
             $this->teamGoods['prom_type'] = $spec_goods_price['prom_type'];
             $this->teamGoods['shop_price'] = $spec_goods_price['price'];
             if(empty($spec_goods_price) || $spec_goods_price['prom_type'] != 6){
-                throw new TpshopException('拼团购买商品',0,['status' => 0, 'msg' => '该商品拼团活动不存在或者已下架', 'result' => '']);
+                throw new wshopException('拼团购买商品',0,['status' => 0, 'msg' => '该商品拼团活动不存在或者已下架', 'result' => '']);
             }
             if($this->buyNum > $spec_goods_price['store_count']){
-                throw new TpshopException('拼团购买商品',0,['status' => 0, 'msg' => '商品库存仅剩余'.$spec_goods_price['store_count'], 'result' => '']);
+                throw new wshopException('拼团购买商品',0,['status' => 0, 'msg' => '商品库存仅剩余'.$spec_goods_price['store_count'], 'result' => '']);
             }
         }
         if($this->buyNum > $goods['store_count']){
-            throw new TpshopException('拼团购买商品',0,['status' => 0, 'msg' => '商品库存仅剩余'.$goods['store_count'], 'result' => '']);
+            throw new wshopException('拼团购买商品',0,['status' => 0, 'msg' => '商品库存仅剩余'.$goods['store_count'], 'result' => '']);
         }
         if ($this->buyNum <= 0) {
-            throw new TpshopException('拼团购买商品',0,['status' => 0, 'msg' => '至少购买一份', 'result' => '']);
+            throw new wshopException('拼团购买商品',0,['status' => 0, 'msg' => '至少购买一份', 'result' => '']);
         }
         if ($this->teamActivity['buy_limit'] != 0 && $this->buyNum > $this->teamActivity['buy_limit']) {
-            throw new TpshopException('拼团购买商品',0,['status' => 0, 'msg' => '购买数已超过该活动单次购买限制数(' . $this->teamActivity['buy_limit'] . ')', 'result' => '']);
+            throw new wshopException('拼团购买商品',0,['status' => 0, 'msg' => '购买数已超过该活动单次购买限制数(' . $this->teamActivity['buy_limit'] . ')', 'result' => '']);
         }
         if($this->foundId){
             if(empty($this->teamFound) || $this->teamFound['status'] != 1){
-                throw new TpshopException('拼团购买商品',0,['status' => 0, 'msg' => '该拼单数据不存在或已失效', 'result' => '']);
+                throw new wshopException('拼团购买商品',0,['status' => 0, 'msg' => '该拼单数据不存在或已失效', 'result' => '']);
             }
             if($this->teamFound['user_id'] == $this->userId){
-                throw new TpshopException('拼团购买商品',0,['status' => 0, 'msg' => '不能自己开团自己拼', 'result' => '']);
+                throw new wshopException('拼团购买商品',0,['status' => 0, 'msg' => '不能自己开团自己拼', 'result' => '']);
             }
             if($this->teamActivity['team_type'] == 2){
                 //抽奖团，只能拼一次团
                 $teamYouSelfFollow = Db::name('team_follow')->where(['follow_user_id' => $this->userId, 'team_id' => $this->teamId, 'status' => ['in', '1,2']])->find();
                 if($teamYouSelfFollow){
-                    throw new TpshopException('拼团购买商品',0,['status' => 0, 'msg' => '你已经参与过该拼团活动。', 'result' => '']);
+                    throw new wshopException('拼团购买商品',0,['status' => 0, 'msg' => '你已经参与过该拼团活动。', 'result' => '']);
                 }
             }
             if($this->teamFound['team_id'] != $this->teamActivity['team_id']){
-                throw new TpshopException('拼团购买商品',0,['status' => 0, 'msg' => '该拼单数据不存在或已失效', 'result' => '']);
+                throw new wshopException('拼团购买商品',0,['status' => 0, 'msg' => '该拼单数据不存在或已失效', 'result' => '']);
             }
             if($this->teamFound['join'] >= $this->teamFound['need']){
-                throw new TpshopException('拼团购买商品',0,['status' => 0, 'msg' => '该单已成功结束', 'result' => '']);
+                throw new wshopException('拼团购买商品',0,['status' => 0, 'msg' => '该单已成功结束', 'result' => '']);
             }
             if(time() - $this->teamFound['found_time'] > $this->teamActivity['time_limit']){
-                throw new TpshopException('拼团购买商品',0,['status' => 0, 'msg' => '该拼单已过期', 'result' => '']);
+                throw new wshopException('拼团购买商品',0,['status' => 0, 'msg' => '该拼单已过期', 'result' => '']);
             }
         }
         $this->teamGoods['goods_price'] = $this->teamActivity['team_price'];

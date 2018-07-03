@@ -1,9 +1,9 @@
 <?php
 /**
- * tpshop
+ * wshop
  * ============================================================================
  * * 版权所有 2015-2027 深圳搜豹网络科技有限公司，并保留所有权利。
- * 网站地址: http://www.tp-shop.cn
+ * 网站地址: http://www.wujiaweb.com
  * ----------------------------------------------------------------------------
  * 这不是一个自由软件！您只能在不用于商业目的的前提下对程序代码进行修改和使用 .
  * 不允许对程序代码以任何形式任何目的的再发布。
@@ -11,11 +11,11 @@
  * ============================================================================
  * 微信交互类
  */
-namespace app\mobile\controller;
+namespace app\api\controller;
 use app\common\logic\UsersLogic;
 use app\common\logic\CartLogic;
 use think\Request;
-class LoginApi extends MobileBase{
+class LoginApi extends ApiGuest {
     public $config;
     public $oauth;
     public $class_obj;
@@ -41,6 +41,12 @@ class LoginApi extends MobileBase{
         $this->class_obj->login();
     }
 
+    /**
+     * @throws \think\Exception
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
     public function callback(){
         
         $data = $this->class_obj->respon();

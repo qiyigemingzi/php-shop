@@ -66,7 +66,7 @@
 
     function get_help(obj){
 
-		window.open("http://www.tp-shop.cn/");
+		window.open("http://www.wujiaweb.com/");
 		return false;
 
         layer.open({

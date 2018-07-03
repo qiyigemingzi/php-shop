@@ -51,7 +51,7 @@ trait Send
      */
     public function formatSuccess($data = [], $message = 'success', $code = 200, $headers = [], $options = [])
     {
-        $responseData['error'] = 0;
+        $responseData['code'] = 200;
         $responseData['message'] = (string)$message;
         if (!empty($data)) $responseData['data'] = $data;
         $responseData = array_merge($responseData, $options);
@@ -85,6 +85,9 @@ trait Send
     public function response($responseData, $code, $headers)
     {
         if (!isset($this->type) || empty($this->type)) $this->setType();
+        $header['Access-Control-Allow-Origin']  = '*';
+        $header['Access-Control-Allow-Headers'] = 'X-Requested-With,Content-Type';
+        $header['Access-Control-Allow-Methods'] = 'GET,POST,PATCH,PUT,DELETE,OPTIONS';
         return Response::create($responseData, $this->type, $code, $headers);
     }
 

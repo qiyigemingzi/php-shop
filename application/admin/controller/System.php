@@ -1,16 +1,7 @@
 <?php
 /**
- * tpshop
- * ============================================================================
- * 版权所有 2015-2027 深圳搜豹网络科技有限公司，并保留所有权利。
- * 网站地址: http://www.tp-shop.cn
- * ----------------------------------------------------------------------------
- * 这不是一个自由软件！您只能在不用于商业目的的前提下对程序代码进行修改和使用 .
- * 不允许对程序代码以任何形式任何目的的再发布。
- * 采用最新Thinkphp5助手函数特性实现单字母函数M D U等简写方式
- * ============================================================================
- * Author: 当燃      
- * Date: 2015-10-09
+ * @author  wuhy
+ * @date 2015-10-09
  */
 
 namespace app\admin\controller;
@@ -91,6 +82,10 @@ class System extends Base
 
     /**
      * 添加修改编辑 前台导航
+     * @return mixed
+     * @throws \think\exception\DbException
+     * @throws db\exception\DataNotFoundException
+     * @throws db\exception\ModelNotFoundException
      */
     public  function addEditNav(){
         $model = D("Navigation");
@@ -126,7 +121,7 @@ class System extends Base
             }
         }
         $system_nav = array(
-            'http://www.tpshop.cn' => 'tpshop官网',
+            'http://www.wshop.cn' => 'wshop官网',
             'http://www.99soubao.com' => '搜豹公司',
             '/index.php?m=Home&c=Activity&a=promoteList' => '促销活动',
             '/index.php?m=Home&c=Activity&a=flash_sale_list' => '限时抢购',
@@ -412,7 +407,12 @@ class System extends Base
      		respose('参数有误');
      	}
      }
-	//清除所有活动数据
+
+    /**
+     * 清除所有活动数据
+     * @throws \think\Exception
+     * @throws \think\exception\PDOException
+     */
 	public function clearProm()
 	{
 		Db::name('flash_sale')->where('1=1')->delete();
@@ -429,7 +429,11 @@ class System extends Base
 		$this->success('清除活动数据成功');
 	}
 
-	//清楚拼团活动数据
+    /**
+     * 清楚拼团活动数据
+     * @throws \think\Exception
+     * @throws \think\exception\PDOException
+     */
 	public function clearTeam(){
 		Db::name('team_activity')->where('1=1')->delete();
 		Db::name('team_follow')->where('1=1')->delete();

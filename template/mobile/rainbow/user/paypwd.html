@@ -84,7 +84,7 @@
             showErrorMsg('请输入您的号码！');
             return false;
         }
-        var s = {$tpshop_config['sms_sms_time_out']|default=60};
+        var s = {$wshop_config['sms_sms_time_out']|default=60};
         //改变按钮状态
         obj.unbind('click');
         //添加样式

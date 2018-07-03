@@ -1,23 +1,11 @@
 <?php
-/**
- * tpshop
- * ============================================================================
- * 版权所有 2015-2027 深圳搜豹网络科技有限公司，并保留所有权利。
- * 网站地址: http://www.tp-shop.cn
- * ----------------------------------------------------------------------------
- * 这不是一个自由软件！您只能在不用于商业目的的前提下对程序代码进行修改和使用 .
- * 不允许对程序代码以任何形式任何目的的再发布。
- * ============================================================================
- * Author: IT宇宙人
- * Date: 2015-09-09
- */
 
 namespace app\common\logic;
 
 use app\common\model\GroupBuy;
 use app\common\model\SpecGoodsPrice;
 use app\common\model\Goods;
-use app\common\util\TpshopException;
+use app\common\util\wshopException;
 use think\Model;
 use think\db;
 
@@ -163,17 +151,17 @@ class GroupBuyLogic extends Prom
      * 团购商品立即购买
      * @param $buyGoods
      * @return mixed
-     * @throws TpshopException
+     * @throws wshopException
      */
     public function buyNow($buyGoods){
         //活动是否已经结束
         if($this->GroupBuy['is_end'] == 1 || empty($this->GroupBuy)){
-            throw new TpshopException('团购商品立即购买',0,['status' => 0, 'msg' => '团购活动已结束', 'result' => '']);
+            throw new wshopException('团购商品立即购买',0,['status' => 0, 'msg' => '团购活动已结束', 'result' => '']);
         }
         if($this->checkActivityIsAble()){
             $groupBuyPurchase = $this->GroupBuy['goods_num'] - $this->GroupBuy['buy_num'];//团购剩余库存
             if($buyGoods['goods_num'] > $groupBuyPurchase){
-                throw new TpshopException('团购商品立即购买',0,['status' => 0, 'msg' => '商品库存不足，剩余'.$groupBuyPurchase, 'result' => '']);
+                throw new wshopException('团购商品立即购买',0,['status' => 0, 'msg' => '商品库存不足，剩余'.$groupBuyPurchase, 'result' => '']);
             }
             $buyGoods['member_goods_price'] = $this->GroupBuy['price'];
             $buyGoods['prom_type'] = 2;

@@ -1,23 +1,11 @@
 <?php
-/**
- * tpshop
- * ============================================================================
- * 版权所有 2015-2027 深圳搜豹网络科技有限公司，并保留所有权利。
- * 网站地址: http://www.tp-shop.cn
- * ----------------------------------------------------------------------------
- * 这不是一个自由软件！您只能在不用于商业目的的前提下对程序代码进行修改和使用 .
- * 不允许对程序代码以任何形式任何目的的再发布。
- * ============================================================================
- * Author: IT宇宙人
- * Date: 2015-09-09
- */
 
 namespace app\common\logic;
 
 use app\common\model\FlashSale;
 use app\common\model\Goods;
 use app\common\model\SpecGoodsPrice;
-use app\common\util\TpshopException;
+use app\common\util\wshopException;
 use think\Model;
 use think\db;
 
@@ -202,22 +190,22 @@ class FlashSaleLogic extends Prom
      * 抢购商品立即购买
      * @param $buyGoods
      * @return mixed
-     * @throws TpshopException
+     * @throws wshopException
      */
     public function buyNow($buyGoods){
         if($this->checkActivityIsAble()){
             if($buyGoods['goods_num'] > $this->flashSale['buy_limit']){
-                throw new TpshopException('抢购商品立即购买', 0, ['status' => 0, 'msg' => '每人限购'.$this->flashSale['buy_limit'].'件', 'result' => '']);
+                throw new wshopException('抢购商品立即购买', 0, ['status' => 0, 'msg' => '每人限购'.$this->flashSale['buy_limit'].'件', 'result' => '']);
             }
         }
         $userFlashOrderGoodsNum = $this->getUserFlashOrderGoodsNum($buyGoods['user_id']); //获取用户抢购已购商品数量
         $userBuyGoodsNum = $buyGoods['goods_num'] + $userFlashOrderGoodsNum;
         if($userBuyGoodsNum > $this->flashSale['buy_limit']){
-            throw new TpshopException('抢购商品立即购买', 0, ['status' => 0, 'msg' => '每人限购'.$this->flashSale['buy_limit'].'件，您已下单'.$userFlashOrderGoodsNum.'件', 'result' => '']);
+            throw new wshopException('抢购商品立即购买', 0, ['status' => 0, 'msg' => '每人限购'.$this->flashSale['buy_limit'].'件，您已下单'.$userFlashOrderGoodsNum.'件', 'result' => '']);
         }
         $flashSalePurchase = $this->flashSale['goods_num'] - $this->flashSale['buy_num'];//抢购剩余库存
         if($buyGoods['goods_num'] > $flashSalePurchase){
-            throw new TpshopException('抢购商品立即购买', 0, ['status' => 0, 'msg' => '商品库存不足，剩余'.$flashSalePurchase, 'result' => '']);
+            throw new wshopException('抢购商品立即购买', 0, ['status' => 0, 'msg' => '商品库存不足，剩余'.$flashSalePurchase, 'result' => '']);
         }
         $buyGoods['member_goods_price'] = $this->flashSale['price'];
         $buyGoods['prom_type'] = 1;

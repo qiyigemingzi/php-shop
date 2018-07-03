@@ -1,17 +1,4 @@
 <?php
-/**
- * tpshop
- * ============================================================================
- * 版权所有 2015-2027 深圳搜豹网络科技有限公司，并保留所有权利。
- * 网站地址: http://www.tp-shop.cn
- * ----------------------------------------------------------------------------
- * 这不是一个自由软件！您只能在不用于商业目的的前提下对程序代码进行修改和使用 .
- * 不允许对程序代码以任何形式任何目的的再发布。
- * 采用最新Thinkphp5助手函数特性实现单字母函数M D U等简写方式
- * ============================================================================
- * Author: IT宇宙人
- * Date: 2015-09-09
- */
 
 namespace app\common\logic;
 
@@ -27,7 +14,7 @@ use think\Db;
  */
 class UsersLogic extends Model
 {
-    protected $user_id=0;
+    protected $user_id = 0;
 
     /**
      * 设置用户ID
@@ -40,7 +27,15 @@ class UsersLogic extends Model
     /*
      * 登陆
      */
-    public function login($username,$password)
+    /**
+     * @param $username
+     * @param $password
+     * @return array
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
+    public function login($username, $password)
     {
         if (!$username || !$password) {
             return array('status' => 0, 'msg' => '请填写账号或密码');
@@ -114,6 +109,16 @@ class UsersLogic extends Model
     }
 
     //绑定账号
+
+    /**
+     * @param array $data
+     * @return bool|false|int
+     * @throws \think\Exception
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     * @throws \think\exception\PDOException
+     */
     public function oauth_bind($data = array())
     {
         if (!empty($data['openid'])) {
@@ -224,11 +229,13 @@ class UsersLogic extends Model
 
     /**
      * 获取第三方登录的用户
-     * @param $openid
-     * @param $unionid
-     * @param $oauth
-     * @param $oauth_child
+     * @param $data
      * @return array
+     * @throws \think\Exception
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     * @throws \think\exception\PDOException
      */
     private function getThirdUser($data)
     {
@@ -255,6 +262,14 @@ class UsersLogic extends Model
 
     /*
      * 第三方登录: (第一种方式:第三方账号直接创建账号, 不需要额外绑定账号)
+     */
+    /**
+     * @param array $data
+     * @return array
+     * @throws \think\Exception
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
      */
     public function thirdLogin($data = array())
     {
@@ -331,6 +346,13 @@ class UsersLogic extends Model
     /*
      * 第三方登录(第二种方式:第三方账号登录必须绑定账号)
      */
+    /**
+     * @param array $data
+     * @return array
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
     public function thirdLogin_new($data = array())
     {
         if((empty($data['openid']) && empty($data['unionid'])) || empty($data['oauth'])){
@@ -358,7 +380,16 @@ class UsersLogic extends Model
      * @param $username  邮箱或手机
      * @param $password  密码
      * @param $password2 确认密码
+     * @param int $push_id
+     * @param array $invite
+     * @param string $nickname
+     * @param string $head_pic
      * @return array
+     * @throws \think\Exception
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     * @throws \think\exception\PDOException
      */
     public function reg($username,$password,$password2,$push_id = 0,$invite=array(),$nickname="",$head_pic=""){
     	$is_validated = 0 ;

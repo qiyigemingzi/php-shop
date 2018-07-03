@@ -44,7 +44,7 @@
             <!--<input type="text"  value="" name="verify_code" placeholder="请输入验证码" >-->
             <!--<img src="/index.php?m=Home&c=User&a=verify" id="verify_code_img" onclick="verify()">-->
         <!--</div>-->
-        <if condition="$tpshop_config['basic_invite'] eq 1" >
+        <if condition="$wshop_config['basic_invite'] eq 1" >
         <div class="lsu">
             <span class="ico ico-referee"></span>
             <input type="text" name="invite" id="invite" value="" placeholder="推荐人手机号(选填)"  class="c-form-txt-normal" >
@@ -114,7 +114,7 @@
     }
 
     function countdown(obj) {
-        var s = {$tpshop_config['sms_sms_time_out']|default=60};
+        var s = {$wshop_config['sms_sms_time_out']|default=60};
         //改变按钮状态
         obj.disabled = true;
         callback();

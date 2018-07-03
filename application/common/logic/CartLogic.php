@@ -1,24 +1,11 @@
 <?php
-/**
- * tpshop
- * ============================================================================
- * 版权所有 2015-2027 深圳搜豹网络科技有限公司，并保留所有权利。
- * 网站地址: http://www.tp-shop.cn
- * ----------------------------------------------------------------------------
- * 这不是一个自由软件！您只能在不用于商业目的的前提下对程序代码进行修改和使用 .
- * 不允许对程序代码以任何形式任何目的的再发布。
- * 采用最新Thinkphp5助手函数特性实现单字母函数M D U等简写方式
- * ============================================================================
- * Author: IT宇宙人
- * Date: 2015-09-09
- */
 
 namespace app\common\logic;
 use app\common\model\SpecGoodsPrice;
 use app\common\model\Cart;
 use app\common\model\Goods;
 use app\common\model\Users;
-use app\common\util\TpshopException;
+use app\common\util\wshopException;
 use think\Model;
 use think\Db;
 /**
@@ -49,9 +36,11 @@ class CartLogic extends Model
     public function setUniqueId($uniqueId){
         $this->session_id = $uniqueId;
     }
+
     /**
      * 包含一个商品模型
      * @param $goods_id
+     * @throws \think\exception\DbException
      */
     public function setGoodsModel($goods_id)
     {
@@ -60,9 +49,11 @@ class CartLogic extends Model
             $this->goods = $goodsModel::get($goods_id);
         }
     }
+
     /**
      * 包含一个商品规格模型
      * @param $item_id
+     * @throws \think\exception\DbException
      */
     public function setSpecGoodsPriceModel($item_id)
     {
@@ -93,14 +84,15 @@ class CartLogic extends Model
     /**
      * 立即购买
      * @return mixed
-     * @throws TpshopException
+     * @throws wshopException
+     * @throws \think\exception\DbException
      */
     public function buyNow(){
         if(empty($this->goods)){
-            throw new TpshopException('立即购买',0,['status'=>0,'msg'=>'购买商品不存在','result'=>'']);
+            throw new wshopException('立即购买',0,['status'=>0,'msg'=>'购买商品不存在','result'=>'']);
         }
         if(empty($this->goodsBuyNum)){
-            throw new TpshopException('立即购买',0,['status'=>0,'msg'=>'购买商品数量不能为0','result'=>'']);
+            throw new wshopException('立即购买',0,['status'=>0,'msg'=>'购买商品数量不能为0','result'=>'']);
         }
         $buyGoods = [
             'user_id'=>$this->user_id,
@@ -121,7 +113,7 @@ class CartLogic extends Model
         if(empty($this->specGoodsPrice)){
             $specGoodsPriceCount = Db::name('SpecGoodsPrice')->where("goods_id", $this->goods['goods_id'])->count('item_id');
             if($specGoodsPriceCount > 0){
-                throw new TpshopException('立即购买',0,['status' => 0, 'msg' => '必须传递商品规格', 'result' => '']);
+                throw new wshopException('立即购买',0,['status' => 0, 'msg' => '必须传递商品规格', 'result' => '']);
             }
             $prom_type = $this->goods['prom_type'];
             $store_count = $this->goods['store_count'];
@@ -136,7 +128,7 @@ class CartLogic extends Model
         }
 
         if($this->goodsBuyNum > $store_count){
-            throw new TpshopException('立即购买',0,['status' => 0, 'msg' => '商品库存不足，剩余'.$this->goods['store_count'], 'result' => '']);
+            throw new wshopException('立即购买',0,['status' => 0, 'msg' => '商品库存不足，剩余'.$this->goods['store_count'], 'result' => '']);
         }
         $goodsPromFactory = new GoodsPromFactory();
         if ($goodsPromFactory->checkPromType($prom_type)) {
@@ -163,9 +155,11 @@ class CartLogic extends Model
         $buyGoods['total_fee'] = $cart->getTotalFeeAttr(0,$buyGoods);
         return $buyGoods;
     }
+
     /**
      * modify ：addCart
      * @return array
+     * @throws \think\exception\DbException
      */
     public function addGoodsToCart()
     {
@@ -214,6 +208,7 @@ class CartLogic extends Model
     /**
      * 购物车添加普通商品
      * @return array
+     * @throws \think\exception\DbException
      */
     private function addNormalCart(){
         if(empty($this->specGoodsPrice)){
@@ -289,6 +284,7 @@ class CartLogic extends Model
     /**
      * 购物车添加秒杀商品
      * @return array
+     * @throws \think\exception\DbException
      */
     private function addFlashSaleCart(){
         $flashSaleLogic = new FlashSaleLogic($this->goods, $this->specGoodsPrice);
@@ -369,6 +365,7 @@ class CartLogic extends Model
     /**
      *  购物车添加团购商品
      * @return array
+     * @throws \think\exception\DbException
      */
     private function addGroupBuyCart(){
         $groupBuyLogic = new GroupBuyLogic($this->goods, $this->specGoodsPrice);
@@ -441,6 +438,7 @@ class CartLogic extends Model
     /**
      *  购物车添加优惠促销商品
      * @return array
+     * @throws \think\exception\DbException
      */
     private function addPromGoodsCart(){
         $promGoodsLogic = new PromGoodsLogic($this->goods, $this->specGoodsPrice);
@@ -557,9 +555,12 @@ class CartLogic extends Model
     }
 
     /**
-     * @param int $selected|是否被用户勾选中的 0 为全部 1为选中  一般没有查询不选中的商品情况
+     * @param int $selected |是否被用户勾选中的 0 为全部 1为选中  一般没有查询不选中的商品情况
      * 获取用户的购物车列表
      * @return false|\PDOStatement|string|\think\Collection
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
      */
     public function getCartList($selected = 0){
         $cart = new Cart();
@@ -583,6 +584,8 @@ class CartLogic extends Model
     /**
      * 过滤掉无效的购物车商品
      * @param $cartList
+     * @return null
+     * @throws \think\exception\DbException
      */
     public function checkCartList($cartList){
         $goodsPromFactory = new GoodsPromFactory();
@@ -651,11 +654,13 @@ class CartLogic extends Model
             M('cart')->delete($cart_id_arr); // 删除购物车完全相同的商品
         }
     }
+
     /**
      * 更改购物车的商品数量
-     * @param $cart_id|购物车id
-     * @param $goods_num|商品数量
+     * @param $cart_id |购物车id
+     * @param $goods_num |商品数量
      * @return array
+     * @throws \think\exception\DbException
      */
     public function changeNum($cart_id, $goods_num){
         $Cart = new Cart();
@@ -693,10 +698,14 @@ class CartLogic extends Model
         $delete = Db::name('cart')->where($cartWhere)->where('id','IN',$cart_ids)->delete();
         return $delete;
     }
+
     /**
      *  更新购物车，并返回计算结果
      * @param array $cart
      * @return array
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
      */
     public function AsyncUpdateCart($cart = [])
     {
@@ -763,9 +772,9 @@ class CartLogic extends Model
 
     /**
      * 转换购物车的优惠券数据
-     * @param $cartList|购物车商品
-     * @param $userCouponList|用户优惠券列表
-     * @return mixedable
+     * @param $cartList |购物车商品
+     * @param $userCouponList |用户优惠券列表
+     * @return array
      */
     public function getCouponCartList($cartList, $userCouponList)
     {
@@ -819,9 +828,9 @@ class CartLogic extends Model
 
     /**
      * 获取可用的购物车优惠券返回。不可用的过滤掉。
-     * @param $cartList|购物车商品
-     * @param $userCouponList|用户优惠券列表
-     * @return mixedable
+     * @param $cartList |购物车商品
+     * @param $userCouponList |用户优惠券列表
+     * @return array
      */
     public function getCouponAbleCartList($cartList, $userCouponList)
     {
@@ -882,13 +891,13 @@ class CartLogic extends Model
     /**
      * 检查购物车数据是否满足库存购买
      * @param $cartList
-     * @throws TpshopException
+     * @throws wshopException
      */
     public function checkStockCartList($cartList)
     {
         foreach ($cartList as $cartKey => $cartVal) {
             if ($cartVal->goods_num > $cartVal->limit_num) {
-                throw new TpshopException('计算订单价格', 0, ['status' => 0, 'msg' => $cartVal->goods_name . '购买数量不能大于' . $cartVal->limit_num, 'result' => ['limit_num' => $cartVal->limit_num]]);
+                throw new wshopException('计算订单价格', 0, ['status' => 0, 'msg' => $cartVal->goods_name . '购买数量不能大于' . $cartVal->limit_num, 'result' => ['limit_num' => $cartVal->limit_num]]);
             }
         }
     }

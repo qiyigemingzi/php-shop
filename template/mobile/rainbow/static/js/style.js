@@ -39,7 +39,7 @@ $(function(){
 
 //轮播
 $(function(){
-    $('#slideTpshop').swipeSlide({
+    $('#slidewshop').swipeSlide({
         continuousScroll:true,
         speed : 3000,
         transitionType : 'cubic-bezier(0.22, 0.69, 0.72, 0.88)',

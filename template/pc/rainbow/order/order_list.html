@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>我的订单</title>
-    <link rel="stylesheet" type="text/css" href="__STATIC__/css/tpshop.css" />
+    <link rel="stylesheet" type="text/css" href="__STATIC__/css/wshop.css" />
     <link rel="stylesheet" type="text/css" href="__STATIC__/css/myaccount.css" />
     <script src="__STATIC__/js/jquery-1.11.3.min.js" type="text/javascript" charset="utf-8"></script>
     <script src="__PUBLIC__/js/layer/layer.js" type="text/javascript"></script>
@@ -112,7 +112,7 @@
                                         <div class="fl_ttmm">
                                             <span class="time-num">下单时间：<em class="num">{$list.add_time|date='Y-m-d H:i:s',###}</em></span>
                                             <span class="time-num">订单编号：<em class="num">{$list.order_sn}</em></span>
-                                            <!--<span class="time-num">卖家：<a href="tencent://message/?uin={$store_list[$list[store_id]][store_qq]}&Site=TPshop商城&Menu=yes"><em class="num">{$store_list[$list[store_id]][store_name]}<i class="ear"></i></em></a></span>-->
+                                            <!--<span class="time-num">卖家：<a href="tencent://message/?uin={$store_list[$list[store_id]][store_qq]}&Site=wshop商城&Menu=yes"><em class="num">{$store_list[$list[store_id]][store_name]}<i class="ear"></i></em></a></span>-->
                                             <div class="paysoon">
                                                 <if condition="$list.pay_btn eq 1">
                                                     <a class="ps_lj" href="{:U('Home/Cart/cart4',array('order_id'=>$list[order_id]))}"  target="_blank">立即支付</a>

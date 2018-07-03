@@ -1,15 +1,7 @@
 <?php
 /**
- * tpshop
- * ============================================================================
- * 版权所有 2015-2027 深圳搜豹网络科技有限公司，并保留所有权利。
- * 网站地址: http://www.tp-shop.cn
- * ----------------------------------------------------------------------------
- * 这不是一个自由软件！您只能在不用于商业目的的前提下对程序代码进行修改和使用 .
- * 不允许对程序代码以任何形式任何目的的再发布。
- * ============================================================================
- * Author: IT宇宙人
- * Date: 2015-09-09
+ * @author wuhy
+ * @date 2018-07-03
  */
 
 namespace app\admin\logic;
@@ -23,9 +15,9 @@ class UpgradeLogic extends Model
     public $version_txt_path;
     public $curent_version;    
     public $service_url;
-    
+
     /**
-     * 析构函数
+     * UpgradeLogic constructor.
      */
     function  __construct() {
          
@@ -35,11 +27,12 @@ class UpgradeLogic extends Model
         $this->service_url = "http://service.tp-shop.cn/index.php?m=Home&c=Index&a=checkVersionTp5";
         //$this->service_url = "http://service.tp-shop.cn/index.php?m=Home&c=Index&a=checkVersionTp52";
         
-   }       
-   /**
-    * 检查是否有更新包
-    * @return type 提示语
-    */
+   }
+
+    /**
+     * 检查是否有更新包
+     * @return array|bool|null 提示语
+     */
     public  function checkVersion() { 
         
         //echo "if(strtolower(".CONTROLLER_NAME.") == 'index' && strtolower(".ACTION_NAME.") == 'index')";
@@ -65,8 +58,10 @@ class UpgradeLogic extends Model
         }
         return null;        
     }
+
     /**
      * 一键更新
+     * @return int|string
      */
     public  function OneKeyUpgrade(){
         error_reporting(0);//关闭所有错误报告                
@@ -135,8 +130,8 @@ class UpgradeLogic extends Model
     
  
     /**     
-     * @param type $fileUrl 下载文件地址
-     * @param type $md5File 文件MD5 加密值 用于对比下载是否完整
+     * @param string $fileUrl 下载文件地址
+     * @param string $md5File 文件MD5 加密值 用于对比下载是否完整
      * @return string 错误或成功提示
      */
     public function downloadFile($fileUrl,$md5File)

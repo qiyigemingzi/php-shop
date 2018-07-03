@@ -2,20 +2,20 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">   
-    <title>注册-{$tpshop_config['shop_info_store_title']}</title>
-    <meta name="keywords" content="{$tpshop_config['shop_info_store_keyword']}" />
-    <meta name="description" content="{$tpshop_config['shop_info_store_desc']}" />
+    <title>注册-{$wshop_config['shop_info_store_title']}</title>
+    <meta name="keywords" content="{$wshop_config['shop_info_store_keyword']}" />
+    <meta name="description" content="{$wshop_config['shop_info_store_desc']}" />
    
     <link href="__STATIC__/css/reg3.css" rel="stylesheet" />
  <link rel="stylesheet" type="text/css" href="__STATIC__/css/base.css"/>
     <script type="text/javascript" src="__PUBLIC__/js/jquery-1.10.2.min.js"></script>
-    <link rel="stylesheet" type="text/css" href="__STATIC__/css/tpshop.css" />
+    <link rel="stylesheet" type="text/css" href="__STATIC__/css/wshop.css" />
 	<script src="__PUBLIC__/js/layer/layer.js"></script><!--弹窗js 参考文档 http://layer.layui.com/-->    
     <script src="__PUBLIC__/js/global.js"></script>
 </head>
 <body>
     <div class="regcon">
-        <a class="m-fnlogoa fn-fl" href="/" ><img src="{$tpshop_config['shop_info_store_logo']|default='__PUBLIC__/static/images/logo/pc_home_logo_default.png'}" style="width: 159px;height: 58px;"/></a>
+        <a class="m-fnlogoa fn-fl" href="/" ><img src="{$wshop_config['shop_info_store_logo']|default='__PUBLIC__/static/images/logo/pc_home_logo_default.png'}" style="width: 159px;height: 58px;"/></a>
         <span class="m-fntit">欢迎注册</span>
         <div class="ui_tab">
             <ul class="ui_tab_nav regnav">
@@ -46,7 +46,7 @@
                             </div>
                             <div id="show-voice" class="show-voice"></div>
                         </div>
-                   <if condition="$tpshop_config['sms_regis_sms_enable'] eq 1" >
+                   <if condition="$wshop_config['sms_regis_sms_enable'] eq 1" >
                         <div class="line">
                             <label class="linel"><span class="dt">手机验证码：</span></label>
                             <div class="liner">
@@ -68,7 +68,7 @@
                                 <input type="password" class="inp fsecpass J_password2" placeholder="请再次输入密码" autocomplete="off" maxlength="16" id="password2" name="password2" required="" value=""/>
                             </div>
                         </div>
-                        <if condition="$tpshop_config['basic_invite'] eq 1" >
+                        <if condition="$wshop_config['basic_invite'] eq 1" >
                         <div class="line">
                             <label class="linel"><span class="dt">推荐人手机：</span></label>
                             <div class="liner">
@@ -81,13 +81,13 @@
                             <div class="liner">
                                 <div class="clearfix checkcon">
                                     <p class="fn-fl checktxt"><input type="checkbox" class="iyes fn-fl J_protocal" checked />
-                                    <span class="fn-fl">我已阅读并同意</span><a class="itxt fn-fl" href="{:U('Home/Article/detail',['article_id'=>1415])}" target="_blank">《{$tpshop_config.shop_info_store_name|default='TPshop商城'}服务协议》</a>
+                                    <span class="fn-fl">我已阅读并同意</span><a class="itxt fn-fl" href="{:U('Home/Article/detail',['article_id'=>1415])}" target="_blank">《{$wshop_config.shop_info_store_name|default='wshop商城'}服务协议》</a>
                                     </p>
                                       <p class="fn-fl errorbox v-txt" id="protocalBox"></p>
                                 </div>
                                 <a class="regbtn J_btn_agree" href="javascript:void(0);" onClick="check_submit();">同意协议并注册</a>
                                 <p class="v-txt" id="err_check_code">
-                                    <span class="fnred">请勾选</span>我已阅读并同意<a class="itxt" href="{:U('Home/Article/detail',['article_id'=>1415])}" target="_blank">《{$tpshop_config.shop_info_store_name|default='TPshop商城'}服务协议》</a>
+                                    <span class="fnred">请勾选</span>我已阅读并同意<a class="itxt" href="{:U('Home/Article/detail',['article_id'=>1415])}" target="_blank">《{$wshop_config.shop_info_store_name|default='wshop商城'}服务协议》</a>
                                 </p>
                         </div>
                     </div>
@@ -139,7 +139,7 @@
                                 <input type="password" class="inp fsecpass J_password2" placeholder="请再次输入密码" autocomplete="off" maxlength="16" id="password2" name="password2" required="" value=""/>
                             </div>
                         </div>
-                        <if condition="$tpshop_config['basic_invite'] eq 1" >
+                        <if condition="$wshop_config['basic_invite'] eq 1" >
                         <div class="line">
                             <label class="linel"><span class="dt">推荐人手机：</span></label>
                             <div class="liner">
@@ -151,12 +151,12 @@
                             <div class="liner">
                                 <div class="clearfix checkcon">
                                     <p class="fn-fl checktxt"><input type="checkbox" class="iyes fn-fl J_protocal" checked />
-                                    <span class="fn-fl">我已阅读并同意</span><a class="itxt fn-fl" href="{:U('Home/Article/detail',['article_id'=>1415])}" target="_blank">《{$tpshop_config.shop_info_store_name|default='TPshop商城'}服务协议》</a>
+                                    <span class="fn-fl">我已阅读并同意</span><a class="itxt fn-fl" href="{:U('Home/Article/detail',['article_id'=>1415])}" target="_blank">《{$wshop_config.shop_info_store_name|default='wshop商城'}服务协议》</a>
                                     </p>
                                       <p class="fn-fl errorbox v-txt" id="protocalBox"></p>
                                 </div>
                                 <a class="regbtn J_btn_agree" href="javascript:void(0);" onClick="check_submit();">同意协议并注册</a>
-                                <p class="v-txt"><span class="fnred">请勾选</span>我已阅读并同意<a class="itxt" href="{:U('Home/Article/detail',['article_id'=>1415])}" target="_blank">《{$tpshop_config.shop_info_store_name|default='TPshop商城'}服务协议》</a></p>
+                                <p class="v-txt"><span class="fnred">请勾选</span>我已阅读并同意<a class="itxt" href="{:U('Home/Article/detail',['article_id'=>1415])}" target="_blank">《{$wshop_config.shop_info_store_name|default='wshop商城'}服务协议》</a></p>
                         </div>
                     </div>
                     </div>
@@ -233,7 +233,7 @@
             	if(res.status == 1)
     			{
     				$('#count_down').attr("disabled","disabled");
-    				intAs = {$tpshop_config['sms_sms_time_out']|default=60}; // 手机短信超时时间
+    				intAs = {$wshop_config['sms_sms_time_out']|default=60}; // 手机短信超时时间
                     jsInnerTimeout('count_down',intAs);
                     layer.alert(res.msg, {icon: 1});
     			}else{

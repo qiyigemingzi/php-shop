@@ -1,17 +1,8 @@
 <?php
 /**
- * tpshop
- * ============================================================================
- * 版权所有 2015-2027 深圳搜豹网络科技有限公司，并保留所有权利。
- * 网站地址: http://www.tp-shop.cn
- * ----------------------------------------------------------------------------
- * 这不是一个自由软件！您只能在不用于商业目的的前提下对程序代码进行修改和使用 .
- * 不允许对程序代码以任何形式任何目的的再发布。
- * 采用最新Thinkphp5助手函数特性实现单字母函数M D U等简写方式
- * ============================================================================
- * Author: 当燃
  * 专题管理
- * Date: 2016-03-09
+ * @author  wuhy
+ * @date 2016-03-09
  */
 
 namespace app\admin\controller;
@@ -37,6 +28,10 @@ class Promotion extends Base
 
     /**
      * 商品活动列表
+     * @return mixed
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
      */
     public function prom_goods_list()
     {
@@ -49,6 +44,12 @@ class Promotion extends Base
         return $this->fetch();
     }
 
+    /**
+     * @return mixed
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
     public function prom_goods_info()
     {
         $level = M('user_level')->select();
@@ -72,6 +73,10 @@ class Promotion extends Base
         return $this->fetch();
     }
 
+    /**
+     * @throws \think\Exception
+     * @throws \think\exception\PDOException
+     */
     public function prom_goods_save()
     {
         $prom_id = I('id/d');
@@ -210,6 +215,12 @@ class Promotion extends Base
         $this->success('删除活动成功', U('Promotion/prom_order_list'));
     }
 
+    /**
+     * @return mixed
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
     public function group_buy_list()
     {
         $GroupBuy = new GroupBuy();
@@ -221,6 +232,12 @@ class Promotion extends Base
         return $this->fetch();
     }
 
+    /**
+     * @return mixed
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
     public function group_buy()
     {
         $act = I('GET.act', 'add');
@@ -241,6 +258,13 @@ class Promotion extends Base
         return $this->fetch();
     }
 
+    /**
+     * @throws \think\Exception
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     * @throws \think\exception\PDOException
+     */
     public function groupbuyHandle()
     {
         $data = I('post.');
@@ -309,6 +333,12 @@ class Promotion extends Base
         }
     }
 
+    /**
+     * @return mixed
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
     public function get_goods()
     {
         $prom_id = I('id/d');
@@ -323,6 +353,12 @@ class Promotion extends Base
         return $this->fetch();
     }
 
+    /**
+     * @return mixed
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
     public function search_goods()
     {
         $goods_id = input('goods_id');
@@ -392,7 +428,13 @@ class Promotion extends Base
         return $this->fetch($tpl);
     }
 
-    //限时抢购
+    /**
+     * 限时抢购
+     * @return mixed
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
     public function flash_sale()
     {
         $condition = array();
@@ -407,6 +449,14 @@ class Promotion extends Base
         return $this->fetch();
     }
 
+    /**
+     * @return mixed
+     * @throws \think\Exception
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     * @throws \think\exception\PDOException
+     */
     public function flash_sale_info()
     {
         if (IS_POST) {
@@ -472,6 +522,11 @@ class Promotion extends Base
         return $this->fetch();
     }
 
+    /**
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
     public function flash_sale_del()
     {
         $id = I('del_id/d');
@@ -517,7 +572,7 @@ class Promotion extends Base
     public function pre_sell_list()
     {
     header("Content-type: text/html; charset=utf-8");
-exit("请联系TPshop官网客服购买高级版支持此功能");	
+exit("请联系wshop官网客服购买高级版支持此功能");	
     }
 
     /**
@@ -526,7 +581,7 @@ exit("请联系TPshop官网客服购买高级版支持此功能");
     public function pre_sell_info()
     {
     header("Content-type: text/html; charset=utf-8");
-exit("请联系TPshop官网客服购买高级版支持此功能");	
+exit("请联系wshop官网客服购买高级版支持此功能");	
     }
 
     /**
@@ -535,7 +590,7 @@ exit("请联系TPshop官网客服购买高级版支持此功能");
     public function pre_sell_del()
     {
         header("Content-type: text/html; charset=utf-8");
-exit("请联系TPshop官网客服购买高级版支持此功能");
+exit("请联系wshop官网客服购买高级版支持此功能");
     }
 
     /**
@@ -544,7 +599,7 @@ exit("请联系TPshop官网客服购买高级版支持此功能");
     public function pre_sell_success()
     {
         header("Content-type: text/html; charset=utf-8");
-exit("请联系TPshop官网客服购买高级版支持此功能");
+exit("请联系wshop官网客服购买高级版支持此功能");
     }
 
     /**
@@ -553,7 +608,7 @@ exit("请联系TPshop官网客服购买高级版支持此功能");
     public function pre_sell_fail()
     {
         header("Content-type: text/html; charset=utf-8");
-exit("请联系TPshop官网客服购买高级版支持此功能");
+exit("请联系wshop官网客服购买高级版支持此功能");
     }
 
 }

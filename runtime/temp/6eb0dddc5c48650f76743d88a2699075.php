@@ -66,7 +66,7 @@
 
     function get_help(obj){
 
-		window.open("http://www.tp-shop.cn/");
+		window.open("http://www.wujiaweb.com/");
 		return false;
 
         layer.open({
@@ -205,7 +205,7 @@
             <li>推送服务相关设置, 请从阿里云注册账户, 并在其控制台获取相关信息。</li>
         </ul>
     </div>
-	<h5 style="font-size:25px">请联系TPshop官网客服购买高级版支持此功能(阿里云OSS存储)</h5>	
+	<h5 style="font-size:25px">请联系wshop官网客服购买高级版支持此功能(阿里云OSS存储)</h5>	
 </div>
 <div id="goTop"> <a href="JavaScript:void(0);" id="btntop"><i class="fa fa-angle-up"></i></a><a href="JavaScript:void(0);" id="btnbottom"><i class="fa fa-angle-down"></i></a></div>
 </body>

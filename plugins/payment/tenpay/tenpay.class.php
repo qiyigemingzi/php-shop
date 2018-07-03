@@ -1,17 +1,4 @@
 <?php
-/**
- * tpshop 支付宝插件
- * ============================================================================
- * 版权所有 2015-2027 深圳搜豹网络科技有限公司，并保留所有权利。
- * 网站地址: http://www.tp-shop.cn
- * ----------------------------------------------------------------------------
- * 这不是一个自由软件！您只能在不用于商业目的的前提下对程序代码进行修改和使用 .
- * 不允许对程序代码以任何形式任何目的的再发布。
- * 如果商业用途务必到官方购买正版授权, 以免引起不必要的法律纠纷.
- * ============================================================================
- * Author: IT宇宙人
- * Date: 2015-09-09
- */
 
 //namespace plugins\payment\alipay;
 
@@ -40,11 +27,13 @@ class tenpay extends Model
         $config_value = unserialize($paymentPlugin['config_value']); // 配置反序列化                
         $this->alipay_config['partner'] = $config_value['partner'];// 
         $this->alipay_config['key']  = $config_value['key'];//         
-    }    
+    }
+
     /**
      * 生成支付代码
-     * @param   array   $order      订单信息
-     * @param   array   $config_value    支付方式信息
+     * @param   array $order 订单信息
+     * @param   array $config_value 支付方式信息
+     * @return string
      */
     function get_code($order, $config_value)
     {                           
@@ -66,12 +55,12 @@ class tenpay extends Model
             $reqHandler->setParameter("total_fee", ($order['order_amount'] * 100));  //总金额
             $reqHandler->setParameter("notify_url", SITE_URL.U('Payment/notifyUrl',array('pay_code'=>'tenpay'))); //服务器异步通知页面路径 //必填，不能修改
             $reqHandler->setParameter("return_url",  SITE_URL.U('Payment/returnUrl',array('pay_code'=>'tenpay')));//页面跳转同步通知页面路径            
-            $reqHandler->setParameter("body", "TPshop 商城");
+            $reqHandler->setParameter("body", "wshop 商城");
             $reqHandler->setParameter("bank_type", "DEFAULT");  	  //银行类型，默认为财付通
             //用户ip
             $reqHandler->setParameter("spbill_create_ip", $_SERVER['REMOTE_ADDR']);//客户端IP
             $reqHandler->setParameter("fee_type", "1");               //币种
-            $reqHandler->setParameter("subject","TPshop商品");          //商品名称，（中介交易时必填）
+            $reqHandler->setParameter("subject","wshop商品");          //商品名称，（中介交易时必填）
 
             //系统可选参数
             $reqHandler->setParameter("sign_type", "MD5");  	 	  //签名方式，默认为MD5，可选RSA

@@ -1,16 +1,4 @@
 <?php
-/**
- * tpshop  万能 插件安装卸载
- * ============================================================================
- * 版权所有 2015-2027 深圳搜豹网络科技有限公司，并保留所有权利。
- * 网站地址: http://www.tp-shop.cn
- * ----------------------------------------------------------------------------
- * 这不是一个自由软件！您只能在不用于商业目的的前提下对程序代码进行修改和使用 .
- * 不允许对程序代码以任何形式任何目的的再发布。
- * ============================================================================
- * Author: IT宇宙人
- * Date: 2015-09-09
- */
 
 use think\Model;
 /**
@@ -33,10 +21,10 @@ class plugins extends Model
      */
     function install()
     {                                     
-        $tpshop_version = file_get_contents($this->app_path.'/Application/Admin/Conf/version.txt'); // TPshop 版本
+        $wshop_version = file_get_contents($this->app_path.'/Application/Admin/Conf/version.txt'); // wshop 版本
         $config = include $this->app_path.'plugins/function/helloworld/config.php'; // 当前插件适合哪些版本
         $config['version'] = explode(',', $config['version']);
-        if(!in_array($tpshop_version, $config['version']))
+        if(!in_array($wshop_version, $config['version']))
         {
             $info['status'] = 0;
             $info['msg'] = '版本不兼容';
@@ -44,7 +32,7 @@ class plugins extends Model
         }
         
         // 假设升级要覆盖 PluginController.class.php 文件, 那么先判断一下 原始文件有没被改动过, 如果改动过则不能安装, 否则会覆盖别人改动过的文件
-        // 而 MD5 对比值 则预先在 tpshop 原始文件中, 通过 MD5_file 获取到  放在这里        
+        // 而 MD5 对比值 则预先在 wshop 原始文件中, 通过 MD5_file 获取到  放在这里        
         if(md5_file($this->app_path.'/Application/Admin/Controller/PluginController.class.php') !=  '0ec9d8a619934cbeff83f29e4311959c')
         {
             //$info['status'] = 0;

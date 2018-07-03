@@ -56,9 +56,9 @@
                 </dt>
                 <dd class="opt">
                 	<select id="level" name="level">
-                		<tpshop sql="select * from `__PREFIX__user_level`" key="k" item='v'>
+                		<wshop sql="select * from `__PREFIX__user_level`" key="k" item='v'>
                 		<option value="{$v[level_id]}" <if condition="$v.level_id eq $user.level">selected</if>>{$v[level_name]}</option>
-                		</tpshop>
+                		</wshop>
                 	</select>
                 </dd>
             </dl>

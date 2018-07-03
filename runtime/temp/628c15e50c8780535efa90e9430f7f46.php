@@ -104,21 +104,21 @@
                         <table cellpadding="0" cellspacing="0" class="system_table">
                             <tbody><tr>
                                 <td class="gray_bg">程序版本:</td>
-                                <td>TPshop <?php echo $sys_info['version']; ?></td>
+                                <td>wshop <?php echo $sys_info['version']; ?></td>
                                 <td class="gray_bg">更新时间:</td>
                                 <td><?php echo date('Y-m-d');?></td>
                             </tr>
                             <tr>
                                 <td class="gray_bg">程序开发:</td>
-                                <td><?php echo (isset($tpshop_config['shop_info_store_name']) && ($tpshop_config['shop_info_store_name'] !== '')?$tpshop_config['shop_info_store_name']:'TPshop商城'); ?></td>
+                                <td><?php echo (isset($wshop_config['shop_info_store_name']) && ($wshop_config['shop_info_store_name'] !== '')?$wshop_config['shop_info_store_name']:'wshop商城'); ?></td>
                                 <td class="gray_bg">版权所有:</td>
                                 <td>盗版必究</td>
                             </tr>
                             <tr>
                                 <td class="gray_bg">官方授权:</td>
-                                <td><a href="http://www.tp-shop.cn/" target="_blank">商业授权</a></td>
+                                <td><a href="http://www.wujiaweb.com/" target="_blank">商业授权</a></td>
                                 <td class="gray_bg">官方论坛:</td>
-                                <td><a href="http://bbs.tp-shop.cn" target="_blank">TPshop交流论坛</a></td>
+                                <td><a href="http://bbs.tp-shop.cn" target="_blank">wshop交流论坛</a></td>
                             </tr>
                             </tbody></table>
                     </div>
@@ -179,7 +179,7 @@
     </div>
 </div>
 <div id="footer" style="position: static; bottom: 0px; font-size:14px;">
-    <p><b>版权所有 © 2012-2017 <?php echo (isset($tpshop_config['shop_info_store_name']) && ($tpshop_config['shop_info_store_name'] !== '')?$tpshop_config['shop_info_store_name']:'TPshop商城'); ?>，并保留所有权利。</b></p>
+    <p><b>版权所有 © 2012-2017 <?php echo (isset($wshop_config['shop_info_store_name']) && ($wshop_config['shop_info_store_name'] !== '')?$wshop_config['shop_info_store_name']:'wshop商城'); ?>，并保留所有权利。</b></p>
 </div>
 <script type="text/javascript">
     $(function(){

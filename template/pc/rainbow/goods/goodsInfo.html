@@ -2,10 +2,10 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>{$goods.goods_name}-{$tpshop_config['shop_info_store_name']}</title>
+    <title>{$goods.goods_name}-{$wshop_config['shop_info_store_name']}</title>
     <meta name="keywords" content="{$goods.keywords}"/>
     <meta name="description" content="{$goods.goods_remark}"/>    
-    <link rel="stylesheet" type="text/css" href="__STATIC__/css/tpshop.css" />
+    <link rel="stylesheet" type="text/css" href="__STATIC__/css/wshop.css" />
     <link rel="stylesheet" type="text/css" href="__STATIC__/css/jquery.jqzoom.css">
     <script src="__STATIC__/js/jquery-1.11.3.min.js" type="text/javascript" charset="utf-8"></script>
     <script src="__PUBLIC__/js/layer/layer-min.js"></script>
@@ -13,7 +13,7 @@
     <script src="__PUBLIC__/js/global.js"></script>
     <script src="__PUBLIC__/js/pc_common.js"></script>
     <link rel="stylesheet" href="__STATIC__/css/location.css" type="text/css"><!-- 收货地址，物流运费 -->
-    <link rel="shortcut icon" type="image/x-icon" href="{$tpshop_config.shop_info_store_ico|default='/public/static/images/logo/storeico_default.png'}" media="screen"/>
+    <link rel="shortcut icon" type="image/x-icon" href="{$wshop_config.shop_info_store_ico|default='/public/static/images/logo/storeico_default.png'}" media="screen"/>
 </head>
 <style>
     #detail_video{
@@ -206,7 +206,7 @@
                 <div class="standard p">
                     <ul>
                         <li class="jaj"><span>服&nbsp;&nbsp;务：</span></li>
-                        <li class="lawir"><span class="service">由<a >{$tpshop_config['shop_info_store_name']}</a>发货并提供售后服务</span></li>
+                        <li class="lawir"><span class="service">由<a >{$wshop_config['shop_info_store_name']}</a>发货并提供售后服务</span></li>
                     </ul>
                 </div>
                 <if condition="$goods['is_virtual'] eq 0 and $goods['exchange_integral'] gt 0">
@@ -298,7 +298,7 @@
                 </div>
                 <div class="type-bot">
                     <ul class="xg_typ">
-                        <foreach name="tpshop_config.hot_keywords" item="wd" key="k">
+                        <foreach name="wshop_config.hot_keywords" item="wd" key="k">
                             <li><a href="{:U('Home/Goods/search',array('q'=>$wd))}">{$wd}</a></li>
                         </foreach>
                     </ul>
@@ -309,14 +309,14 @@
                     <h2>推荐热卖</h2>
                 </div>
                 <div class="tjhot-shoplist type-bot">
-                    <tpshop sql="select goods_id,goods_name,shop_price from __PREFIX__goods where is_recommend=1 and is_on_sale = 1 order by goods_id desc limit 10" item="vo" key="k">
+                    <wshop sql="select goods_id,goods_name,shop_price from __PREFIX__goods where is_recommend=1 and is_on_sale = 1 order by goods_id desc limit 10" item="vo" key="k">
                         <div class="alone-shop">
                             <a href="{:U('Home/Goods/goodsInfo',array('id'=>$vo[goods_id]))}"><img src="{$vo.goods_id|goods_thum_images=206,206}" style="display: inline;"></a>
                             <p class="line-two-hidd"><a href="{:U('Home/Goods/goodsInfo',array('id'=>$vo[goods_id]))}">{$vo.goods_name|getSubstr=0,30}</a></p>
                             <p class="price-tag"><span class="li_xfo">￥</span><span>{$vo.shop_price}</span></p>
                             <!--<p class="store-alone"><a href="">恒要达食品专享店</a></p>-->
                         </div>
-                    </tpshop>
+                    </wshop>
                 </div>
             </div>
         </div>

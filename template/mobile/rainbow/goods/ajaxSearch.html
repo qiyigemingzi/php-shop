@@ -36,7 +36,7 @@
 		<div class="lb_showhide se_shien p" style="display: block;">
 			<div class="maleri30">
 				<ul>
-                    <foreach name="tpshop_config.hot_keywords" item="wd" key="k">
+                    <foreach name="wshop_config.hot_keywords" item="wd" key="k">
                         <li><a href="{:U('Goods/search',array('q'=>$wd))}" <if condition="$k eq 0">class="ht"</if>>{$wd}</a></li>
                     </foreach>
 				</ul>

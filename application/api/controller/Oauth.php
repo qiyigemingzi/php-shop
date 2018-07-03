@@ -47,13 +47,13 @@ class Oauth
                 return $clientInfo;
             }
         } catch (Exception $e) {
-            return $this->returnMsg(402,'Invalid1 authentication credentials.');
+            return $this->formatError(402,'Invalid1 authentication credentials.');
         }
     }
 
     /**
      * 获取用户信息
-     * @return $this
+     * @return Oauth|\think\Response|\think\response\Json|\think\response\Jsonp|\think\response\Xml
      */
     public function getClient()
     {
@@ -62,7 +62,7 @@ class Oauth
         try {
             $clientInfo = $request->param();
         } catch (Exception $e) {
-            return $this->returnMsg(402,$e.'Invalid authentication credentials');
+            return $this->formatError(402,$e.'Invalid authentication credentials');
         }
         return $clientInfo;
     }
@@ -85,10 +85,10 @@ class Oauth
         // return true;
         $getCacheAccessToken = Cache::get(self::$accessTokenPrefix . $data['access_token']);  //获取缓存access_token
         if(!$getCacheAccessToken){
-            return $this->returnMsg(402,'Access_token expired or error！');
+            return $this->formatError(402,'Access_token expired or error！');
         }
         if($getCacheAccessToken['client']['app_key'] != $data['app_key']){
-            return $this->returnMsg(402,'App_token does not match app_key');  // app_key与缓存中的appkey不匹配
+            return $this->formatError(402,'App_token does not match app_key'); // app_key与缓存中的appkey不匹配
         }
         return true;
     }

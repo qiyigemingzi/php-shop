@@ -3,9 +3,9 @@
 <form method="post"  id="recharge_form" onsubmit="return recharge_submit()" action="{:U('Mobile/Payment/getPay',['buy_vip'=>1])}">
 <div class="loginsingup-input mobil_topup">
         <div class="lsu lsu-recharge">
-            <span>充值金额：</span>  {$tpshop_config['basic_rechargevip_price']}
+            <span>充值金额：</span>  {$wshop_config['basic_rechargevip_price']}
 
-            <input type="hidden" name="account"id="add_money" value="{$tpshop_config['basic_rechargevip_price']}" >
+            <input type="hidden" name="account"id="add_money" value="{$wshop_config['basic_rechargevip_price']}" >
         </div>
         <a class="lsu usedeb" href="javascript:void(0);" style="display: block;">
             <div class="order order-bordertop-none p">

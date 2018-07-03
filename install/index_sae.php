@@ -25,12 +25,12 @@ define("TUZI_CMS_VERSION", '20150811');
 
 //数据库
 $configFile = 'config.php';
-if (!file_exists(SITEDIR . 'install/tpshop.sql' ) || !file_exists(SITEDIR . 'install/' . $configFile)) {
+if (!file_exists(SITEDIR . 'install/wshop.sql' ) || !file_exists(SITEDIR . 'install/' . $configFile)) {
     echo '缺少必要的安装文件!';
     exit;
 }
-$Title = "TPshop安装向导";
-$Powered = "Powered by TPshop";
+$Title = "wshop安装向导";
+$Powered = "Powered by wshop";
 $steps = array(
     '1' => '安装许可协议',
     '2' => '运行环境检测',

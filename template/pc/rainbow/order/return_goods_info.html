@@ -3,7 +3,7 @@
 	<head>
 		<meta charset="UTF-8">
 		<title>进度跟踪</title>
-		<link rel="stylesheet" type="text/css" href="__STATIC__/css/tpshop.css" />
+		<link rel="stylesheet" type="text/css" href="__STATIC__/css/wshop.css" />
 		<link rel="stylesheet" type="text/css" href="__STATIC__/css/myaccount.css" />
 		<script src="__STATIC__/js/jquery-1.11.3.min.js" type="text/javascript" charset="utf-8"></script>
 		<link rel="stylesheet" type="text/css" href="__STATIC__/css/return.add.css" />
@@ -25,15 +25,15 @@
 				    			<div class="goodpiece p">
 									<h1>售后服务详情</h1>
 									<div class="twibtn_r">
-										<tpshop sql="select * from `__PREFIX__article` where cat_id = 6  and is_open=1 limit 1" key="k2" item='v2'>
+										<wshop sql="select * from `__PREFIX__article` where cat_id = 6  and is_open=1 limit 1" key="k2" item='v2'>
 			                                <a class="shhear" href="{:U('Home/Article/detail',array('article_id'=>13))}">售后政策</a>
-			                            </tpshop>
-										<a class="shhear" href="tencent://message/?uin={$store[store_qq]}&Site=TPshop商城&Menu=yes"><i class="earp"></i>联系卖家</a>
+			                            </wshop>
+										<a class="shhear" href="tencent://message/?uin={$store[store_qq]}&Site=wshop商城&Menu=yes"><i class="earp"></i>联系卖家</a>
 									</div>
 								</div>
 								<div class="fu_serdetail ma-to-20">
 									<div class="serft_fl">
-										<span>本次售后服务由<a class="red">{$tpshop_config['shop_info_store_name']}</a>为您提供</span>
+										<span>本次售后服务由<a class="red">{$wshop_config['shop_info_store_name']}</a>为您提供</span>
 									</div>
 									<div class="serft_fr">
 										<div class="shop-if-dif">
@@ -337,10 +337,10 @@
                                         <if condition="$return_goods[status] eq 3 and $return_goods[type] eq 0">
                                             尊敬的客户，您的服务单已审核</if>
                                         <if condition="$return_goods[status] eq 4 or $return_goods[status] eq 5">
-                                            尊敬的客户，您的服务单已完成，感谢您对{$tpshop_config['shop_info_store_name']}的大力支持
+                                            尊敬的客户，您的服务单已完成，感谢您对{$wshop_config['shop_info_store_name']}的大力支持
                                         </if>
                                         <if condition="$return_goods[status] eq -2">
-                                            尊敬的客户，您的服务单已取消，感谢您对{$tpshop_config['shop_info_store_name']}的大力支持
+                                            尊敬的客户，您的服务单已取消，感谢您对{$wshop_config['shop_info_store_name']}的大力支持
                                         </if>
                                     </div>
                                     <if condition="($return_goods[status] neq -2) and ($return_goods[status] lt 4)">
@@ -484,9 +484,9 @@
 		    					 		<td><span>卖家收货信息</span></td>
 		    					 		<td class="lastd">
 		    					 		<strong>
-		    					 			收货地址：{$tpshop_config['shop_info_address']}<br>
-		    					 			收件人：{$tpshop_config['shop_info_store_name']}(收)<br>
-		    					 			电话：{$tpshop_config['shop_info_phone']}
+		    					 			收货地址：{$wshop_config['shop_info_address']}<br>
+		    					 			收件人：{$wshop_config['shop_info_store_name']}(收)<br>
+		    					 			电话：{$wshop_config['shop_info_phone']}
 		    					 		</strong>
 		    					 		</td>
 		    					 	</tr>

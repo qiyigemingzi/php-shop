@@ -1,16 +1,7 @@
 <?php
 /**
- * tpshop
- * ============================================================================
- * 版权所有 2015-2027 深圳搜豹网络科技有限公司，并保留所有权利。
- * 网站地址: http://www.tp-shop.cn
- * ----------------------------------------------------------------------------
- * 这不是一个自由软件！您只能在不用于商业目的的前提下对程序代码进行修改和使用 .
- * 不允许对程序代码以任何形式任何目的的再发布。
- * 采用最新Thinkphp5助手函数特性实现单字母函数M D U等简写方式
- * ============================================================================
- * Author: IT宇宙人     
- * Date: 2015-09-09
+ * @author wuhy     
+ * @date 2018-07-03
  */
 namespace app\admin\controller;
 use app\admin\logic\GoodsLogic;
@@ -154,10 +145,12 @@ class Goods extends Base {
         $str = $GoodsLogic->GetAttrCheckboxList($_REQUEST['type_id'],$filter_attr_arr);          
         $str = $str ? $str : '没有可帅选的商品属性';
         exit($str);        
-    }    
-    
+    }
+
     /**
      * 删除分类
+     * @throws \think\Exception
+     * @throws \think\exception\PDOException
      */
     public function delGoodsCategory(){
         $ids = I('post.ids','');
@@ -263,6 +256,10 @@ class Goods extends Base {
 
     /**
      * 添加修改商品
+     * @return mixed
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
      */
     public function addEditGoods()
     {
@@ -404,6 +401,9 @@ class Goods extends Base {
 
     /**
      * 添加修改编辑  商品属性类型
+     * @return mixed
+     * @throws \think\Exception
+     * @throws \think\exception\PDOException
      */
     public function addEditGoodsType()
     {
@@ -637,10 +637,14 @@ class Goods extends Base {
         // 删除分类
         M('Spec')->whereIn('id',$aspec_ids)->delete();
         $this->ajaxReturn(['status' => 1,'msg' => "操作成功!!!",'url'=>U('Admin/Goods/specList')]);
-    } 
-    
+    }
+
     /**
      * 品牌列表
+     * @return mixed
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
      */
     public function brandList(){
         $where = "";
@@ -657,9 +661,12 @@ class Goods extends Base {
         $this->assign('brandList',$brandList);
         return $this->fetch('brandList');
     }
-    
+
     /**
      * 添加修改编辑  商品品牌
+     * @return mixed
+     * @throws \think\Exception
+     * @throws \think\exception\PDOException
      */
     public  function addEditBrand(){
             $id = I('id');            
@@ -683,10 +690,12 @@ class Goods extends Base {
            $brand = M("Brand")->find($id);             
            $this->assign('brand',$brand);
            return $this->fetch('_brand');
-    }    
-    
+    }
+
     /**
      * 删除品牌
+     * @throws \think\Exception
+     * @throws \think\exception\PDOException
      */
     public function delBrand()
     {
@@ -747,6 +756,10 @@ class Goods extends Base {
 
     /**
      * 添加修改编辑  商品规格
+     * @return mixed
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
      */
     public  function addEditSpec(){
 

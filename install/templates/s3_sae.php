@@ -53,7 +53,7 @@
           <tr>
             <td class="tar">数据库表前缀：</td>
             <td><input type="text" name="dbprefix" id="dbprefix" disabled="disabled" value="TP_" class="input" disabled></td>
-            <td><div id="J_install_tip_dbprefix"><span class="gray">建议使用默认，同一数据库安装多个TPshop时需修改</span></div></td>
+            <td><div id="J_install_tip_dbprefix"><span class="gray">建议使用默认，同一数据库安装多个wshop时需修改</span></div></td>
           </tr>
         </table>
 		<table width="100%">
@@ -64,7 +64,7 @@
           </tr>
           <tr>
             <td class="tar">网站名称：</td>
-            <td><input type="text" name="sitename" value="TPshop内容管理框架" class="input"></td>
+            <td><input type="text" name="sitename" value="wshop内容管理框架" class="input"></td>
             <td><div id="J_install_tip_sitename"></div></td>
           </tr>
           <tr>
@@ -74,12 +74,12 @@
           </tr>
           <tr>
             <td class="tar">关键词：</td>
-            <td><input type="text" name="sitekeywords" value="TPshop,php,企业网站管理系统,cms,椰角网络,yejiao,thinkphp" class="input" autoComplete="off"></td>
+            <td><input type="text" name="sitekeywords" value="wshop,php,企业网站管理系统,cms,椰角网络,yejiao,thinkphp" class="input" autoComplete="off"></td>
             <td><div id="J_install_tip_sitekeywords"></div></td>
           </tr>
           <tr>
             <td class="tar">描述：</td>
-            <td><input type="text" name="siteinfo" class="input" value="TPshop是一款基于PHP+MySql开发的企业网站内容管理系统，其中免费版是完全开源的版本，采用MVC设计模式实现业务逻辑与表现层的适当分离，使网页设计师能够轻松设计出理想的模板，框架式开发易用扩展，支持自定义内容模型，可面向中小型站点提供重量级网站建设方案。对于那些想要进行开发，但技术不足的站长们是一个难得的CMS平台。企业建站，就选兔子CMS！TC的开发旨在帮助创业者搭建企业网站平台，实现创业梦想。"></td>
+            <td><input type="text" name="siteinfo" class="input" value="wshop是一款基于PHP+MySql开发的企业网站内容管理系统，其中免费版是完全开源的版本，采用MVC设计模式实现业务逻辑与表现层的适当分离，使网页设计师能够轻松设计出理想的模板，框架式开发易用扩展，支持自定义内容模型，可面向中小型站点提供重量级网站建设方案。对于那些想要进行开发，但技术不足的站长们是一个难得的CMS平台。企业建站，就选兔子CMS！TC的开发旨在帮助创业者搭建企业网站平台，实现创业梦想。"></td>
             <td><div id="J_install_tip_siteinfo"></div></td>
           </tr>
         </table>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Title</title> 
-     <link href="__STATIC__/css/tpshop.css" rel="stylesheet" />
+     <link href="__STATIC__/css/wshop.css" rel="stylesheet" />
      <script src="__STATIC__/js/jquery-1.11.3.min.js" type="text/javascript" charset="utf-8"></script>
      <script src="__PUBLIC__/js/layer/layer.js" type="text/javascript"></script>
      <script src="__PUBLIC__/js/global.js" type="text/javascript"></script>
@@ -12,14 +12,14 @@
 <div class="relation-user-wrap">
     <div class="relation-tips">联合登录</div>
     <ul class="relation-lists1">
-        <li class="relation-ac">已有TPshop商城账号，请绑定</li>
-        <li>没有TPshop商城账号，请完善资料</li>
+        <li class="relation-ac">已有wshop商城账号，请绑定</li>
+        <li>没有wshop商城账号，请完善资料</li>
     </ul>
     <ul class="relation-lists2">
         <li class="relation-ac">
             <div class="user-tips1 p">
                 <div class="user-photo1"><img src="{$head_pic}" alt="" /></div>
-                <p class="mes-tips1">Hi, {$nickname} 欢迎来到 {$tpshop_config['shop_info_store_name']}，完成绑定后可以
+                <p class="mes-tips1">Hi, {$nickname} 欢迎来到 {$wshop_config['shop_info_store_name']}，完成绑定后可以
                 	<if condition="$oauth eq 'weixin'">	微信
                 	<elseif condition="$oauth eq 'qq'" />	QQ
                 	<else/>支付宝
@@ -48,7 +48,7 @@
         <li>
             <div class="user-tips1 p">
                 <div class="user-photo1"><img src="{$head_pic}" alt="" /></div>
-                <p class="mes-tips1">Hi, {$nickname} 欢迎来到 {$tpshop_config['shop_info_store_name']}，完成绑定后可以
+                <p class="mes-tips1">Hi, {$nickname} 欢迎来到 {$wshop_config['shop_info_store_name']}，完成绑定后可以
                 	<if condition="$oauth eq 'weixin'">	微信
                 	<elseif condition="$oauth eq 'qq'" />	QQ
                 	<else/>支付宝
@@ -86,7 +86,7 @@
                 <div class="form-agreen">
                     <input type="checkbox"  value="1"/>
                     我已阅读并同意
-                    <a class="itxt" href="{:U('Home/Article/detail',['article_id'=>1415])}" target="_blank">《TPshop商城用户注册协议》</a>
+                    <a class="itxt" href="{:U('Home/Article/detail',['article_id'=>1415])}" target="_blank">《wshop商城用户注册协议》</a>
                 </div>
                 <input class="btn-register" type="button" onclick="checkSubmit(2)" value="立即绑定"  />
             </form>
@@ -224,7 +224,7 @@
                 	if(res.status == 1)
         			{
         				$('#count_down').attr("disabled","disabled");
-        				intAs = {$tpshop_config['sms_sms_time_out']|default=60}; // 手机短信超时时间
+        				intAs = {$wshop_config['sms_sms_time_out']|default=60}; // 手机短信超时时间
                         jsInnerTimeout('count_down',intAs);
                         layer.alert(res.msg, {icon: 1});
         			}else{

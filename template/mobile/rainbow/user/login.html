@@ -2,7 +2,7 @@
 <include file="public/header_nav" title="登录"  href="javascript:history.back(-1);"/>
 <div class="logo-wrap-bg">
     <a class="login-logo-wrap" href="#">
-        <img src="{$tpshop_config.shop_info_store_user_logo|default='/public/static/images/logo/pc_home_user_logo_default.png'}" alt="LOGO"/>
+        <img src="{$wshop_config.shop_info_store_user_logo|default='/public/static/images/logo/pc_home_user_logo_default.png'}" alt="LOGO"/>
     </a>
 </div>
 
@@ -38,7 +38,7 @@
     <div class="thirdlogin">
         <h4>第三方登陆</h4>
         <div class="third-login-list">
-        <tpshop sql="select * from __PREFIX__plugin where type='login' AND status = 1" item="v" key="k">
+        <wshop sql="select * from __PREFIX__plugin where type='login' AND status = 1" item="v" key="k">
             <!--<if condition="$v['code'] eq 'weixin' AND is_weixin() neq 1">
                 <a class="item-ico ico-wechat-login" href="{:U('LoginApi/login',array('oauth'=>'weixin'))}" target="_blank" title="weixin"></a>
        </if>-->
@@ -48,7 +48,7 @@
             <if condition="$v['code'] eq 'alipay' AND is_alipay() neq 1">
             <a class="item-ico ico-alipay-login" href="{:U('LoginApi/login',array('oauth'=>'alipay'))}"></a>
             </if>
-        </tpshop>
+        </wshop>
         </div>
     </div>
      <!--第三方登陆-e-->

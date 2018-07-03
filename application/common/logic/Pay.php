@@ -1,21 +1,8 @@
 <?php
-/**
- * tpshop
- * ============================================================================
- * 版权所有 2015-2027 深圳搜豹网络科技有限公司，并保留所有权利。
- * 网站地址: http://www.tp-shop.cn
- * ----------------------------------------------------------------------------
- * 这不是一个自由软件！您只能在不用于商业目的的前提下对程序代码进行修改和使用 .
- * 不允许对程序代码以任何形式任何目的的再发布。
- * 采用最新Thinkphp5助手函数特性实现单字母函数M D U等简写方式
- * ============================================================================
- * Author: dyr
- * Date: 2017-12-04
- */
 
 namespace app\common\logic;
 use app\common\model\CouponList;
-use app\common\util\TpshopException;
+use app\common\util\wshopException;
 use think\Model;
 use think\Db;
 /**
@@ -47,13 +34,13 @@ class Pay
     /**
      * 计算订单表的普通订单商品
      * @param $order_goods
-     * @throws TpshopException
+     * @throws wshopException
      */
     public function payOrder($order_goods){
         $this->payList = $order_goods;
         $order = Db::name('order')->where('order_id',  $this->payList[0]['order_id'])->find();
         if(empty($order)){
-            throw new TpshopException('计算订单价格', 0, ['status' => -9, 'msg' => '找不到订单数据', 'result' => '']);
+            throw new wshopException('计算订单价格', 0, ['status' => -9, 'msg' => '找不到订单数据', 'result' => '']);
         }
         $reduce = tpCache('shopping.reduce');
         if($order['pay_status'] == 0 && $reduce == 2){
@@ -61,7 +48,7 @@ class Pay
             for ($payCursor = 0; $payCursor < $goodsListCount; $payCursor++) {
                 $goods_stock = getGoodNum($this->payList[$payCursor]['goods_id'], $this->payList[$payCursor]['spec_key']); // 最多可购买的库存数量
                 if($goods_stock <= 0 && $this->payList[$payCursor]['goods_num'] > $goods_stock){
-                    throw new TpshopException('计算订单价格', 0, ['status' => -9, 'msg' => $this->payList[$payCursor]['goods_name'].','.$this->payList[$payCursor]['spec_key_name'] . "库存不足,请重新下单", 'result' => '']);
+                    throw new wshopException('计算订单价格', 0, ['status' => -9, 'msg' => $this->payList[$payCursor]['goods_name'].','.$this->payList[$payCursor]['spec_key_name'] . "库存不足,请重新下单", 'result' => '']);
                 }
             }
         }
@@ -71,13 +58,13 @@ class Pay
     /**
      * 计算购买购物车的商品
      * @param $cart_list
-     * @throws TpshopException
+     * @throws wshopException
      */
     public function payCart($cart_list){
         $this->payList = $cart_list;
         $goodsListCount = count($this->payList);
         if ($goodsListCount == 0) {
-            throw new TpshopException('计算订单价格', 0, ['status' => -9, 'msg' => '你的购物车没有选中商品', 'result' => '']);
+            throw new wshopException('计算订单价格', 0, ['status' => -9, 'msg' => '你的购物车没有选中商品', 'result' => '']);
         }
         $this->Calculation();
     }
@@ -85,13 +72,13 @@ class Pay
     /**
      * 计算购买商品表的商品
      * @param $goods_list
-     * @throws TpshopException
+     * @throws wshopException
      */
     public function payGoodsList($goods_list)
     {
         $goodsListCount = count($goods_list);
         if ($goodsListCount == 0) {
-            throw new TpshopException('计算订单价格', 0, ['status' => -9, 'msg' => '你的购物车没有选中商品', 'result' => '']);
+            throw new wshopException('计算订单价格', 0, ['status' => -9, 'msg' => '你的购物车没有选中商品', 'result' => '']);
         }
         $discount = $this->getDiscount();
         for ($goodsCursor = 0; $goodsCursor < $goodsListCount; $goodsCursor++) {
@@ -131,7 +118,7 @@ class Pay
 
     /**
      * 设置用户ID
-     * @throws TpshopException
+     * @throws wshopException
      * @param $user_id
      */
     public function setUserId($user_id)
@@ -139,13 +126,13 @@ class Pay
         $this->userId = $user_id;
         $this->user = Db::name('users')->where(['user_id' => $this->userId])->find();
         if(empty($this->user)){
-            throw new TpshopException("计算订单价格",0,['status' => -9, 'msg' => '未找到用户', 'result' => '']);
+            throw new wshopException("计算订单价格",0,['status' => -9, 'msg' => '未找到用户', 'result' => '']);
         }
     }
 
     /**
      * 使用积分
-     * @throws TpshopException
+     * @throws wshopException
      * @param $pay_points
      * @param $is_exchange|是否有使用积分兑换商品流程
      */
@@ -157,20 +144,20 @@ class Pay
                 $use_percent_point = tpCache('shopping.point_use_percent');     //最大使用限制: 最大使用积分比例, 例如: 为50时, 未50% , 那么积分支付抵扣金额不能超过应付金额的50%
                 $min_use_limit_point = tpCache('shopping.point_min_limit'); //最低使用额度: 如果拥有的积分小于该值, 不可使用
                 if($use_percent_point == 0){
-                    throw new TpshopException("计算订单价格",0,['status' => -1, 'msg' => '该笔订单不能使用积分', 'result' => '']);
+                    throw new wshopException("计算订单价格",0,['status' => -1, 'msg' => '该笔订单不能使用积分', 'result' => '']);
                 }
                 if($use_percent_point > 0 && $use_percent_point < 100){
                     //计算订单最多使用多少积分
                     $point_limit = $this->orderAmount * $point_rate * $use_percent_point;
                     if($pay_points > $point_limit){
-                        throw new TpshopException("计算订单价格",0,['status' => -1, 'msg' => "该笔订单, 您使用的积分不能大于" . $point_limit, 'result' => '']);
+                        throw new wshopException("计算订单价格",0,['status' => -1, 'msg' => "该笔订单, 您使用的积分不能大于" . $point_limit, 'result' => '']);
                     }
                 }
                 if($pay_points > $this->user['pay_points']){
-                    throw new TpshopException("计算订单价格",0,['status' => -5, 'msg' => "你的账户可用积分为:" . $this->user['pay_points'], 'result' => '']);
+                    throw new wshopException("计算订单价格",0,['status' => -5, 'msg' => "你的账户可用积分为:" . $this->user['pay_points'], 'result' => '']);
                 }
                 if ($min_use_limit_point > 0 && $pay_points < $min_use_limit_point) {
-                    throw new TpshopException("计算订单价格",0,['status' => -1, 'msg' => "您使用的积分必须大于".$min_use_limit_point."才可以使用", 'result' => '']);
+                    throw new wshopException("计算订单价格",0,['status' => -1, 'msg' => "您使用的积分必须大于".$min_use_limit_point."才可以使用", 'result' => '']);
                 }
                 $order_amount_pay_point = floor($this->orderAmount * $point_rate);
                 if($pay_points > $order_amount_pay_point){
@@ -197,14 +184,14 @@ class Pay
 
     /**
      * 使用余额
-     * @throws TpshopException
+     * @throws wshopException
      * @param $user_money
      */
     public function useUserMoney($user_money)
     {
         if($user_money > 0){
             if($user_money > $this->user['user_money']){
-                throw new TpshopException("计算订单价格",0,['status' => -6, 'msg' =>  "你的账户可用余额为:" . $this->user['user_money'], 'result' => '']);
+                throw new wshopException("计算订单价格",0,['status' => -6, 'msg' =>  "你的账户可用余额为:" . $this->user['user_money'], 'result' => '']);
             }
             if($user_money > $this->orderAmount){
                 $this->userMoney = $this->orderAmount;
@@ -246,17 +233,17 @@ class Pay
     /**
      * 配送
      * @param $district_id
-     * @throws TpshopException
+     * @throws wshopException
      */
     public function delivery($district_id){
         if(empty($district_id)){
-            throw new TpshopException("计算订单价格",0,['status'=>-1,'msg'=>'请填写收货信息','result'=>['']]);
+            throw new wshopException("计算订单价格",0,['status'=>-1,'msg'=>'请填写收货信息','result'=>['']]);
         }
         $GoodsLogic = new GoodsLogic();
         $checkGoodsShipping = $GoodsLogic->checkGoodsListShipping($this->payList, $district_id);
         foreach($checkGoodsShipping as $shippingKey => $shippingVal){
             if($shippingVal['shipping_able'] != true){
-                throw new TpshopException("计算订单价格",0,['status'=>-1,'msg'=>'订单中部分商品不支持对当前地址的配送请返回购物车修改','result'=>['goods_shipping'=>$checkGoodsShipping]]);
+                throw new wshopException("计算订单价格",0,['status'=>-1,'msg'=>'订单中部分商品不支持对当前地址的配送请返回购物车修改','result'=>['goods_shipping'=>$checkGoodsShipping]]);
             }
         }
         $freight_free = tpCache('shopping.freight_free'); // 全场满多少免运费

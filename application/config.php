@@ -1,16 +1,6 @@
 <?php
 /**
- * tpshop
- * ============================================================================
- * * 版权所有 2015-2027 深圳搜豹网络科技有限公司，并保留所有权利。
- * 网站地址: http://www.tp-shop.cn
- * ----------------------------------------------------------------------------
- * 这不是一个自由软件！您只能在不用于商业目的的前提下对程序代码进行修改和使用 .
- * 不允许对程序代码以任何形式任何目的的再发布。
- * 如果商业用途务必到官方购买正版授权, 以免引起不必要的法律纠纷.
- * 采用最新Thinkphp5助手函数特性实现单字母函数M D U等简写方式
- * ============================================================================
- * $Author: IT宇宙人 2015-08-10 $
+ * @author wuhy
  */
 
 return [
@@ -255,7 +245,7 @@ return [
         'list_rows' => 15,
     ],
     // 密码加密串
-    'AUTH_CODE' => "TPSHOP", //安装完毕之后不要改变，否则所有密码都会出错
+    'AUTH_CODE' => "wshop", //安装完毕之后不要改变，否则所有密码都会出错
     
     'ORDER_STATUS' =>[
         0 => '待确认',
@@ -375,15 +365,15 @@ return [
     
     'WX_PAY2' => 1,
 
-    /**假设这个访问地址是 www.tpshop.cn/home/goods/goodsInfo/id/1.html 
+    /**假设这个访问地址是 www.wshop.cn/home/goods/goodsInfo/id/1.html 
      *就保存名字为 home_goods_goodsinfo_1.html     
      *配置成这样, 指定 模块 控制器 方法名 参数名      
      */
     'HTML_CACHE_ARR'=> [
     ['mca'=>'home_Goods_goodsInfo','p'=>['id']],  
     ['mca'=>'home_Index_index'],  // 缓存首页静态页面
-    ['mca'=>'home_Goods_ajaxComment','p'=>['goods_id','commentType','p']],  // 缓存评论静态页面 http://www.tpshop2.0.com/index.php?m=Home&c=Goods&a=ajaxComment&goods_id=142&commentType=1&p=1
-    ['mca'=>'home_Goods_ajax_consult','p'=>['goods_id','consult_type','p']],  // 缓存咨询静态页面 http://www.tpshop2.0.com/index.php?m=Home&c=Goods&a=ajax_consult&goods_id=142&consult_type=0&p=2
+    ['mca'=>'home_Goods_ajaxComment','p'=>['goods_id','commentType','p']],  // 缓存评论静态页面 http://www.wshop2.0.com/index.php?m=Home&c=Goods&a=ajaxComment&goods_id=142&commentType=1&p=1
+    ['mca'=>'home_Goods_ajax_consult','p'=>['goods_id','consult_type','p']],  // 缓存咨询静态页面 http://www.wshop2.0.com/index.php?m=Home&c=Goods&a=ajax_consult&goods_id=142&consult_type=0&p=2
     ],
 
     /*订单操作*/

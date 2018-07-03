@@ -1,16 +1,17 @@
 <?php
 
-/**
- * User: dyr
- * Date: 2017/11/24 0024
- * Time: 下午 3:00
- */
 
 namespace app\common\behavior;
 use app\common\logic\wechat\WechatUtil;
 use think\Db;
 class Order
 {
+    /**
+     * @param $order
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
     public function userAddOrder(&$order)
     {
 

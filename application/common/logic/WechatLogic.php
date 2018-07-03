@@ -1,15 +1,4 @@
 <?php
-/**
- * tpshop
- * ============================================================================
- * 版权所有 2015-2027 深圳搜豹网络科技有限公司，并保留所有权利。
- * 网站地址: http://www.tp-shop.cn
- * ----------------------------------------------------------------------------
- * 这不是一个自由软件！您只能在不用于商业目的的前提下对程序代码进行修改和使用 .
- * 不允许对程序代码以任何形式任何目的的再发布。
- * 如果商业用途务必到官方购买正版授权, 以免引起不必要的法律纠纷.
- * ============================================================================
- */
 
 namespace app\common\logic;
 
@@ -32,6 +21,13 @@ class WechatLogic
     static private $wx_user = null;
     static private $wechat_obj;
 
+    /**
+     * WechatLogic constructor.
+     * @param null $config
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
     public function __construct($config = null)
     {
         if (!self::$wx_user) {
@@ -66,7 +62,11 @@ class WechatLogic
     /**
      * 处理关注事件
      * @param array $msg
-     * @return array
+     * @return void
+     * @throws \think\Exception
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
      */
     private function handleSubscribeEvent($msg)
     {
@@ -130,6 +130,9 @@ class WechatLogic
 
     /**
      * 关注时回复消息
+     * @param $from
+     * @param $to
+     * @throws \think\exception\DbException
      */
     private function replySubscribe($from, $to)
     {
@@ -150,6 +153,7 @@ class WechatLogic
      * @param $type string WxReply的类型
      * @param array $data 附加数据
      * @return string
+     * @throws \think\exception\DbException
      */
     private function createReplyMsg($from, $to, $type, $data = [])
     {
@@ -179,6 +183,9 @@ class WechatLogic
     /**
      * 处理点击事件
      * @param array $msg
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
      */
     private function handleClickEvent($msg)
     {
@@ -198,6 +205,10 @@ class WechatLogic
 
     /**
      * 回复我的二维码
+     * @param $msg
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
      */
     private function replyMyQrcode($msg)
     {
@@ -321,6 +332,11 @@ class WechatLogic
 
     /**
      * 创建图文回复消息
+     * @param $fromUser
+     * @param $toUser
+     * @param $material_id
+     * @return string
+     * @throws \think\exception\DbException
      */
     private function createNewsReplyMsg($fromUser, $toUser, $material_id)
     {
@@ -344,7 +360,8 @@ class WechatLogic
 
     /**
      * 默认回复
-     * @param array $msg
+     * @param $from
+     * @param $to
      */
     private function replyDefault($from, $to)
     {
@@ -494,6 +511,9 @@ class WechatLogic
 
     /**
      * 获取粉丝列表
+     * @param $p
+     * @param int $num
+     * @return array
      */
     public function getFanList($p, $num = 10)
     {
@@ -549,6 +569,13 @@ class WechatLogic
 
     /**
      * 商城用户里的粉丝列表
+     * @param $p
+     * @param int $num
+     * @param string $keyword
+     * @return array
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
      */
     public function getUserFanList($p, $num = 10, $keyword= '')
     {
@@ -588,6 +615,10 @@ class WechatLogic
     /**
      * 新建和更新文本素材
      * （图文素材只需保存在本地，微信不存储文本素材）
+     * @param $material_id
+     * @param $data
+     * @return array
+     * @throws \think\exception\DbException
      */
     public function createOrUpdateText($material_id, $data)
     {
@@ -622,6 +653,9 @@ class WechatLogic
 
     /**
      * 删除文本素材
+     * @param $material_id
+     * @return array
+     * @throws \think\exception\DbException
      */
     public function deleteText($material_id)
     {
@@ -637,6 +671,11 @@ class WechatLogic
 
     /**
      * 新建和更新图文素材
+     * @param $material_id
+     * @param $news_id
+     * @param $data
+     * @return array
+     * @throws \think\exception\DbException
      */
     public function createOrUpdateNews($material_id, $news_id, $data)
     {
@@ -701,6 +740,7 @@ class WechatLogic
      * 删除图文素材
      * @param $material_id int 素材id
      * @return array
+     * @throws \think\exception\DbException
      */
     public function deleteNews($material_id)
     {
@@ -730,6 +770,7 @@ class WechatLogic
      * 删除单图文
      * @param $news_id int 单图文的id
      * @return array
+     * @throws \think\exception\DbException
      */
     public function deleteSingleNews($news_id)
     {
@@ -757,6 +798,7 @@ class WechatLogic
      * 上传图文
      * @param $material WxMaterial
      * @return array
+     * @throws \think\exception\DbException
      */
     private function uploadNews($material)
     {
@@ -841,6 +883,7 @@ class WechatLogic
      * @param $openids array|string 可多个用户openid
      * @param int $to_all 0由openids决定，1所有粉丝
      * @return array
+     * @throws \think\exception\DbException
      */
     public function sendNewsMsg($material_id, $openids, $to_all = 0)
     {
@@ -879,6 +922,7 @@ class WechatLogic
     /**
      * 删除图片
      * @param $url string 存储在本地的url
+     * @throws \think\exception\DbException
      */
     public function deleteImage($url)
     {
@@ -1016,7 +1060,10 @@ class WechatLogic
 
     /**
      * 配置模板
+     * @param $template_sn
      * @param $data array 配置
+     * @return array
+     * @throws \think\exception\DbException
      */
     public function setTemplateMsg($template_sn, $data)
     {
@@ -1050,6 +1097,9 @@ class WechatLogic
 
     /**
      * 重置模板消息
+     * @param $template_sn
+     * @return array
+     * @throws \think\exception\DbException
      */
     public function resetTemplateMsg($template_sn)
     {
@@ -1070,6 +1120,10 @@ class WechatLogic
     /**
      * 发送模板消息（订单支付成功通知）
      * @param $order array 订单数据
+     * @return array
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
      */
     public function sendTemplateMsgOnPaySuccess($order)
     {
@@ -1115,6 +1169,10 @@ class WechatLogic
     /**
      * 发送模板消息（订单发货通知）
      * @param $deliver array 物流信息
+     * @return array
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
      */
     public function sendTemplateMsgOnDeliver($deliver)
     {
@@ -1283,6 +1341,9 @@ class WechatLogic
 
     /**
      * 添加文本自动回复
+     * @param $data
+     * @return array
+     * @throws \think\exception\DbException
      */
     public function addTextAutoReply($data)
     {
@@ -1323,6 +1384,7 @@ class WechatLogic
      * @param $reply_id int 回复id
      * @param $data array
      * @return array
+     * @throws \think\exception\DbException
      */
     public function updateTextAutoReply($reply_id, $data)
     {
@@ -1358,6 +1420,9 @@ class WechatLogic
 
     /**
      * 检查文本自动回复表单
+     * @param $data
+     * @return array
+     * @throws \think\exception\DbException
      */
     private function checkNewsAutoReplyForm(&$data)
     {
@@ -1394,6 +1459,9 @@ class WechatLogic
 
     /**
      * 新增图文自动回复
+     * @param $data
+     * @return array
+     * @throws \think\exception\DbException
      */
     public function addNewsAutoReply($data)
     {
@@ -1434,6 +1502,7 @@ class WechatLogic
      * @param $reply_id int 回复id
      * @param $data array
      * @return array
+     * @throws \think\exception\DbException
      */
     public function updateNewsAutoReply($reply_id, $data)
     {
@@ -1469,6 +1538,10 @@ class WechatLogic
 
     /**
      * 添加自动回复
+     * @param $type
+     * @param $data
+     * @return array
+     * @throws \think\exception\DbException
      */
     public function addAutoReply($type, $data)
     {
@@ -1483,6 +1556,11 @@ class WechatLogic
 
     /**
      * 更新自动回复
+     * @param $type
+     * @param $reply_id
+     * @param $data
+     * @return array
+     * @throws \think\exception\DbException
      */
     public function updateAutoReply($type, $reply_id, $data)
     {
@@ -1497,6 +1575,9 @@ class WechatLogic
 
     /**
      * 删除自动回复
+     * @param $reply_id
+     * @return array
+     * @throws \think\exception\DbException
      */
     public function deleteAutoReply($reply_id)
     {

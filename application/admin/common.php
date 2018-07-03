@@ -1,16 +1,5 @@
 <?php
-/**
- * tpshop
- * ============================================================================
- * 版权所有 2015-2027 深圳搜豹网络科技有限公司，并保留所有权利。
- * 网站地址: http://www.tp-shop.cn
- * ----------------------------------------------------------------------------
- * 这不是一个自由软件！您只能在不用于商业目的的前提下对程序代码进行修改和使用 .
- * 不允许对程序代码以任何形式任何目的的再发布。
- * ============================================================================
- * Author: 当燃
- * Date: 2015-09-09
- */
+
 
 /**
  * 管理员操作记录
@@ -28,10 +17,7 @@ function adminLog($log_info){
 
 /**
  * 平台支出记录
- * @param $log_id 支出业务关联id
- * @param $money 支出金额
- * @param $type 支出类别
- * @param $user_id or $store_id 涉及申请用户ID或商家ID
+ * @param $data
  */
 function expenseLog($data){
 	$data['addtime'] = time();
@@ -86,8 +72,8 @@ function navigate_admin()
 
 /**
  * 导出excel
- * @param $strTable	表格内容
- * @param $filename 文件名
+ * @param $strTable //表格内容
+ * @param $filename //文件名
  */
 function downloadExcel($strTable,$filename)
 {
@@ -113,7 +99,8 @@ function format_bytes($size, $delimiter = '') {
 
 /**
  * 根据id获取地区名字
- * @param $regionId id
+ * @param $regionId //id
+ * @return string
  */
 function getRegionName($regionId){
     $data = M('region')->where(array('id'=>$regionId))->field('name')->find();

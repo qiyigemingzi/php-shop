@@ -1,15 +1,7 @@
 <?php
 /**
- * tpshop
- * ============================================================================
- * 版权所有 2015-2027 深圳搜豹网络科技有限公司，并保留所有权利。
- * 网站地址: http://www.tp-shop.cn
- * ----------------------------------------------------------------------------
- * 这不是一个自由软件！您只能在不用于商业目的的前提下对程序代码进行修改和使用 .
- * 不允许对程序代码以任何形式任何目的的再发布。
- * ============================================================================
- * Author: IT宇宙人
- * Date: 2015-09-09
+ * @author wuhy
+ * @date 2018-07-03
  */
 
 namespace app\admin\logic;
@@ -47,12 +39,12 @@ class GoodsLogic extends Model
                 }
                 return $goods_category2;               
     }
-    
+
     /**
-     * 获取指定id下的 所有分类      
-     * @global type $goods_category 所有商品分类
+     * 获取指定id下的 所有分类
      * @param type $id 当前显示的 菜单id
-     * @return 返回数组 Description
+     * @return void Description
+     * @global type $goods_category 所有商品分类
      */
     public function get_cat_tree($id)
     {
@@ -66,13 +58,14 @@ class GoodsLogic extends Model
              }
         }               
     }
-    
-    
+
+
     /**
      * 移除指定$parent_id_path 分类以及下的所有分类
-     * @global type $cat_list 所有商品分类
+     * @param $cat_list
      * @param type $parent_id_path 指定的id
-     * @return 返回数组 Description
+     * @return type Description
+     * @global type $cat_list 所有商品分类
      */
     public function remove_cat($cat_list,$parent_id_path)
     {
@@ -84,12 +77,12 @@ class GoodsLogic extends Model
         }     
         return $cat_list;
     }
-    
+
     /**
-     * 改变或者添加分类时 需要修改他下面的 parent_id_path  和 level 
+     * 改变或者添加分类时 需要修改他下面的 parent_id_path  和 level
      * @global type $cat_list 所有商品分类
-     * @param type $parent_id_path 指定的id
-     * @return 返回数组 Description
+     * @return void Description
+     * @global type $cat_list 所有商品分类
      */
     public function refresh_cat($id)
     {            
@@ -114,12 +107,13 @@ class GoodsLogic extends Model
         $replace_level = $cat['level'] - ($parent_cat['level'] + 1); // 看看他 相比原来的等级 升级了多少  ($parent_cat['level'] + 1) 他老爸等级加一 就是他现在要改的等级
         $replace_str = $parent_cat['parent_id_path'].'_'.$id;                
         Db::execute("UPDATE `__PREFIX__goods_category` SET parent_id_path = REPLACE(parent_id_path,'{$cat['parent_id_path']}','$replace_str'), level = (level - $replace_level) WHERE  parent_id_path LIKE '{$cat['parent_id_path']}%'");        
-    }    
+    }
 
     /**
      * 动态获取商品属性输入框 根据不同的数据返回不同的输入框类型
      * @param int $goods_id 商品id
      * @param int $type_id 商品属性类型id
+     * @return string
      */
     public function getAttrInput($goods_id,$type_id)
     {
@@ -358,11 +352,12 @@ class GoodsLogic extends Model
         $str .= "</table>";
        return $str;   
     }
-    
+
     /**
      * 获取指定规格类型下面的所有规格  但不包括规格项 供商品分类列表页帅选作用
      * @param type $type_id
      * @param type $checked
+     * @return string
      */
     function GetSpecCheckboxList($type_id, $checked = array()){
         $list = M('Spec')->where("type_id = $type_id")->order('`order` desc')->select();     
@@ -377,11 +372,12 @@ class GoodsLogic extends Model
         }
         return $str;
     }
-    
+
     /**
      * 获取指定商品类型下面的所有属性  供商品分类列表页帅选作用
      * @param type $type_id
      * @param type $checked
+     * @return string
      */
     function GetAttrCheckboxList($type_id, $checked = array()){                
         $list = M('GoodsAttribute')->where("type_id = $type_id and attr_index > 0 ")->order('`order` desc')->select();                
@@ -396,10 +392,11 @@ class GoodsLogic extends Model
         }
         return $str;
     }
-    
+
     /**
      *  获取选中的下拉框
      * @param type $cat_id
+     * @return array
      */
     function find_parent_cat($cat_id)
     {
@@ -508,11 +505,12 @@ class GoodsLogic extends Model
         return $categoryList;
     }
 
-    
+
     /**
      * @方法：将数据格式转换成树形结构数组
      * @param array $items 要进行转换的数组
      * return array $items 转换完成的数组
+     * @return array
      */
     function getCatTree(Array $items) {
     	$tree = array();
@@ -527,7 +525,7 @@ class GoodsLogic extends Model
     
     /**
      * * 将树形结构数组输出
-     * @param $items    要输出的数组
+     * @param $items    //要输出的数组
      * @param int $deep 顶级父节点id
      * @param int $type_id 已选中项
      * @return string

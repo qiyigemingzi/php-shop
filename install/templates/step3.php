@@ -47,13 +47,13 @@
           </tr>
           <tr>
             <td class="tar">数据库名：</td>
-            <td><input type="text" name="dbname" id="dbname" value="tpshop2.5.0" class="input" onBlur="TestDbPwd(0)"></td>
+            <td><input type="text" name="dbname" id="dbname" value="wshop2.5.0" class="input" onBlur="TestDbPwd(0)"></td>
             <td><div id="J_install_tip_dbname"></div></td>
           </tr>
           <tr>
             <td class="tar">数据库表前缀：</td>
             <td><input type="text" name="dbprefix" id="dbprefix" value="tp_" class="input" ></td>
-            <td><div id="J_install_tip_dbprefix"><span class="gray">建议使用默认，同一数据库安装多个TPshop时需修改</span></div></td>
+            <td><div id="J_install_tip_dbprefix"><span class="gray">建议使用默认，同一数据库安装多个wshop时需修改</span></div></td>
           </tr>
           <tr>
           	<td class="tar">演示数据：</td>
@@ -69,7 +69,7 @@
           </tr>
           <tr>
             <td class="tar">商城名称：</td>
-            <td><input type="text" name="sitename" value="TPshop开源商城" class="input"></td>
+            <td><input type="text" name="sitename" value="wshop开源商城" class="input"></td>
             <td><div id="J_install_tip_sitename"></div></td>
           </tr>
           <tr>
@@ -79,12 +79,12 @@
           </tr>
           <tr>
             <td class="tar">商城关键词：</td>
-            <td><input type="text" name="sitekeywords" value="TPshop,b2c商城系统，thinkphp" class="input" autoComplete="off"></td>
+            <td><input type="text" name="sitekeywords" value="wshop,b2c商城系统，thinkphp" class="input" autoComplete="off"></td>
             <td><div id="J_install_tip_sitekeywords"></div></td>
           </tr>
           <tr>
             <td class="tar">商城描述：</td>
-            <td><input type="text" name="siteinfo" class="input" value="TPshop的开发旨在帮助创业者搭建企业网站平台，实现创业梦想。"></td>
+            <td><input type="text" name="siteinfo" class="input" value="wshop的开发旨在帮助创业者搭建企业网站平台，实现创业梦想。"></td>
             <td><div id="J_install_tip_siteinfo"></div></td>
           </tr>
         </table>-->

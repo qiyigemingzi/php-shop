@@ -1,15 +1,7 @@
 <?php
 /**
- * tpshop
- * ============================================================================
- * 版权所有 2015-2027 深圳搜豹网络科技有限公司，并保留所有权利。
- * 网站地址: http://www.tp-shop.cn
- * ----------------------------------------------------------------------------
- * 商业用途务必到官方购买正版授权, 使用盗版将严厉追究您的法律责任。
- * 采用最新Thinkphp5助手函数特性实现单字母函数M D U等简写方式
- * ============================================================================
- * Author: IT宇宙人
- * Date: 2015-09-09
+ * @author wuhy
+ * @date 2018-07-03
  */
 
 namespace app\admin\logic;
@@ -23,7 +15,16 @@ use think\Db;
 class RefundLogic extends Model
 {
 
-    //订单商品售后退款
+    /**
+     * 订单商品售后退款
+     * @param $rec_id
+     * @param int $refund_type
+     * @throws \think\Exception
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     * @throws \think\exception\PDOException
+     */
     function updateRefundGoods($rec_id,$refund_type=0){
         $order_goods = M('order_goods')->where(array('rec_id'=>$rec_id))->find();
         $return_goods = M('return_goods')->where(array('rec_id'=>$rec_id))->find();
@@ -79,12 +80,15 @@ class RefundLogic extends Model
         $expense_data = array('money'=>$return_goods['refund_money']+$return_goods['refund_deposit'],'log_type_id'=>$rec_id,'type'=>3,'user_id'=>$return_goods['user_id']);
         expenseLog($expense_data);//退款记录日志
     }
-    
-    
+
+
     /**
      * 取消订单退还余额，优惠券等
      * @param $order
+     * @param int $type
      * @return bool
+     * @throws \think\Exception
+     * @throws \think\exception\PDOException
      */
     function updateRefundOrder($order,$type=0){
         //使用积分或者余额抵扣部分一一退还

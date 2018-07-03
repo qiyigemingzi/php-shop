@@ -1,17 +1,4 @@
 <?php
-/**
- * tpshop 微信支付插件
- * ============================================================================
- * 版权所有 2015-2027 深圳搜豹网络科技有限公司，并保留所有权利。
- * 网站地址: http://www.tp-shop.cn
- * ----------------------------------------------------------------------------
- * 这不是一个自由软件！您只能在不用于商业目的的前提下对程序代码进行修改和使用 .
- * 不允许对程序代码以任何形式任何目的的再发布。
- * 如果商业用途务必到官方购买正版授权, 以免引起不必要的法律纠纷.
- * ============================================================================
- * Author: IT宇宙人
- * Date: 2015-09-09
- */
 
 /**
  * 支付 逻辑定义
@@ -37,11 +24,13 @@ class weixin
         WxPayConfig::$smchid = isset($config_value['smchid']) ? $config_value['smchid'] : ''; // * SMCHID：服务商商户号（必须配置，开户邮件中可查看）
         WxPayConfig::$key = $config_value['key']; // KEY：商户支付密钥，参考开户邮件设置（必须配置，登录商户平台自行设置）
         WxPayConfig::$appsecret = $config_value['appsecret']; // 公众帐号secert（仅JSAPI支付的时候需要配置)，                                      
-    }    
+    }
+
     /**
      * 生成支付代码
-     * @param   array   $order      订单信息
-     * @param   array   $config    支付方式信息
+     * @param   array $order 订单信息
+     * @param   array $config 支付方式信息
+     * @return string
      */
     function get_code($order, $config)
     {
@@ -152,7 +141,7 @@ EOF;
     // 微信提现批量转账
     function transfer($data){
     header("Content-type: text/html; charset=utf-8");
-exit("请联系TPshop官网客服购买高级版支持此功能");
+exit("请联系wshop官网客服购买高级版支持此功能");
     }
     
     /**
@@ -215,7 +204,7 @@ exit("请联系TPshop官网客服购买高级版支持此功能");
      // 微信订单退款原路退回
     public function payment_refund($data){
     header("Content-type: text/html; charset=utf-8");
-exit("请联系TPshop官网客服购买高级版支持此功能");
+exit("请联系wshop官网客服购买高级版支持此功能");
     }
 
 }

@@ -1,15 +1,6 @@
 <?php
 /**
- * tpshop
- * ============================================================================
- * 版权所有 2015-2027 深圳搜豹网络科技有限公司，并保留所有权利。
- * 网站地址: http://www.tp-shop.cn
- * ----------------------------------------------------------------------------
- * 这不是一个自由软件！您只能在不用于商业目的的前提下对程序代码进行修改和使用 .
- * 不允许对程序代码以任何形式任何目的的再发布。
- * 采用最新Thinkphp5助手函数特性实现单字母函数M D U等简写方式
- * ============================================================================
- * Author: 当燃      
+ * @author  wuhy      
  * Date: 2015-12-21
  */
 
@@ -39,7 +30,13 @@ class Report extends Base{
 		$this->begin = strtotime($begin);
 		$this->end = strtotime($end)+86399;
 	}
-	
+
+    /**
+     * @return mixed
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
 	public function index(){
 		$now = strtotime(date('Y-m-d'));
 		$today['today_amount'] = M('order')->where("add_time>$now AND (pay_status=1 or pay_code='cod') and order_status in(1,2,4)")->sum('total_amount');//今日销售总额
@@ -85,6 +82,9 @@ class Report extends Base{
     /**
      * 销量排行
      * @return mixed
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
      */
 	public function saleTop(){
 		$goods_name = I('goods_name');
@@ -113,6 +113,9 @@ class Report extends Base{
     /**
      * 统计报表 - 会员排行
      * @return mixed
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
      */
 	public function userTop(){
 
@@ -153,6 +156,9 @@ class Report extends Base{
     /**
      * 用户订单
      * @return mixed
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
      */
     public function userOrder(){
         $orderModel = new Order();
@@ -184,6 +190,12 @@ class Report extends Base{
         return $this->fetch();
     }
 
+    /**
+     * @return mixed
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
     public function saleOrder(){
         $end_time = $this->begin+24*60*60;
         $order_where = "o.add_time>$this->begin and o.add_time<$end_time";  //交易成功的有效订单
@@ -201,6 +213,10 @@ class Report extends Base{
 
     /**
      * 销售明细列表
+     * @return mixed
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
      */
 	public function saleList(){
         $cat_id = I('cat_id',0);
@@ -242,7 +258,10 @@ class Report extends Base{
         $this->assign('brandList',$brandList);
         return $this->fetch();
 	}
-	
+
+    /**
+     * @return mixed
+     */
 	public function user(){
 		$today = strtotime(date('Y-m-d'));
 		$month = strtotime(date('Y-m-01'));
@@ -355,10 +374,13 @@ class Report extends Base{
         $this->assign('result',json_encode($result));
         return $this->fetch();
     }
-    
-  /**
+
+    /**
      * 运营概况详情
      * @return mixed
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
      */
     public function financeDetail(){
         $begin = $this->begin;

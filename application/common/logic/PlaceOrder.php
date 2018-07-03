@@ -1,24 +1,11 @@
 <?php
-/**
- * tpshop
- * ============================================================================
- * 版权所有 2015-2027 深圳搜豹网络科技有限公司，并保留所有权利。
- * 网站地址: http://www.tp-shop.cn
- * ----------------------------------------------------------------------------
- * 这不是一个自由软件！您只能在不用于商业目的的前提下对程序代码进行修改和使用 .
- * 不允许对程序代码以任何形式任何目的的再发布。
- * 采用最新Thinkphp5助手函数特性实现单字母函数M D U等简写方式
- * ============================================================================
- * Author: dyr
- * Date: 2017-12-04
- */
 
 namespace app\common\logic;
 use app\common\model\CouponList;
 use app\common\model\Order;
 use app\common\model\TeamActivity;
 use app\common\model\Users;
-use app\common\util\TpshopException;
+use app\common\util\wshopException;
 use think\Cache;
 use think\Hook;
 use think\Model;
@@ -140,7 +127,7 @@ class PlaceOrder
 
     /**
      * 提交订单前检查
-     * @throws TpshopException
+     * @throws wshopException
      */
     public function check()
     {
@@ -149,16 +136,16 @@ class PlaceOrder
         if ($pay_points || $user_money) {
             $user = $this->pay->getUser();
             if ($user['is_lock'] == 1) {
-                throw new TpshopException('提交订单', 0, ['status'=>-5,'msg'=>"账号异常已被锁定，不能使用余额支付！",'result'=>'']);
+                throw new wshopException('提交订单', 0, ['status'=>-5,'msg'=>"账号异常已被锁定，不能使用余额支付！",'result'=>'']);
             }
             if (empty($user['paypwd'])) {
-                throw new TpshopException('提交订单', 0, ['status'=>-6,'msg'=>"请先设置支付密码",'result'=>'']);
+                throw new wshopException('提交订单', 0, ['status'=>-6,'msg'=>"请先设置支付密码",'result'=>'']);
             }
             if (empty($this->payPsw)) {
-                throw new TpshopException('提交订单', 0, ['status'=>-7,'msg'=>"请输入支付密码",'result'=>'']);
+                throw new wshopException('提交订单', 0, ['status'=>-7,'msg'=>"请输入支付密码",'result'=>'']);
             }
              if ($this->payPsw !== $user['paypwd'] && encrypt($this->payPsw) !== $user['paypwd']) {
-                throw new TpshopException('提交订单', 0, ['status'=>-8,'msg'=>'支付密码错误','result'=>'']);
+                throw new wshopException('提交订单', 0, ['status'=>-8,'msg'=>'支付密码错误','result'=>'']);
             }
         }
 
@@ -167,7 +154,7 @@ class PlaceOrder
     {
         $queue = Cache::get('queue');
         if($queue >= 100){
-            throw new TpshopException('提交订单', 0, ['status' => -99, 'msg' => "当前人数过多请耐心排队!" . $queue, 'result' => '']);
+            throw new wshopException('提交订单', 0, ['status' => -99, 'msg' => "当前人数过多请耐心排队!" . $queue, 'result' => '']);
         }
         Cache::inc('queue');
     }
@@ -182,7 +169,7 @@ class PlaceOrder
 
     /**
      * 插入订单表
-     * @throws TpshopException
+     * @throws wshopException
      */
     private function addOrder()
     {
@@ -239,7 +226,7 @@ class PlaceOrder
         $this->order->data($orderData, true);
         $orderSaveResult = $this->order->save();
         if ($orderSaveResult === false) {
-            throw new TpshopException("订单入库", 0, ['status' => -8, 'msg' => '添加订单失败', 'result' => '']);
+            throw new wshopException("订单入库", 0, ['status' => -8, 'msg' => '添加订单失败', 'result' => '']);
         }
     }
 

@@ -11,10 +11,10 @@
     <div class="relation-user-wrap">
         <div class="user-photo1-h"><img src="{$head_pic}" alt="" /></div>
         <p class="relation-des ueser-name1-h">亲爱的用户:<span>{$nickname}</span></p>
-        <p class="relation-des co-black">为了给您更好的服务，请关联一个 {$tpshop_config['shop_info_store_name']} 账号</p>
-        <p class="relation-des p-t-48">还没有 {$tpshop_config['shop_info_store_name']} 账号？</p>
+        <p class="relation-des co-black">为了给您更好的服务，请关联一个 {$wshop_config['shop_info_store_name']} 账号</p>
+        <p class="relation-des p-t-48">还没有 {$wshop_config['shop_info_store_name']} 账号？</p>
         <a class="relation-btns register-btns" href="{:U('Mobile/User/reg', array('is_bind'=>1,'nickname'=>$nickname))}">快速注册</a>
-        <p class="relation-des p-t-48">已 {$tpshop_config['shop_info_store_name']} 账号？</p>
+        <p class="relation-des p-t-48">已 {$wshop_config['shop_info_store_name']} 账号？</p>
         <a class="relation-btns" href="{:U('Mobile/User/bind_account')}">立即关联</a>
     </div>
 </body>

@@ -3,7 +3,7 @@
 	<head>
 		<meta charset="UTF-8">
 		<title>安全设置</title>
-		<link rel="stylesheet" type="text/css" href="__STATIC__/css/tpshop.css" />
+		<link rel="stylesheet" type="text/css" href="__STATIC__/css/wshop.css" />
 		<link rel="stylesheet" type="text/css" href="__STATIC__/css/myaccount.css" />
 		<script src="__STATIC__/js/jquery-1.11.3.min.js" type="text/javascript" charset="utf-8"></script>
 	</head>
@@ -107,7 +107,7 @@
 		if (wait == 0) {
 			o.removeAttribute("disabled");
 			o.value="获取验证码";
-			wait = {$tpshop_config['sms_sms_time_out']|default=60};
+			wait = {$wshop_config['sms_sms_time_out']|default=60};
 		} else {
 			o.setAttribute("disabled", true);
 			o.value="重新发送(" + wait + ")";

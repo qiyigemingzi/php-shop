@@ -1,16 +1,8 @@
 <?php
 
 /**
- * tpshop
- * ============================================================================
- * 版权所有 2015-2027 深圳搜豹网络科技有限公司，并保留所有权利。
- * 网站地址: http://www.tp-shop.cn
- * ----------------------------------------------------------------------------
- * 这不是一个自由软件！您只能在不用于商业目的的前提下对程序代码进行修改和使用 .
- * 不允许对程序代码以任何形式任何目的的再发布。
- * ============================================================================
- * Author: 当燃
- * Date: 2015-09-09
+ * @author  wuhy
+ * @date 2018-07-03
  */
 
 namespace app\admin\logic;
@@ -29,11 +21,14 @@ class ArticleCatLogic extends Model
      * 获得指定分类下的子分类的数组
      *
      * @access  public
-     * @param   int     $cat_id     分类的ID
-     * @param   int     $selected   当前选中分类的ID
-     * @param   boolean $re_type    返回的类型: 值为真时返回下拉列表,否则返回数组
-     * @param   int     $level      限定返回的级数。为0时返回所有级数
+     * @param   int $cat_id 分类的ID
+     * @param   int $selected 当前选中分类的ID
+     * @param   boolean $re_type 返回的类型: 值为真时返回下拉列表,否则返回数组
+     * @param   int $level 限定返回的级数。为0时返回所有级数
      * @return  mix
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
      */
     public function article_cat_list($cat_id = 0, $selected = 0, $re_type = true, $level = 0)
     {
@@ -136,14 +131,13 @@ class ArticleCatLogic extends Model
             return $options;
         }
     }
-    
+
     /**
      * 过滤和排序所有文章分类，返回一个带有缩进级别的数组
      *
      * @access  private
-     * @param   int     $cat_id     上级分类ID
-     * @param   array   $arr        含有所有分类的数组
-     * @param   int     $level      级别
+     * @param $spec_cat_id
+     * @param   array $arr 含有所有分类的数组
      * @return  void
      */
     public function article_cat_options($spec_cat_id, $arr)

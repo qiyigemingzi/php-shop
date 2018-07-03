@@ -1,13 +1,6 @@
 <?php
 /**
- * tpshop
- * ============================================================================
- * 版权所有 2015-2027 深圳搜豹网络科技有限公司，并保留所有权利。
- * 网站地址: http://www.tp-shop.cn
- * ----------------------------------------------------------------------------
- * 商业用途务必到官方购买正版授权, 使用盗版将严厉追究您的法律责任。
- * ============================================================================
- * Author: 当燃      
+ * @author  wuhy
  * Date: 2015-09-21
  */
 
@@ -21,6 +14,9 @@ class Shipping extends Base{
     /**
      * 快递公司列表
      * @return mixed
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
      */
     public function index(){
         $shipping_name = input('shipping_name/s');
@@ -44,6 +40,9 @@ class Shipping extends Base{
     /**
      * 快递公司详情页
      * @return mixed
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
      */
     public function info()
     {
@@ -62,6 +61,7 @@ class Shipping extends Base{
 
     /**
      * 添加和更新快递公司
+     * @throws \think\exception\DbException
      */
     public function save()
     {

@@ -1,6 +1,6 @@
 <?php
 /**
- * $Author: wuhy
+ * @author wuhy
  */
 
 use MongoDB\BSON\Type;
@@ -366,9 +366,9 @@ function getCatGrandson ($cat_id)
     // 先把自己的id 保存起来
     $GLOBALS['catGrandson'][] = $cat_id;
     // 把整张表找出来
-    $GLOBALS['category_id_arr'] = M('GoodsCategory')->cache(true,TPSHOP_CACHE_TIME)->getField('id,parent_id');
+    $GLOBALS['category_id_arr'] = M('GoodsCategory')->cache(true,wshop_CACHE_TIME)->getField('id,parent_id');
     // 先把所有儿子找出来
-    $son_id_arr = M('GoodsCategory')->where("parent_id", $cat_id)->cache(true,TPSHOP_CACHE_TIME)->getField('id',true);
+    $son_id_arr = M('GoodsCategory')->where("parent_id", $cat_id)->cache(true,wshop_CACHE_TIME)->getField('id',true);
     foreach($son_id_arr as $k => $v)
     {
         getCatGrandson2($v);
@@ -776,9 +776,9 @@ function set_btn_order_status($order)
  */
 function rechargevip_rebate($order) {
     //获取返利配置
-    $tpshop_config =  tpCache('basic');
+    $wshop_config =  tpCache('basic');
     //检查配置是否开启
-    if ($tpshop_config["rechargevip_on_off"] > 0 && $tpshop_config["rechargevip_rebate_on_off"] > 0) {
+    if ($wshop_config["rechargevip_on_off"] > 0 && $wshop_config["rechargevip_rebate_on_off"] > 0) {
         //查询充值VIP上级
         $userid = $order['user_id'];
         //更改用户VIP状态
@@ -786,8 +786,8 @@ function rechargevip_rebate($order) {
         $first_leader = Db::name('users')->where('user_id', $userid)->value('first_leader');
         if ($first_leader) {
             //变动上级资金，记录日志
-            $msg = '获取线下' . $userid . '充值VIP返利' . $tpshop_config["rechargevip_rebate"];
-            accountLog($first_leader, $tpshop_config["rechargevip_rebate"], 0, $msg, 0, 0, $order['order_sn']);
+            $msg = '获取线下' . $userid . '充值VIP返利' . $wshop_config["rechargevip_rebate"];
+            accountLog($first_leader, $wshop_config["rechargevip_rebate"], 0, $msg, 0, 0, $order['order_sn']);
         }
     }
 }

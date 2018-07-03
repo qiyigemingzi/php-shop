@@ -15,7 +15,7 @@ return [
     // 服务器地址
     'hostname'       => '192.168.0.201,192.168.0.199,192.168.0.198',
     // 数据库名
-    'database'       => 'tpshop2.0',
+    'database'       => 'wshop2.0',
     // 用户名
     'username'       => 'root',
     // 密码

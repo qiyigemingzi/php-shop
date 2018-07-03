@@ -1,17 +1,8 @@
 <?php
 
 /**
- * tpshop
- * ============================================================================
- * 版权所有 2015-2027 深圳搜豹网络科技有限公司，并保留所有权利。
- * 网站地址: http://www.tp-shop.cn
- * ----------------------------------------------------------------------------
- * 这不是一个自由软件！您只能在不用于商业目的的前提下对程序代码进行修改和使用 .
- * 不允许对程序代码以任何形式任何目的的再发布。
- * 采用最新Thinkphp5助手函数特性实现单字母函数M D U等简写方式
- * ============================================================================
- * Author: 当燃
- * Date: 2015-09-09
+ * @author  wuhy
+ * @date 2018-07-03
  */
 
 namespace app\admin\controller;
@@ -33,7 +24,7 @@ class Base extends Controller {
     function __construct() 
     {
         Session::start();
-        header("Cache-control: private");  // history.back返回后输入框值丢失问题 参考文章 http://www.tp-shop.cn/article_id_1465.html  http://blog.csdn.net/qinchaoguang123456/article/details/29852881
+        header("Cache-control: private");  // history.back返回后输入框值丢失问题 参考文章 http://www.wujiaweb.com/article_id_1465.html  http://blog.csdn.net/qinchaoguang123456/article/details/29852881
         parent::__construct();
         $upgradeLogic = new UpgradeLogic();
         $upgradeMsg = $upgradeLogic->checkVersion(); //升级包消息        
@@ -68,11 +59,11 @@ class Base extends Controller {
      */
     public function public_assign()
     {
-       $tpshop_config = array();
+       $wshop_config = array();
        $tp_config = M('config')->cache(true)->select();
        foreach($tp_config as $k => $v)
        {
-          $tpshop_config[$v['inc_type'].'_'.$v['name']] = $v['value'];
+          $wshop_config[$v['inc_type'].'_'.$v['name']] = $v['value'];
        }
         if(I('start_time')){
             $begin =$begin = I('start_time');
@@ -86,7 +77,7 @@ class Base extends Controller {
         $this->begin = strtotime($begin);
         $this->end = strtotime($end)+86399;
         $this->page_size = C('PAGESIZE');
-       $this->assign('tpshop_config', $tpshop_config);       
+       $this->assign('wshop_config', $wshop_config);       
     }
     
     public function check_priv()

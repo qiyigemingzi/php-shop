@@ -27,9 +27,10 @@ function navigate_user()
 }
 
 /**
-*  面包屑导航  用于前台商品
+ *  面包屑导航  用于前台商品
  * @param type $id 商品id  或者是 商品分类id
  * @param type $type 默认0是传递商品分类id  id 也可以传递 商品id type则为1
+ * @return array
  */
 function navigate_goods($id,$type = 0)
 {

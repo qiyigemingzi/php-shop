@@ -1,37 +1,29 @@
 <?php
 
-/**
- * tpshop
- * ============================================================================
- * 版权所有 2015-2027 深圳搜豹网络科技有限公司，并保留所有权利。
- * 网站地址: http://www.tp-shop.cn
- * ----------------------------------------------------------------------------
- * 这不是一个自由软件！您只能在不用于商业目的的前提下对程序代码进行修改和使用 .
- * 不允许对程序代码以任何形式任何目的的再发布。
- * ============================================================================
- * Date: 2015-09-14
- */
-
-
 namespace app\admin\logic;
 
+use app\common\model\Order;
 use think\Db;
 use app\common\logic\WechatLogic;
 
 class OrderLogic
 {
     /**
-     * @param array $condition  搜索条件
-     * @param string $order   排序方式
-     * @param int $start    limit开始行
-     * @param int $page_size  获取数量
+     * @param array $condition 搜索条件
+     * @param string $order 排序方式
+     * @param int $start limit开始行
+     * @param int $page_size 获取数量
+     * @return array
      */
     public function getOrderList($condition,$order='',$start=0,$page_size=20){
         $res = M('order')->where($condition)->limit("$start,$page_size")->order($order)->select();
         return $res;
     }
-    /*
+
+    /**
      * 根据商品型号获取商品
+     * @param $goods_id_arr
+     * @return array|bool
      */
     public function get_spec_goods($goods_id_arr){
     	if(!is_array($goods_id_arr)) return false;
@@ -80,8 +72,10 @@ class OrderLogic
         return M('order_action')->add($data);//订单操作记录
     }
 
-    /*
+    /**
      * 获取订单商品总价格
+     * @param $order_id
+     * @return mixed
      */
     public function getGoodsAmount($order_id){
         $sql = "SELECT SUM(goods_num * goods_price) AS goods_amount FROM __PREFIX__order_goods WHERE order_id = {$order_id}";
@@ -99,8 +93,10 @@ class OrderLogic
         return date('YmdHi') . str_pad(mt_rand(1, 99999), 5, '0', STR_PAD_LEFT);
     }
 
-    /*
+    /**
      * 获取当前可操作的按钮
+     * @param $order
+     * @return array
      */
     public function getOrderButton($order){
         /*
@@ -159,7 +155,15 @@ class OrderLogic
         return $btn;
     }
 
-
+    /**
+     * @param $order_id
+     * @param $act
+     * @param array $ext
+     * @return bool
+     * @throws \think\Exception
+     * @throws \think\exception\DbException
+     * @throws \think\exception\PDOException
+     */
     public function orderProcessHandle($order_id,$act,$ext=array()){
     	$updata = array();
     	switch ($act){
@@ -191,9 +195,15 @@ class OrderLogic
     	}
     	return M('order')->where("order_id=$order_id")->save($updata);//改变订单状态
     }
-    
-    
-    //管理员取消付款
+
+
+    /**
+     * 管理员取消付款
+     * @param $order_id
+     * @return bool
+     * @throws \think\Exception
+     * @throws \think\exception\DbException
+     */
     function order_pay_cancel($order_id)
     {
     	//如果这笔订单已经取消付款过了
@@ -244,7 +254,7 @@ class OrderLogic
      * @throws \think\Exception
      */
     public function deliveryHandle($data){
-        $orderModel = new \app\common\model\Order();
+        $orderModel = new Order();
         $orderObj = $orderModel::get(['order_id'=>$data['order_id']]);
         $order =$orderObj->append(['full_address','orderGoods'])->toArray();
         $orderGoods= $order['orderGoods'];
@@ -376,10 +386,16 @@ class OrderLogic
         return ['status'=>1,'msg'=>'删除成功'];
     }
 
-	/**
-	 * 当订单里商品都退货完成，将订单状态改成关闭
-	 * @param $order_id
-	 */
+    /**
+     * 当订单里商品都退货完成，将订单状态改成关闭
+     * @param $order_id
+     * @return bool
+     * @throws \think\Exception
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     * @throws \think\exception\PDOException
+     */
 	function closeOrderByReturn($order_id)
 	{
 		$order_goods_list = Db::name('order_goods')->where(['order_id' => $order_id])->select();
@@ -428,8 +444,14 @@ class OrderLogic
             }
         }
     }
-    
-    
+
+    /**
+     * @param $return_goods
+     * @return float|int
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
     public function getRefundGoodsMoney($return_goods){
     	$order_goods = M('order_goods')->where(array('rec_id'=>$return_goods['rec_id']))->find();
     	if($return_goods['is_receive'] == 1){
@@ -455,7 +477,7 @@ class OrderLogic
 
     //订单发货在线下单、电子面单
     public function submitOrderExpress($data,$orderGoods){
-		return array('status'=>0,'msg'=>'请联系TPshop官网客服购买高级版支持此功能');
+		return array('status'=>0,'msg'=>'请联系wshop官网客服购买高级版支持此功能');
     }
     
     //识别单号

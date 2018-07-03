@@ -2,10 +2,10 @@
 <html>
 	<head>
 		<meta charset="UTF-8">
-		<title>我的账户-{$tpshop_config['shop_info_store_title']}</title>
-		<meta name="keywords" content="{$tpshop_config['shop_info_store_keyword']}" />
-		<meta name="description" content="{$tpshop_config['shop_info_store_desc']}" />
-		<link rel="stylesheet" type="text/css" href="__STATIC__/css/tpshop.css" />
+		<title>我的账户-{$wshop_config['shop_info_store_title']}</title>
+		<meta name="keywords" content="{$wshop_config['shop_info_store_keyword']}" />
+		<meta name="description" content="{$wshop_config['shop_info_store_desc']}" />
+		<link rel="stylesheet" type="text/css" href="__STATIC__/css/wshop.css" />
 		<link rel="stylesheet" type="text/css" href="__STATIC__/css/myaccount.css" />
 		<script src="__STATIC__/js/jquery-1.11.3.min.js" type="text/javascript" charset="utf-8"></script>
 	</head>
@@ -91,7 +91,7 @@
 			                               <i class="icon-ar"></i>
 			                            </a>
 			                        </li>
-									<if condition="$tpshop_config['basic_rechargevip_on_off'] eq 1" >
+									<if condition="$wshop_config['basic_rechargevip_on_off'] eq 1" >
 									<li class="">
 										<a href="{:U('Home/User/rechargevip')}">
 											<i class="icon-card"></i>
@@ -113,7 +113,7 @@
 			                       <!--<i class="u-sep"></i>-->
 			                       <!--<a class="u-view-pre" href="">预售单<span class="hide">(待付款 <em>0</em>)</span></a>-->
 			    				</div>
-								<tpshop sql="select * from `__PREFIX__order` where user_id = $user[user_id] and prom_type < 5 order by order_id desc limit 1" result_name="order_list"></tpshop>
+								<wshop sql="select * from `__PREFIX__order` where user_id = $user[user_id] and prom_type < 5 order by order_id desc limit 1" result_name="order_list"></wshop>
 								<empty name="order_list">
 									<div class="car-none-pl">
 										<i class="account-acco1"></i>您最近没有待处理订单，<a href="/">快去逛逛吧~</a>
@@ -130,7 +130,7 @@
 													<div class="fl_ttmm">
 														<span class="time-num">下单时间：<em class="num">{$list.add_time|date='Y-m-d H:i:s',###}</em></span>
 														<span class="time-num">订单编号：<em class="num">{$list.order_sn}</em></span>
-														<!--<span class="time-num">卖家：<a href="tencent://message/?uin={$store_list[$list[store_id]][store_qq]}&Site=TPshop商城&Menu=yes"><em class="num">{$store_list[$list[store_id]][store_name]}<i class="ear"></i></em></a></span>-->
+														<!--<span class="time-num">卖家：<a href="tencent://message/?uin={$store_list[$list[store_id]][store_qq]}&Site=wshop商城&Menu=yes"><em class="num">{$store_list[$list[store_id]][store_name]}<i class="ear"></i></em></a></span>-->
 														<div class="paysoon">
 														<if condition="$list.pay_btn eq 1">
 															<a class="ps_lj" href="{:U('/Home/Cart/cart4',array('order_id'=>$list[order_id]))}"  target="_blank">立即支付</a>
@@ -153,7 +153,7 @@
 													<div class="fr_ttmm"></div>
 												</td>
 											</tr>
-											<tpshop sql="select * from `__PREFIX__order_goods` where order_id = $list[order_id]" item="goods" result_name="goods_list">
+											<wshop sql="select * from `__PREFIX__order_goods` where order_id = $list[order_id]" item="goods" result_name="goods_list">
 												<tr class="conten_or">
 													<td class="sx1">
 														<div class="shop-if-dif">
@@ -215,7 +215,7 @@
 														</div>
 													</td>
 												</tr>
-											</tpshop>
+											</wshop>
 										</table>
 									</volist>
 								</div>
@@ -226,7 +226,7 @@
 			    			<div class="ddlb-zy">
 			    				<div class="coll-coupon fl">
 			    					<div class="coll-etl">
-										<tpshop sql="select c.*,g.shop_price from __PREFIX__goods_collect c INNER JOIN __PREFIX__goods g on c.goods_id = g.goods_id  where c.user_id = $user[user_id] order by collect_id desc limit 3" result_name="collect_result"></tpshop>
+										<wshop sql="select c.*,g.shop_price from __PREFIX__goods_collect c INNER JOIN __PREFIX__goods g on c.goods_id = g.goods_id  where c.user_id = $user[user_id] order by collect_id desc limit 3" result_name="collect_result"></wshop>
 										<div class="ddlb-tit">
 					                       <h1>我的收藏</h1>
 					                       <!--<a class="cx-fk" class="J-childCollect" href="{:U('Home/User/goods_collect')}">促销（<em>{$collect_result|count}</em>）</a>-->

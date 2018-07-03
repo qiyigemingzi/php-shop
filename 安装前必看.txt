@@ -1,24 +1,24 @@
-TPshop2.0 °²×°²¿Êð·½Ê½
-±ØÐë°²×°ÔÚÓòÃû¸ùÄ¿Â¼ÏÂ, ²»ÄÜÈ¦Ì×È¦Ì×ÔÚÄ³¸öÄ¿Â¼ÏÂ ·ñÔò»áÂ·¾¶³ö´í
+wshop2.0 ï¿½ï¿½×°ï¿½ï¿½ï¿½ï¿½Ê½
+ï¿½ï¿½ï¿½ë°²×°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¿Â¼ï¿½ï¿½, ï¿½ï¿½ï¿½ï¿½È¦ï¿½ï¿½È¦ï¿½ï¿½ï¿½ï¿½Ä³ï¿½ï¿½Ä¿Â¼ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Â·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 
-°²×°ÐèÒªhostÒ»¸öÓòÃû¸ùÄ¿Â¼ÏÂ°²×°. apacheÅäÖÃÒ»¸öÐéÄâÖ÷»ú ²»ÄÜÈ¦Ì×ÔÚÄ³¸öÄ¿Â¼ÏÂ
-Ê¾Àý:
- http://www.xxx.com/index.php   ÕýÈ·
+ï¿½ï¿½×°ï¿½ï¿½ÒªhostÒ»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¿Â¼ï¿½Â°ï¿½×°. apacheï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½È¦ï¿½ï¿½ï¿½ï¿½Ä³ï¿½ï¿½Ä¿Â¼ï¿½ï¿½
+Ê¾ï¿½ï¿½:
+ http://www.xxx.com/index.php   ï¿½ï¿½È·
   
- http://www.xxx.com/TPshop/index.php   ´íÎó (ºÜ¶àÂ·¾¶³ö´í)
+ http://www.xxx.com/wshop/index.php   ï¿½ï¿½ï¿½ï¿½ (ï¿½Ü¶ï¿½Â·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½)
  
-ÊÖ»ú·ÃÎÊÄ¿Â¼ http://www.xxx.com/index.php/Mobile  ×îºÃÓÃÊÖ»ú»òÊÖ»úä¯ÀÀÆ÷´ò¿ª²âÊÔ PC¶Ëä¯ÀÀÆ÷»áÓÐ¼æÈÝÎÊÌâ
+ï¿½Ö»ï¿½ï¿½ï¿½ï¿½ï¿½Ä¿Â¼ http://www.xxx.com/index.php/Mobile  ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö»ï¿½ï¿½ï¿½ï¿½Ö»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ò¿ª²ï¿½ï¿½ï¿½ PCï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 
 
-Èç¹ûÄãÊÇnginx ·þÎñÆ÷  lnmp °²×°µÄ, ²¢ÇÒÊÇ°´ÕÕ lnmp ¹ÙÍø±ê×¼°²×°µÄ Äã¿ÉÒÔ Ö±½ÓÄÃµ±Ç°¸ùÄ¿Â¼ÏÂµÄ nginx.conf2 ÎÄ¼þ ¸ÄÃû×Ö¸²¸ÇÄãµÄ ¶ÔÓ¦ÓòÃûµÄÎÄ¼þ. È»ºóÐÞ¸ÄÀïÃæµÄ "www.tp-shop.cn"  ÓòÃû»»³ÉÄãµÄ¼´¿É
+ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½nginx ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½  lnmp ï¿½ï¿½×°ï¿½ï¿½, ï¿½ï¿½ï¿½ï¿½ï¿½Ç°ï¿½ï¿½ï¿½ lnmp ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×¼ï¿½ï¿½×°ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ Ö±ï¿½ï¿½ï¿½Ãµï¿½Ç°ï¿½ï¿½Ä¿Â¼ï¿½Âµï¿½ nginx.conf2 ï¿½Ä¼ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ó¦ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½. È»ï¿½ï¿½ï¿½Þ¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ "www.wujiaweb.com"  ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½
 
-±ÈÈçÎÒµÄTPshopÏîÄ¿ÔÚ  D:\www\tpshop2.0  ÓòÃûÓ¦¸ÃÖ¸Ïòµ½ D:\www\tpshop2.0  ÒòÎªindex.php ÔÚ D:\www\tpshop2.0 ÏÂÃæ
+ï¿½ï¿½ï¿½ï¿½ï¿½Òµï¿½wshopï¿½ï¿½Ä¿ï¿½ï¿½  D:\www\wshop2.0  ï¿½ï¿½ï¿½ï¿½Ó¦ï¿½ï¿½Ö¸ï¿½ï¿½ D:\www\wshop2.0  ï¿½ï¿½Îªindex.php ï¿½ï¿½ D:\www\wshop2.0 ï¿½ï¿½ï¿½ï¿½
 
-apacheÅäÖÃÓ¦¸ÃÊÇ
+apacheï¿½ï¿½ï¿½ï¿½Ó¦ï¿½ï¿½ï¿½ï¿½
 
 <VirtualHost *:80>
-     DocumentRoot "D:\www\tpshop2.0\"
-     ServerName www.tpshop.cn
+     DocumentRoot "D:\www\wshop2.0\"
+     ServerName www.wshop.cn
 </VirtualHost>
 
-Èç¹û»¹ÓÐÊ²Ã´²»¶®µÄµ½tpshop¹ÙÍøÏÂÔØÒ³Ãæ ÏÂÔØ¿´°²×°ÊÓÆµ½Ì³Ì
+ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê²Ã´ï¿½ï¿½ï¿½ï¿½ï¿½Äµï¿½wshopï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò³ï¿½ï¿½ ï¿½ï¿½ï¿½Ø¿ï¿½ï¿½ï¿½×°ï¿½ï¿½Æµï¿½Ì³ï¿½

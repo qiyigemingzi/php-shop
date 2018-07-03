@@ -33,14 +33,14 @@ define('SITEDIR', _dir_path(substr(dirname(__FILE__), 0, -8)));
 //echo SITEDIR2;
 //exit;
 //数据库
-$sqlFile = 'tpshop.sql';
+$sqlFile = 'wshop.sql';
 $configFile = 'config.php';
 if (!file_exists(SITEDIR . 'install/' . $sqlFile) || !file_exists(SITEDIR . 'install/' . $configFile)) {
     echo '缺少必要的安装文件!';
     exit;
 }
-$Title = "TPshop安装向导";
-$Powered = "Powered by TPshop";
+$Title = "wshop安装向导";
+$Powered = "Powered by wshop";
 $steps = array(
     '1' => '安装许可协议',
     '2' => '运行环境检测',
@@ -311,7 +311,7 @@ switch ($step) {
             $strConfig = file_get_contents(SITEDIR . '/application/config.php');
             $uniqid_str = uniqid();
             $uniqid_str = md5($uniqid_str);
-            $strConfig = str_replace('tpshop_cache_prefix', $uniqid_str, $strConfig);           
+            $strConfig = str_replace('wshop_cache_prefix', $uniqid_str, $strConfig);           
             @chmod(SITEDIR . '/application/config.php',0777); //配置文件的地址
             @file_put_contents(SITEDIR . '/application/config.php', $strConfig); //配置文件的地址            
             
@@ -329,7 +329,7 @@ switch ($step) {
             $time = time();
             $ip = get_client_ip();
             $ip = empty($ip) ? "0.0.0.0" : $ip;
-            $password = md5('TPSHOP'.trim($_POST['manager_pwd']));
+            $password = md5('wshop'.trim($_POST['manager_pwd']));
 			mysqli_query($conn,"delete from `{$dbPrefix}admin` where user_name = 'admin'");
 			//mysql_query("INSERT INTO `{$dbPrefix}admin` (admin_id,user_name,email,password,add_time,last_ip,role_id) VALUES ('1','$username','$email','$password','$time','$ip','1')");
 			mysqli_query($conn," insert  into `{$dbPrefix}admin` (`admin_id`,`user_name`,`email`,`password`,`ec_salt`,`add_time`,`last_login`,`last_ip`,`nav_list`,`lang_type`,`agency_id`,`suppliers_id`,`todolist`,`role_id`) values ('1','$username','$email','$password',NULL,'$time',0,'$ip','','','0','0',NULL,'1')");

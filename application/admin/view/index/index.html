@@ -9,8 +9,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <!-- Apple devices fullscreen -->
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="shortcut icon" type="image/x-icon" href="{$tpshop_config.shop_info_store_ico|default='/public/static/images/logo/storeico_default.png'}" media="screen"/>
-<title>TPshop2.5.0</title>
+<link rel="shortcut icon" type="image/x-icon" href="{$wshop_config.shop_info_store_ico|default='/public/static/images/logo/storeico_default.png'}" media="screen"/>
+<title>wshop2.5.0</title>
 <script type="text/javascript">
   var SITEURL = window.location.host +'/index.php/admin';
 </script>
@@ -32,8 +32,8 @@
   <div class="bgSelector"></div>
   <div id="foldSidebar"><i class="fa fa-outdent " title="展开/收起侧边导航"></i></div>
   <div class="admincp-name" onClick="javascript:openItem('welcome|Index');">
-    <!-- <h2 style="cursor:pointer;">TPshop2.0<br>平台系统管理中心</h2> -->
-    <img  style="width: 148px;height: 28px" src="{$tpshop_config.shop_info_admin_home_logo|default='/public/static/images/logo/admin_home_logo_default.png'}" alt="">
+    <!-- <h2 style="cursor:pointer;">wshop2.0<br>平台系统管理中心</h2> -->
+    <img  style="width: 148px;height: 28px" src="{$wshop_config.shop_info_admin_home_logo|default='/public/static/images/logo/admin_home_logo_default.png'}" alt="">
   </div>
   <div class="nc-module-menu">
     <ul class="nc-row">
@@ -80,7 +80,7 @@
       </div>
     </div>
     <ul class="operate nc-row">
-      <li style="display: none !important;" tptype="pending_matters"><a class="toast show-option" href="javascript:void(0);" onClick="$.cookie('commonPendingMatters', 0, {expires : -1});ajax_form('pending_matters', '待处理事项', 'http://www.tpshop.cn/admin/index.php?act=common&op=pending_matters', '480');" title="查看待处理事项">&nbsp;<em>0</em></a></li>
+      <li style="display: none !important;" tptype="pending_matters"><a class="toast show-option" href="javascript:void(0);" onClick="$.cookie('commonPendingMatters', 0, {expires : -1});ajax_form('pending_matters', '待处理事项', 'http://www.wshop.cn/admin/index.php?act=common&op=pending_matters', '480');" title="查看待处理事项">&nbsp;<em>0</em></a></li>
       <!-- li><a class="sitemap show-option" tptype="map_on" href="javascript:void(0);" title="查看全部管理菜单">&nbsp;</a></li -->
       <!-- li><a class="style-color show-option" id="trace_show" href="javascript:void(0);" title="给管理中心换个颜色">&nbsp;</a></li -->
         <li><a class="sitemap show-option" id="trace_show" href="{:U('System/cleanCache',array('quick'=>1))}" target="workspace" title="更新缓存">&nbsp;</a></li>

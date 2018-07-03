@@ -1,24 +1,11 @@
 <?php
-/**
- * tpshop
- * ============================================================================
- * 版权所有 2015-2027 深圳搜豹网络科技有限公司，并保留所有权利。
- * 网站地址: http://www.tp-shop.cn
- * ----------------------------------------------------------------------------
- * 这不是一个自由软件！您只能在不用于商业目的的前提下对程序代码进行修改和使用 .
- * 不允许对程序代码以任何形式任何目的的再发布。
- * 如果商业用途务必到官方购买正版授权, 以免引起不必要的法律纠纷.
- * ============================================================================
- * Author: dyr
- * Date: 2016-08-09
- */
 
 namespace app\common\logic;
 
 use app\common\model\Goods;
 use app\common\model\UserAddress;
 use app\common\model\Users;
-use app\common\util\TpshopException;
+use app\common\util\wshopException;
 use think\Db;
 use app\common\model\SpecGoodsPrice;
 
@@ -39,6 +26,7 @@ class Integral
     /**
      * 设置购买的商品
      * @param $goods_id
+     * @throws \think\exception\DbException
      */
     public function setGoodsById($goods_id){
         if($goods_id > 0){
@@ -103,57 +91,57 @@ class Integral
 
     /**
      * 购买前检查
-     * @throws TpshopException
+     * @throws wshopException
      */
     public function checkBuy()
     {
         if(empty($this->user)){
-            throw new TpshopException('积分兑换', 0, ['status' => 0, 'msg' => '请登录']);
+            throw new wshopException('积分兑换', 0, ['status' => 0, 'msg' => '请登录']);
         }
         if(empty($this->goods)){
-            throw new TpshopException('积分兑换', 0, ['status' => 0, 'msg' => '该商品不存在']);
+            throw new wshopException('积分兑换', 0, ['status' => 0, 'msg' => '该商品不存在']);
         }
         if ($this->goods['is_on_sale'] != 1) {
-            throw new TpshopException('积分兑换', 0, ['status' => 0, 'msg' => '商品已下架']);
+            throw new wshopException('积分兑换', 0, ['status' => 0, 'msg' => '商品已下架']);
         }
         if ($this->goods['exchange_integral'] <= 0) {
-            throw new TpshopException('积分兑换', 0, ['status' => 0, 'msg' => '该商品不属于积分兑换商品']);
+            throw new wshopException('积分兑换', 0, ['status' => 0, 'msg' => '该商品不属于积分兑换商品']);
         }
         if ($this->goods['store_count'] == 0) {
-            throw new TpshopException('积分兑换', 0, ['status' => 0, 'msg' => '商品库存为零']);
+            throw new wshopException('积分兑换', 0, ['status' => 0, 'msg' => '商品库存为零']);
         }
         if ($this->buyNum > $this->goods['store_count']) {
-            throw new TpshopException('积分兑换', 0, ['status' => 0, 'msg' => '商品库存不足，剩余' . $this->goods['store_count'] . '份']);
+            throw new wshopException('积分兑换', 0, ['status' => 0, 'msg' => '商品库存不足，剩余' . $this->goods['store_count'] . '份']);
         }
         $total_integral = $this->goods['exchange_integral'] * $this->buyNum;
         if (empty($this->specGoodsPrice)) {
             $goods_spec_list = SpecGoodsPrice::all(['goods_id' => $this->goods['goods_id']]);
             if (count($goods_spec_list) > 0) {
-                throw new TpshopException('积分兑换', 0, ['status' => 0, 'msg' => '请传递规格参数', 'result' => '']);
+                throw new wshopException('积分兑换', 0, ['status' => 0, 'msg' => '请传递规格参数', 'result' => '']);
             }
             //没有规格
         } else {
             //有规格
             if ($this->buyNum > $this->specGoodsPrice['store_count']) {
-                throw new TpshopException('积分兑换', 0, ['status' => 0, 'msg' => '该商品规格库存不足，剩余' . $this->specGoodsPrice['store_count'] . '份']);
+                throw new wshopException('积分兑换', 0, ['status' => 0, 'msg' => '该商品规格库存不足，剩余' . $this->specGoodsPrice['store_count'] . '份']);
             }
         }
         $integral_use_enable = tpCache('shopping.integral_use_enable');
         //购买设置必须使用积分购买，而用户的积分不足以支付
         if ($total_integral > $this->user['pay_points'] && $integral_use_enable == 1) {
-            throw new TpshopException('积分兑换', 0, ['status' => 0, 'msg' => "你的账户可用积分为:" . $this->user['pay_points']]);
+            throw new wshopException('积分兑换', 0, ['status' => 0, 'msg' => "你的账户可用积分为:" . $this->user['pay_points']]);
         }
     }
 
     /**
      * 积分商品购买计算
      * @return Pay
-     * @throws TpshopException
+     * @throws wshopException
      */
     public function pay()
     {
         if (empty($this->userAddress)) {
-            throw new TpshopException('积分兑换', 0,['status' => -3, 'msg' => '请先填写收货人信息', 'result' => '']);
+            throw new wshopException('积分兑换', 0,['status' => -3, 'msg' => '请先填写收货人信息', 'result' => '']);
         }
         $integralGoods = $this->goods;
         $total_integral = $this->goods['exchange_integral'] * $this->buyNum;//需要兑换的总积分

@@ -11,4 +11,3 @@ $home_config = [
 
 $html_config = include_once 'html.php';
 return array_merge($home_config,$html_config);
-?>

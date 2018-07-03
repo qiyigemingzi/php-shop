@@ -3,7 +3,7 @@
 <head>
 	<meta charset="UTF-8">
 	<title>搜索列表</title>
-	<link rel="stylesheet" type="text/css" href="__STATIC__/css/tpshop.css" />
+	<link rel="stylesheet" type="text/css" href="__STATIC__/css/wshop.css" />
 	<script src="__STATIC__/js/jquery-1.11.3.min.js" type="text/javascript" charset="utf-8"></script>
 	<script src="__PUBLIC__/js/layer/layer-min.js"></script>
 	<script src="__PUBLIC__/js/global.js"></script>
@@ -182,13 +182,13 @@
 		<div class="tjhot fl">
 			<div class="sx_topb"><h3>推荐热卖</h3></div>
 			<div class="tjhot-shoplist" id="ajax_hot_goods">
-                <tpshop sql="select * from `__PREFIX__goods` where  is_recommend = 1 and is_on_sale = 1 limit 5" item="vo" key="k">
+                <wshop sql="select * from `__PREFIX__goods` where  is_recommend = 1 and is_on_sale = 1 limit 5" item="vo" key="k">
                     <div class="alone-shop">
                         <a href="{:U('Home/Goods/goodsInfo',array('id'=>$vo.goods_id))}"><img class="lazy" data-original="{$vo.goods_id|goods_thum_images=180,180}"/></a>
                         <p class="line-two-hidd"><a href="{:U('Home/Goods/goodsInfo',array('id'=>$vo.goods_id))}">{$vo.goods_name}</a></p>
                         <p class="price-tag"><span class="li_xfo">￥</span><span>{$vo.shop_price}</span></p>
                     </div>
-                </tpshop>
+                </wshop>
 			</div>
 			<!--<div class="sx_topb ma-to-20"><h3>销量排行</h3></div>-->
 			<!--<div class="tjhot-shoplist" id="ajax_sales_goods">-->

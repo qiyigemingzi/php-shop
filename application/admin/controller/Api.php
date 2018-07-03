@@ -1,15 +1,6 @@
 <?php
 /**
- * tpshop
- * ============================================================================
- * 版权所有 2015-2027 深圳搜豹网络科技有限公司，并保留所有权利。
- * 网站地址: http://www.tp-shop.cn
- * ----------------------------------------------------------------------------
- * 这不是一个自由软件！您只能在不用于商业目的的前提下对程序代码进行修改和使用 .
- * 不允许对程序代码以任何形式任何目的的再发布。
- * 采用最新Thinkphp5助手函数特性实现单字母函数M D U等简写方式
- * ============================================================================
- * Author: JY
+ * @author  wuhy
  * Date: 2015-09-23
  */
 
@@ -32,6 +23,12 @@ class Api extends Base {
         echo $html;
     }
 
+    /**
+     * @return mixed
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
     public function getGoodsSpec(){
         $goods_id = I('get.goods_id/d');
         $temp = DB::name('spec_goods_price')->field("GROUP_CONCAT(`key` SEPARATOR '_' ) as goods_spec_item")->where('goods_id', $goods_id)->select();
@@ -68,7 +65,9 @@ class Api extends Base {
         exit(json_encode($info));
     }
 
-    //商品价格计算
+    /**
+     * 商品价格计算
+     */
     public function calcGoods(){
         $goods_id = I('post.goods/d'); // 添加商品id
         $price_type = I('post.price') ? I('post.price') : 3; // 价钱类型

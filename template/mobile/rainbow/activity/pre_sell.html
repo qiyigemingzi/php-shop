@@ -32,7 +32,7 @@
 <!--商品s-->
 <div class="xq_details">
     <div class="banner ban1 detailban">
-        <div class="mslide" id="slideTpshop">
+        <div class="mslide" id="slidewshop">
             <ul>
                 <foreach name="goods_images_list" item="v">
                     <li><a href="javascript:void(0)"><img src="{$v[image_url]}" alt=""></a></li>
@@ -177,7 +177,7 @@
             <div class="likeshop">
                 <ul>
                     <!--商品推荐-->
-                    <tpshop sql="SELECT * FROM __PREFIX__goods WHERE ( is_recommend=1 and is_on_sale=1 ) ORDER BY goods_id DESC LIMIT 0,4 " key="k" item='v'>
+                    <wshop sql="SELECT * FROM __PREFIX__goods WHERE ( is_recommend=1 and is_on_sale=1 ) ORDER BY goods_id DESC LIMIT 0,4 " key="k" item='v'>
                         <li>
                             <a href="{:U('Goods/goodsInfo',array('id'=>$v[goods_id]))}">
                                 <div class="similer-product">
@@ -189,7 +189,7 @@
                                 </div>
                             </a>
                         </li>
-                    </tpshop>
+                    </wshop>
                 </ul>
             </div>
         </div>
@@ -253,7 +253,7 @@
         <div class="fl">
             <ul>
                 <li>
-                    <a href="tel:{$tpshop_config['shop_info_phone']}">
+                    <a href="tel:{$wshop_config['shop_info_phone']}">
                         <i></i>
                         <p>客服</p>
                     </a>

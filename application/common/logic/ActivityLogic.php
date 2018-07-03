@@ -1,20 +1,8 @@
 <?php
-/**
- * tpshop
- * ============================================================================
- * 版权所有 2015-2027 深圳搜豹网络科技有限公司，并保留所有权利。
- * 网站地址: http://www.tp-shop.cn
- * ----------------------------------------------------------------------------
- * 这不是一个自由软件！您只能在不用于商业目的的前提下对程序代码进行修改和使用 .
- * 不允许对程序代码以任何形式任何目的的再发布。
- * 采用最新Thinkphp5助手函数特性实现单字母函数M D U等简写方式
- * ============================================================================
- * Author: lhb
- * Date: 2017-05-15
- */
 
 namespace app\common\logic;
 
+use app\common\logic\CouponLogic;
 use app\common\model\Coupon;
 use think\Model;
 use think\Db;
@@ -24,12 +12,10 @@ use think\Db;
  */
 class ActivityLogic extends Model
 {
-    
+
     /**
      * 团购总数
-     * @param type $sort_type
-     * @param type $page_index
-     * @param type $page_size
+     * @return number
      */
     public function getGroupBuyCount()
     {
@@ -44,12 +30,13 @@ class ActivityLogic extends Model
                 ->count();
         return $count;
     }
-    
+
     /**
      * 团购列表
-     * @param type $sort_type
-     * @param type $page_index
-     * @param type $page_size
+     * @param string $sort_type
+     * @param int $page_index
+     * @param int $page_size
+     * @return array
      */
     public function getGroupBuyList($sort_type = '', $page_index = 1, $page_size = 20)
     {
@@ -206,13 +193,13 @@ class ActivityLogic extends Model
         $query = $this->getCouponQuery(1, $user_id, $type, $orderBy,$order_money);
         return $query->limit($firstRow, $listRows)->select();
     }
-    
+
     /**
      * 领券中心
-     * @param type $cat_id 领券类型id
-     * @param type $user_id 用户id
-     * @param type $p 第几页
-     * @return type
+     * @param int $cat_id 领券类型id
+     * @param int $user_id 用户id
+     * @param int $p 第几页
+     * @return array
      */
     public function getCouponCenterList($cat_id, $user_id, $p = 1)
     {
@@ -263,12 +250,12 @@ class ActivityLogic extends Model
         
         return  $coupon_list;
     }
-    
+
     /**
      * 优惠券类型列表
-     * @param type $p 第几页
-     * @param type $num 每页多少，null表示全部
-     * @return type
+     * @param int $p 第几页
+     * @param int $num 每页多少，null表示全部
+     * @return array
      */
     public function getCouponTypes($p = 1, $num = null)
     {
@@ -283,11 +270,12 @@ class ActivityLogic extends Model
 
         return $result;
     }
-    
+
     /**
      * 领券
      * @param $id 优惠券id
      * @param $user_id
+     * @return array
      */
     public function get_coupon($id, $user_id)
     {
@@ -396,7 +384,7 @@ class ActivityLogic extends Model
             } elseif ($prom['type'] == 2) {
                 $activityData[] = ['title' => '促销', 'content' => "促销价{$prom['expression']}元"];
             } elseif ($prom['type'] == 3) {
-                $couponLogic = new \app\common\logic\CouponLogic;
+                $couponLogic = new CouponLogic;
                 $money = $couponLogic->getSendValidCouponMoney($prom['expression'], $goods['goods_id'], $goods['cat_id3']);
                 if ($money !== false) {
                     $activityData[] = ['title' => '送券', 'content' => "买就送代金券{$money}元"];
@@ -419,12 +407,11 @@ class ActivityLogic extends Model
         
         return $activity;
     }
-    
+
     /**
      * 获取
-     * @param type $user_level
-     * @param type $cur_time
-     * @param type $goods
+     * @param $user
+     * @param array $goods
      * @return string|array
      */
     public function getOrderPromSimpleInfo($user, $goods)
@@ -443,7 +430,7 @@ class ActivityLogic extends Model
                 } elseif ($p['type'] == 2) {
                     //积分暂不支持?
                 } elseif ($p['type'] == 3) {
-                    $couponLogic = new \app\common\logic\CouponLogic;
+                    $couponLogic = new CouponLogic;
                     $money = $couponLogic->getSendValidCouponMoney($p['expression'], $goods['goods_id'], $goods['cat_id']);
                     if ($money !== false) {
                         $data[] = ['title' => '送券', 'content' => "满{$p['money']}元送{$money}元优惠券"];
@@ -454,12 +441,11 @@ class ActivityLogic extends Model
         
         return $data;
     }
-    
+
     /**
      * 订单支付时显示的优惠显示
-     * @param type $user
-     * @param type $store_id
-     * @return type
+     * @param int $order_amount
+     * @return string
      */
     public function getOrderPayProm($order_amount=0)
     {

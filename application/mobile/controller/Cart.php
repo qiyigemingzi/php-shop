@@ -1,16 +1,4 @@
 <?php
-/**
- * tpshop
- * ============================================================================
- * * 版权所有 2015-2027 深圳搜豹网络科技有限公司，并保留所有权利。
- * 网站地址: http://www.tp-shop.cn
- * ----------------------------------------------------------------------------
- * 这不是一个自由软件！您只能在不用于商业目的的前提下对程序代码进行修改和使用 .
- * 不允许对程序代码以任何形式任何目的的再发布。
- * 采用最新Thinkphp5助手函数特性实现单字母函数M D U等简写方式
- * ============================================================================
- * $Author: IT宇宙人 2015-08-10 $
- */
 namespace app\mobile\controller;
 use app\common\logic\CartLogic;
 use app\common\logic\GoodsActivityLogic;
@@ -21,7 +9,7 @@ use app\common\logic\Pay;
 use app\common\logic\PlaceOrder;
 use app\common\model\Goods;
 use app\common\model\SpecGoodsPrice;
-use app\common\util\TpshopException;
+use app\common\util\wshopException;
 use think\Db;
 use think\Url;
 
@@ -59,7 +47,7 @@ class Cart extends MobileBase {
         $cartLogic->setUserId($this->user_id);
         $cartList = $cartLogic->getCartList();//用户购物车
         $userCartGoodsTypeNum = $cartLogic->getUserCartGoodsTypeNum();//获取用户购物车商品总数
-        $hot_goods = M('Goods')->where('is_hot=1 and is_on_sale=1')->limit(20)->cache(true,TPSHOP_CACHE_TIME)->select();
+        $hot_goods = M('Goods')->where('is_hot=1 and is_on_sale=1')->limit(20)->cache(true,wshop_CACHE_TIME)->select();
         $this->assign('hot_goods', $hot_goods);
         $this->assign('userCartGoodsTypeNum', $userCartGoodsTypeNum);
         $this->assign('cartList', $cartList);//购物车列表
@@ -137,7 +125,7 @@ class Cart extends MobileBase {
             $buyGoods = [];
             try{
                 $buyGoods = $cartLogic->buyNow();
-            }catch (TpshopException $t){
+            }catch (wshopException $t){
                 $error = $t->getErrorArr();
                 $this->error($error['msg']);
             }
@@ -213,7 +201,7 @@ class Cart extends MobileBase {
             $pay->useCouponById($coupon_id);
             $pay->useUserMoney($user_money);
             $pay->usePayPoints($pay_points);
-        } catch (TpshopException $t) {
+        } catch (wshopException $t) {
             $error = $t->getErrorArr();
             $this->ajaxReturn($error);
         }
@@ -227,7 +215,7 @@ class Cart extends MobileBase {
             $placeOrder->setPayPsw($payPwd);
             try{
                 $placeOrder->addNormalOrder();
-            }catch (TpshopException $t) {
+            }catch (wshopException $t) {
                 $error = $t->getErrorArr();
                 $this->ajaxReturn($error);
             }
@@ -436,7 +424,7 @@ class Cart extends MobileBase {
             $url = U('Cart/integral', ['goods_id' => $goods_id, 'item_id' => $item_id, 'goods_num' => $goods_num]);
             $result = ['status' => 1, 'msg' => '购买成功', 'result' => ['url' => $url]];
             $this->ajaxReturn($result);
-        }catch (TpshopException $t){
+        }catch (wshopException $t){
             $result = $t->getErrorArr();
             $this->ajaxReturn($result);
         }
@@ -542,7 +530,7 @@ class Cart extends MobileBase {
                 $this->ajaxReturn(['status'=>1,'msg'=>'提交订单成功','result'=>$order['order_id']]);
             }
             $this->ajaxReturn(['status' => 1, 'msg' => '计算成功', 'result' => $pay->toArray()]);
-        }catch (TpshopException $t){
+        }catch (wshopException $t){
             $error = $t->getErrorArr();
             $this->ajaxReturn($error);
         }

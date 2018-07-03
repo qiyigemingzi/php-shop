@@ -3,9 +3,9 @@
 	<head>
 		<meta charset="UTF-8">
 		<title>申请提现</title>
-		<link rel="stylesheet" type="text/css" href="__STATIC__/css/tpshop.css" />
+		<link rel="stylesheet" type="text/css" href="__STATIC__/css/wshop.css" />
 		<link rel="stylesheet" type="text/css" href="__STATIC__/css/myaccount.css" />
-		<link rel="shortcut  icon" type="image/x-icon" href="{$tpshop_config.shop_info_store_ico|default='/public/static/images/logo/storeico_default.png'}" media="screen"  />
+		<link rel="shortcut  icon" type="image/x-icon" href="{$wshop_config.shop_info_store_ico|default='/public/static/images/logo/storeico_default.png'}" media="screen"  />
 		<script src="__STATIC__/js/jquery-1.11.3.min.js" type="text/javascript" charset="utf-8"></script>
 	</head>
 	<body class="bg-f5">
@@ -35,7 +35,7 @@
 												<input type="text" name="money" id="money" onpaste="this.value=this.value.replace(/[^\d.]/g,'')" onKeyUp="this.value=this.value.replace(/[^\d.]/g,'')"/>
 												<span>元</span>
 											</div>
-											<span class="keyj">(最低提现额度{$tpshop_config['basic_min']}，当前账户金额：<em>{$user.user_money}</em>元)</span>
+											<span class="keyj">(最低提现额度{$wshop_config['basic_min']}，当前账户金额：<em>{$user.user_money}</em>元)</span>
 										</li>
 									</ul>
 								<!--	<ul class="name_jz">

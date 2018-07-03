@@ -1,17 +1,4 @@
 <?php
-/**
- * tpshop
- * ============================================================================
- * * 版权所有 2015-2027 深圳搜豹网络科技有限公司，并保留所有权利。
- * 网站地址: http://www.tpshop.cn
- * ----------------------------------------------------------------------------
- * 这不是一个自由软件！您只能在不用于商业目的的前提下对程序代码进行修改和使用 .
- * 不允许对程序代码以任何形式任何目的的再发布。
- * 采用最新Thinkphp5助手函数特性实现单字母函数M D U等简写方式
- * ============================================================================
- * $Author: IT宇宙人 2015-08-10 $
- *
- */ 
  
 namespace app\home\controller; 
 use app\common\logic\Integral;
@@ -25,7 +12,7 @@ use app\common\logic\OrderLogic;
 use app\common\logic\PickupLogic;
 use app\common\model\SpecGoodsPrice;
 use app\common\model\Goods;
-use app\common\util\TpshopException;
+use app\common\util\wshopException;
 use think\Db;
 class Cart extends Base {
 
@@ -183,7 +170,7 @@ class Cart extends Base {
             $buyGoods = [];
             try{
                 $buyGoods = $cartLogic->buyNow();
-            }catch (TpshopException $t){
+            }catch (wshopException $t){
                 $error = $t->getErrorArr();
                 $this->error($error['msg']);
             }
@@ -359,7 +346,7 @@ class Cart extends Base {
                 $this->ajaxReturn(['status'=>1,'msg'=>'提交订单成功','result'=>$order['order_sn']]);
             }
             $this->ajaxReturn(['status'=>1,'msg'=>'计算成功','result'=>$pay->toArray()]);
-        } catch (TpshopException $t) {
+        } catch (wshopException $t) {
             $error = $t->getErrorArr();
             $this->ajaxReturn($error);
         }
@@ -522,7 +509,7 @@ class Cart extends Base {
             $url = U('Cart/integral', ['goods_id' => $goods_id, 'item_id' => $item_id, 'goods_num' => $goods_num]);
             $result = ['status' => 1, 'msg' => '购买成功', 'result' => ['url' => $url]];
             $this->ajaxReturn($result);
-        }catch (TpshopException $t){
+        }catch (wshopException $t){
             $result = $t->getErrorArr();
             $this->ajaxReturn($result);
         }
@@ -614,7 +601,7 @@ class Cart extends Base {
                 $this->ajaxReturn(['status'=>1,'msg'=>'提交订单成功','result'=>$order['order_id']]);
             }
             $this->ajaxReturn(['status' => 1, 'msg' => '计算成功', 'result' => $pay->toArray()]);
-        }catch (TpshopException $t){
+        }catch (wshopException $t){
             $error = $t->getErrorArr();
             $this->ajaxReturn($error);
         }

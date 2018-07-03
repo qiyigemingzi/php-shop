@@ -1,16 +1,4 @@
 <?php
-/**
- * tpshop
- * ============================================================================
- * * 版权所有 2015-2027 深圳搜豹网络科技有限公司，并保留所有权利。
- * 网站地址: http://www.tp-shop.cn
- * ----------------------------------------------------------------------------
- * 这不是一个自由软件！您只能在不用于商业目的的前提下对程序代码进行修改和使用 .
- * 不允许对程序代码以任何形式任何目的的再发布。
- * 采用最新Thinkphp5助手函数特性实现单字母函数M D U等简写方式
- * ============================================================================
- * $Author: IT宇宙人 2015-08-10 $
- */ 
 namespace app\home\controller; 
 use think\Request;
 use think\Db;
@@ -26,7 +14,7 @@ class Payment extends Base {
     public function  __construct() {   
         parent::__construct();           
         
-        // tpshop 订单支付提交
+        // wshop 订单支付提交
         $pay_radio = $_REQUEST['pay_radio'];
         if(!empty($pay_radio)) 
         {                         
@@ -45,13 +33,13 @@ class Payment extends Base {
         if(empty($this->pay_code))
             exit('pay_code 不能为空');
         // 导入具体的支付类文件                
-        include_once  "plugins/payment/{$this->pay_code}/{$this->pay_code}.class.php"; // D:\wamp\www\svn_tpshop\www\plugins\payment\alipay\alipayPayment.class.php                       
+        include_once  "plugins/payment/{$this->pay_code}/{$this->pay_code}.class.php"; // D:\wamp\www\svn_wshop\www\plugins\payment\alipay\alipayPayment.class.php                       
         $code = '\\'.$this->pay_code; // \alipay
         $this->payment = new $code();
     }
    
     /**
-     * tpshop 提交支付方式
+     * wshop 提交支付方式
      */
     public function getCode(){        
             //C('TOKEN_ON',false); // 关闭 TOKEN_ON
@@ -70,7 +58,7 @@ class Payment extends Base {
             $payment_arr = M('Plugin')->where("`type` = 'payment'")->getField("code,name");
             M('order')->where("order_id",$order_id)->save(array('pay_code'=>$this->pay_code,'pay_name'=>$payment_arr[$this->pay_code]));
 
-            // tpshop 订单支付提交
+            // wshop 订单支付提交
             $pay_radio = $_REQUEST['pay_radio'];
             $config_value = parse_url_param($pay_radio); // 类似于 pay_code=alipay&bank_code=CCB-DEBIT 参数
             $payBody = getPayBody($order_id);
@@ -115,13 +103,13 @@ class Payment extends Base {
     	return $this->fetch('recharge'); //分跳转 和不 跳转
     }
     
-    // 服务器点对点 // http://www.tp-shop.cn/index.php/Home/Payment/notifyUrl        
+    // 服务器点对点 // http://www.wujiaweb.com/index.php/Home/Payment/notifyUrl        
     public function notifyUrl(){            
         $this->payment->response();            
         exit();
     }
 
-    // 页面跳转 // http://www.tp-shop.cn/index.php/Home/Payment/returnUrl        
+    // 页面跳转 // http://www.wujiaweb.com/index.php/Home/Payment/returnUrl        
     public function returnUrl(){
         $result = $this->payment->respond2(); // $result['order_sn'] = '201512241425288593';
         

@@ -1,13 +1,6 @@
 <?php
 /**
- * tpshop
- * ============================================================================
- * 版权所有 2015-2027 深圳搜豹网络科技有限公司，并保留所有权利。
- * 网站地址: http://www.tp-shop.cn
- * ----------------------------------------------------------------------------
- * 商业用途务必到官方购买正版授权, 使用盗版将严厉追究您的法律责任。
- * ============================================================================
- * Author: lhb
+ * @author wuhy
  */
 
 namespace app\admin\controller;
@@ -26,6 +19,12 @@ class Wechat extends Base
 {
     private $wx_user;
 
+    /**
+     * Wechat constructor.
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
     function __construct()
     {
         parent::__construct();
@@ -39,6 +38,14 @@ class Wechat extends Base
         exit;
     }
 
+    /**
+     * @return mixed
+     * @throws \think\Exception
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     * @throws \think\exception\PDOException
+     */
     public function setting()
     {
         $id = I('get.id');
@@ -82,6 +89,12 @@ class Wechat extends Base
         return $this->fetch();
     }
 
+    /**
+     * @return mixed
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
     public function menu()
     {
         $wechat = $this->wx_user;
@@ -123,8 +136,10 @@ class Wechat extends Base
     }
 
 
-    /*
+    /**
      * 删除菜单
+     * @throws \think\Exception
+     * @throws \think\exception\PDOException
      */
     public function del_menu()
     {
@@ -141,8 +156,11 @@ class Wechat extends Base
         }
     }
 
-    /*
+    /**
      * 生成微信菜单
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
      */
     public function pub_menu()
     {
@@ -180,7 +198,14 @@ class Wechat extends Base
         $this->success('菜单已成功生成', U('Wechat/menu'));
     }
 
-    //菜单转换
+    /**
+     * 菜单转换
+     * @param $p_menus
+     * @return array
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
     private function convert_menu($p_menus)
     {
 //        $key_map = array(
@@ -250,6 +275,10 @@ class Wechat extends Base
 
     /**
      * 自动回复展示
+     * @return mixed
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
      */
     public function auto_reply()
     {
@@ -279,6 +308,8 @@ class Wechat extends Base
 
     /**
      * 自动回复编辑页面
+     * @return mixed
+     * @throws \think\exception\DbException
      */
     public function auto_reply_edit()
     {
@@ -351,6 +382,7 @@ class Wechat extends Base
 
     /**
      * 粉丝详细列表
+     * @throws \think\exception\DbException
      */
     public function fans_list()
     {
@@ -415,6 +447,10 @@ class Wechat extends Base
 
     /**
      * 素材管理
+     * @return mixed
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
      */
     public function materials()
     {
@@ -447,6 +483,10 @@ class Wechat extends Base
 
     /**
      * 异步请求图文消息
+     * @return mixed
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
      */
     public function ajax_news()
     {
@@ -463,6 +503,8 @@ class Wechat extends Base
 
     /**
      * 单图文素材编辑
+     * @return mixed
+     * @throws \think\exception\DbException
      */
     public function news_edit()
     {
@@ -540,6 +582,8 @@ class Wechat extends Base
 
     /**
      * 编辑文本素材
+     * @return mixed
+     * @throws \think\exception\DbException
      */
     public function text_edit()
     {
@@ -582,6 +626,8 @@ class Wechat extends Base
 
     /**
      * 模板消息
+     * @return mixed
+     * @throws \think\exception\DbException
      */
     public function template_msg()
     {

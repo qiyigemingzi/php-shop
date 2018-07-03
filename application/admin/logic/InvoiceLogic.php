@@ -1,18 +1,5 @@
 <?php
 
-/**
- * tpshop
- * ============================================================================
- * 版权所有 2015-2027 深圳搜豹网络科技有限公司，并保留所有权利。
- * 网站地址: http://www.tp-shop.cn
- * ----------------------------------------------------------------------------
- * 商业用途务必到官方购买正版授权, 使用盗版将严厉追究您的法律责任。
- * 采用最新Thinkphp5助手函数特性实现单字母函数M D U等简写方式
- * ============================================================================
- * Date: 2017-10-23
- */
-
-
 namespace app\admin\logic;
 
 use think\Db;
@@ -20,7 +7,13 @@ use think\Model;
 
 class InvoiceLogic extends Model
 {
-    //发票创建
+    /**
+     * 发票创建
+     * @param $order
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
 	function createInvoice($order){
         $data = [
             'order_id'       => $order['order_id'],  //订单id

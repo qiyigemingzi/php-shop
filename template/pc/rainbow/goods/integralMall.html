@@ -2,9 +2,9 @@
 <html>
 	<head>
 		<meta charset="UTF-8">
-		<title>积分商城-{$tpshop_config['shop_info_store_title']}</title>
-		<link rel="stylesheet" type="text/css" href="__STATIC__/css/tpshop.css" />
-		<link rel="shortcut icon" type="image/x-icon" href="{$tpshop_config.shop_info_store_ico|default='/public/static/images/logo/storeico_default.png'}" media="screen"/>
+		<title>积分商城-{$wshop_config['shop_info_store_title']}</title>
+		<link rel="stylesheet" type="text/css" href="__STATIC__/css/wshop.css" />
+		<link rel="shortcut icon" type="image/x-icon" href="{$wshop_config.shop_info_store_ico|default='/public/static/images/logo/storeico_default.png'}" media="screen"/>
 		<script src="__STATIC__/js/jquery-1.11.3.min.js" type="text/javascript" charset="utf-8"></script>
 		<script src="__PUBLIC__/js/layer/layer-min.js"></script>
 		<script src="__PUBLIC__/js/global.js"></script>
@@ -114,7 +114,7 @@
 						<h2 class="litt-titt">精品推荐</h2>
 						<div class="reacommque">
 							<ul>
-								<tpshop sql="select * from `__PREFIX__goods` where is_on_sale eq 1 and exchange_integral gt 0 and is_recommend eq 1 and is_virtual eq 0 limit 5" item="goods" key="k">
+								<wshop sql="select * from `__PREFIX__goods` where is_on_sale eq 1 and exchange_integral gt 0 and is_recommend eq 1 and is_virtual eq 0 limit 5" item="goods" key="k">
 									<li>
 									<div class="boxque">
 										<img src="{$goods['goods_id']|goods_thum_images=165,188}"/>
@@ -133,7 +133,7 @@
 										</div>
 									</div>
 								</li>
-								</tpshop>
+								</wshop>
 							</ul>
 						</div>
 					</div>
@@ -143,7 +143,7 @@
 						<h2 class="litt-titt">热门兑换</h2>
 						<div class="hot-change">
 							<ul>
-								<tpshop sql="select * from `__PREFIX__goods` where is_on_sale eq 1 and exchange_integral gt 0 and is_hot eq 1 and is_virtual eq 0 limit 7" item="goods" key="k">
+								<wshop sql="select * from `__PREFIX__goods` where is_on_sale eq 1 and exchange_integral gt 0 and is_hot eq 1 and is_virtual eq 0 limit 7" item="goods" key="k">
 									<li <if condition="($k+1)%5 eq 0">class="mar0"</if>>
 										<div class="lit-shcha">
 											<img src="{$goods['goods_id']|goods_thum_images=165,188}"/>
@@ -153,7 +153,7 @@
 											</div>
 										</div>
 									</li>
-								</tpshop>
+								</wshop>
 							</ul>
 						</div>
 					</div>

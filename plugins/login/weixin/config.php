@@ -4,7 +4,7 @@ return array(
     'code'=> 'weixin',
     'name' => '微信登录',
     'version' => '1.0',
-    'author' => '彭老师',
+    'author' => 'wuhy',
     'desc' => '微信扫码登录插件 ',
     'icon' => 'logo.jpg',
     'config' => array(

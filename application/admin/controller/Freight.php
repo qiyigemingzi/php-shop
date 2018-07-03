@@ -1,14 +1,8 @@
 <?php
 /**
- * tpshop
- * ============================================================================
- * 版权所有 2015-2027 深圳搜豹网络科技有限公司，并保留所有权利。
- * 网站地址: http://www.tp-shop.cn
- * ----------------------------------------------------------------------------
- * 商业用途务必到官方购买正版授权, 使用盗版将严厉追究您的法律责任。
- * ============================================================================
  * 运费模板管理
- * Date: 2017-11-14
+ * @author wuhy
+ * @date 2017-11-14
  */
 
 namespace app\admin\controller;
@@ -21,6 +15,12 @@ use think\Page;
 class Freight extends Base
 {
 
+    /**
+     * @return mixed
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
     public function index()
     {
         $FreightTemplate = new FreightTemplate();
@@ -33,6 +33,12 @@ class Freight extends Base
         return $this->fetch();
     }
 
+    /**
+     * @return mixed
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
     public function info()
     {
         $template_id = input('template_id');
@@ -151,7 +157,12 @@ class Freight extends Base
         }
     }
 
-
+    /**
+     * @return mixed
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
     public function area()
     {
         $province_list = Db::name('region')->where(array('parent_id' => 0, 'level' => 1))->select();
@@ -162,6 +173,11 @@ class Freight extends Base
     /**
      * 检查模板，如果模板下没有配送区域配置，就删除该模板
      * @param $template_id
+     * @throws \think\Exception
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     * @throws \think\exception\PDOException
      */
     private function checkFreightTemplate($template_id)
     {

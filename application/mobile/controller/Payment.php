@@ -1,15 +1,6 @@
 <?php
 /**
- * tpshop
- * ============================================================================
- * * 版权所有 2015-2027 深圳搜豹网络科技有限公司，并保留所有权利。
- * 网站地址: http://www.tp-shop.cn
- * ----------------------------------------------------------------------------
- * 这不是一个自由软件！您只能在不用于商业目的的前提下对程序代码进行修改和使用 .
- * 不允许对程序代码以任何形式任何目的的再发布。
- * 采用最新Thinkphp5助手函数特性实现单字母函数M D U等简写方式
- * ============================================================================
- * $Author: IT宇宙人 2015-08-10 $
+ * @author wuhy
  */
 
 namespace app\mobile\controller;
@@ -44,13 +35,13 @@ class Payment extends MobileBase
         }
 
         // 导入具体的支付类文件
-        include_once "plugins/payment/{$this->pay_code}/{$this->pay_code}.class.php"; // D:\wamp\www\svn_tpshop\www\plugins\payment\alipay\alipayPayment.class.php
+        include_once "plugins/payment/{$this->pay_code}/{$this->pay_code}.class.php"; // D:\wamp\www\svn_wshop\www\plugins\payment\alipay\alipayPayment.class.php
         $code = '\\' . $this->pay_code; // \alipay
         $this->payment = new $code();
     }
 
     /**
-     * tpshop 提交支付方式
+     * wshop 提交支付方式
      */
     public function getCode()
     {
@@ -148,14 +139,14 @@ class Payment extends MobileBase
         return $this->fetch('recharge'); //分跳转 和不 跳转
     }
 
-    // 服务器点对点 // http://www.tp-shop.cn/index.php/Home/Payment/notifyUrl
+    // 服务器点对点 // http://www.wujiaweb.com/index.php/Home/Payment/notifyUrl
     public function notifyUrl()
     {
         $this->payment->response();
         exit();
     }
 
-    // 页面跳转 // http://www.tp-shop.cn/index.php/Home/Payment/returnUrl
+    // 页面跳转 // http://www.wujiaweb.com/index.php/Home/Payment/returnUrl
     public function returnUrl()
     {
         $result = $this->payment->respond2(); // $result['order_sn'] = '201512241425288593';

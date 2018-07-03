@@ -2,20 +2,20 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>登录-{$tpshop_config['shop_info_store_title']}</title>
-    <link rel="stylesheet" type="text/css" href="__STATIC__/css/tpshop.css" />
+    <title>登录-{$wshop_config['shop_info_store_title']}</title>
+    <link rel="stylesheet" type="text/css" href="__STATIC__/css/wshop.css" />
     <link rel="stylesheet" type="text/css" href="__STATIC__/css/base.css"/>
     <link rel="stylesheet" type="text/css" href="__STATIC__/css/myaccount.css" />
     <script src="__STATIC__/js/jquery-1.11.3.min.js" type="text/javascript" charset="utf-8"></script>
     <script src="__PUBLIC__/static/js/layer/layer.js" type="text/javascript"></script>
-    <link rel="shortcut icon" type="image/x-icon" href="{$tpshop_config.shop_info_store_ico|default='/public/static/images/logo/storeico_default.png'}" media="screen"/>
+    <link rel="shortcut icon" type="image/x-icon" href="{$wshop_config.shop_info_store_ico|default='/public/static/images/logo/storeico_default.png'}" media="screen"/>
 </head>
 <body>
 <div class="loginsum_cm">
     <div class="w1224 p">
         <div class="login-dl">
             <a href="/index.php" title="首页">
-                <img src="{$tpshop_config.shop_info_store_user_logo|default='/public/static/images/logo/pc_home_logo_default.png'}"/>
+                <img src="{$wshop_config.shop_info_store_user_logo|default='/public/static/images/logo/pc_home_logo_default.png'}"/>
             </a>
         </div>
         <div class="login-welcome">
@@ -73,7 +73,7 @@
                     <div class="contactsty">
                         <div class="tecant_c">
                             <ul>
-                                <tpshop sql="select * from __PREFIX__plugin where type='login' AND status = 1" item="v" key="k">
+                                <wshop sql="select * from __PREFIX__plugin where type='login' AND status = 1" item="v" key="k">
                                     <if condition="$v['code'] eq 'weixin'">
                                         <li class="spacer"></li>
                                         <li>
@@ -100,7 +100,7 @@
                                             </a>
                                         </li>
                                     </if>
-                                </tpshop>
+                                </wshop>
                             </ul>
                         </div>
                         <div class="register_c">

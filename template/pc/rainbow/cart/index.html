@@ -3,7 +3,7 @@
 	<head>
 		<meta charset="UTF-8">
 		<title>我的购物车列表</title>
-		<link rel="stylesheet" type="text/css" href="__STATIC__/css/tpshop.css" />
+		<link rel="stylesheet" type="text/css" href="__STATIC__/css/wshop.css" />
 		<script src="__STATIC__/js/jquery-1.11.3.min.js" type="text/javascript" charset="utf-8"></script>
 		<script src="__PUBLIC__/js/global.js" type="text/javascript" charset="utf-8"></script>
 		<script src="__PUBLIC__/js/locationJson.js"></script>
@@ -29,13 +29,13 @@
 		</adv>
 		<!--顶部广告-e-->
 		<!--header-s-->
-		<div class="tpshop-tm-hander p" style="border-bottom: 0;">
+		<div class="wshop-tm-hander p" style="border-bottom: 0;">
 			<include file="public/sign-header" />
 			<div class="nav-middan-z p tphsop2_0">
 				<div class="header w1224">
 					<div class="ecsc-logo fon_gwcshcar">
 						<a href="/" class="logo">
-                            <img src="{$tpshop_config['shop_info_store_logo']|default='__PUBLIC__/static/images/logo/pc_home_logo_default.png'}" style="max-width: 240px;max-height: 80px;">
+                            <img src="{$wshop_config['shop_info_store_logo']|default='__PUBLIC__/static/images/logo/pc_home_logo_default.png'}" style="max-width: 240px;max-height: 80px;">
                         </a>
 					</div>
 					<div class="ecsc-search mycarlist_search">
@@ -115,7 +115,7 @@
 							</script>
 						</form>
 						<div class="keyword">
-							<foreach name="tpshop_config.hot_keywords" item="wd" key="k">
+							<foreach name="wshop_config.hot_keywords" item="wd" key="k">
 								<a class="key-item" href="{:U('Home/Goods/search',array('q'=>$wd))}" target="_blank">{$wd}</a>
 							</foreach>
 						</div>
@@ -155,7 +155,7 @@
 		</div>
 		<!-- 购物车列表 -->
 		<notempty name="cartList">
-			<div id="tpshop-cart">
+			<div id="wshop-cart">
 				<div class="li3_address w1224 p">
 					<ul>
 						<li class="current"><a>全部商品数<em>（{$userCartGoodsTypeNum}）</em></a></li>
@@ -355,7 +355,7 @@
 								<a class="s-item">&nbsp;</a>
 							</div>
 							<div class="s-panel-main">
-								<tpshop sql="select * from `__PREFIX__goods` where is_recommend = 1 AND is_virtual=0 AND is_on_sale = 1 order by sort DESC limit 12" result_name="goods_likes"></tpshop>
+								<wshop sql="select * from `__PREFIX__goods` where is_recommend = 1 AND is_virtual=0 AND is_on_sale = 1 order by sort DESC limit 12" result_name="goods_likes"></wshop>
 								<div class="goods-panel jsaddsucc p">
 									<ul>
 										<volist name="goods_likes" id="like" offset="0" length="4">
@@ -794,7 +794,7 @@
 									}
 								})
 								if(inputCheckItemAll.length == 0){
-									$('#tpshop-cart').remove();
+									$('#wshop-cart').remove();
 									$('.shopcar_empty').show();
 								}
 							}else{
@@ -903,7 +903,7 @@
 			function pop_login(){
 				layer.open({
 					type: 2,
-					title: '<b>登陆TPshop网</b>',
+					title: '<b>登陆wshop网</b>',
 					skin: 'layui-layer-rim',
 					shadeClose: true,
 					shade: 0.5,

@@ -4,9 +4,9 @@
 	<meta charset="UTF-8">
 	<title>商品列表</title>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
-	<link rel="stylesheet" type="text/css" href="__STATIC__/css/tpshop.css" />
+	<link rel="stylesheet" type="text/css" href="__STATIC__/css/wshop.css" />
 	<script src="__STATIC__/js/jquery-1.11.3.min.js" type="text/javascript" charset="utf-8"></script>
-    <link rel="shortcut icon" type="image/x-icon" href="{$tpshop_config.shop_info_store_ico|default='/public/static/images/logo/storeico_default.png'}" media="screen"/>
+    <link rel="shortcut icon" type="image/x-icon" href="{$wshop_config.shop_info_store_ico|default='/public/static/images/logo/storeico_default.png'}" media="screen"/>
 	<script src="__PUBLIC__/js/layer/layer-min.js"></script>
 	<script src="__PUBLIC__/js/global.js"></script>
 	<script src="__PUBLIC__/js/pc_common.js"></script>
@@ -265,13 +265,13 @@
 		<div class="tjhot fl">
 			<div class="sx_topb"><h3>推荐热卖</h3></div>
 			<div class="tjhot-shoplist" id="ajax_hot_goods">
-                <tpshop sql="select goods_id,goods_name,shop_price from `__PREFIX__goods` where is_hot=1 and is_on_sale = 1 limit 5" item="vo" key="k">
+                <wshop sql="select goods_id,goods_name,shop_price from `__PREFIX__goods` where is_hot=1 and is_on_sale = 1 limit 5" item="vo" key="k">
                     <div class="alone-shop">
                         <a href="{:U('Home/Goods/goodsInfo',array('id'=>$vo.goods_id))}"><img class="lazy" data-original="{$vo.goods_id|goods_thum_images=180,180}"/></a>
                         <p class="line-two-hidd"><a href="{:U('Home/Goods/goodsInfo',array('id'=>$vo.goods_id))}">{$vo.goods_name}</a></p>
                         <p class="price-tag"><span class="li_xfo">￥</span><span>{$vo.shop_price}</span></p>
                     </div>
-                </tpshop>
+                </wshop>
 			</div>
 		</div>
 		<div class="stsho fr">

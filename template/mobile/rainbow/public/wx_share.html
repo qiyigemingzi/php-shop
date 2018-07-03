@@ -3,8 +3,8 @@
 <if condition="ACTION_NAME eq 'goodsInfo'">
 	var ShareLink = "{:U('Mobile/Goods/goodsInfo',['id'=>$goods[goods_id]],'',true)}"; //默认分享链接
 	var ShareImgUrl = "http://{$Think.server.SERVER_NAME}{$goods[goods_id]|goods_thum_images=400,400}"; // 分享图标
-	var ShareTitle = "{$goods.goods_name|default=$tpshop_config['shop_info_store_title']}"; // 分享标题
-	var ShareDesc = "{$goods.goods_remark|default=$tpshop_config['shop_info_store_desc']}"; // 分享描述
+	var ShareTitle = "{$goods.goods_name|default=$wshop_config['shop_info_store_title']}"; // 分享标题
+	var ShareDesc = "{$goods.goods_remark|default=$wshop_config['shop_info_store_desc']}"; // 分享描述
 <elseif condition="ACTION_NAME eq 'info'"/>
 	var ShareLink = "{:U('Mobile/Team/info',['goods_id'=>$team[goods_id],'team_id'=>$team[team_id]])}"; //默认分享链接
 	var ShareImgUrl = "http://{$Think.server.SERVER_NAME}{$team[share_img]}"; //分享图标
@@ -17,14 +17,14 @@
 	var ShareDesc = "{$team[share_desc]}"; //分享描述
 <elseif condition="ACTION_NAME eq 'my_store'"/>
 	var ShareLink = "http://{$Think.server.SERVER_NAME}/index.php?m=Mobile&c=Distribut&a=my_store"; 
-	var ShareImgUrl = "http://{$Think.server.SERVER_NAME}{$tpshop_config['shop_info_store_logo']}"; 
+	var ShareImgUrl = "http://{$Think.server.SERVER_NAME}{$wshop_config['shop_info_store_logo']}";
 	var ShareTitle = "{$share_title}"; 
 	var ShareDesc = "http://{$Think.server.SERVER_NAME}{:U('Mobile/Distribut/my_store')}"; 
 <else />
 	var ShareLink = "http://{$_SERVER[HTTP_HOST]}/index.php?m=Mobile&c=Index&a=index"; //默认分享链接
-	var ShareImgUrl = "http://{$Think.server.SERVER_NAME}{$tpshop_config['shop_info_store_logo']}"; //分享图标
-	var ShareTitle = "{$tpshop_config['shop_info_store_title']}"; //分享标题
-	var ShareDesc = "{$tpshop_config['shop_info_store_desc']}"; //分享描述
+	var ShareImgUrl = "http://{$Think.server.SERVER_NAME}{$wshop_config['shop_info_store_logo']}"; //分享图标
+	var ShareTitle = "{$wshop_config['shop_info_store_title']}"; //分享标题
+	var ShareDesc = "{$wshop_config['shop_info_store_desc']}"; //分享描述
 </if>
 
 var is_distribut = getCookie('is_distribut'); // 是否分销代理

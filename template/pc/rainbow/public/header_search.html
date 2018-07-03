@@ -1,6 +1,6 @@
 <div class="ecsc-logo">
 	<a href="/" class="logo">
-        <img src="{$tpshop_config['shop_info_store_logo']|default='__PUBLIC__/static/images/logo/pc_home_logo_default.png'}" style="max-width: 240px;max-height: 80px;">
+        <img src="{$wshop_config['shop_info_store_logo']|default='__PUBLIC__/static/images/logo/pc_home_logo_default.png'}" style="max-width: 240px;max-height: 80px;">
     </a>
 </div>
 <div class="ecsc-search">
@@ -112,7 +112,7 @@
 	</form>
 	<div class="keyword">
 		<ul>
-			<foreach name="tpshop_config.hot_keywords" item="wd" key="k">
+			<foreach name="wshop_config.hot_keywords" item="wd" key="k">
 				<li>
 					<a href="{:U('Home/Goods/search',array('q'=>$wd))}" target="_blank">{$wd}</a>
 				</li>

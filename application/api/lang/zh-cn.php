@@ -1,5 +1,5 @@
 <?php
 return [
-     'hello_TPshop'  => 'mobile 你好 TPshop',
-     'I_love_you_TPshop' => 'mobile 我爱你 TPshop',
+     'hello_wshop'  => 'mobile 你好 wshop',
+     'I_love_you_wshop' => 'mobile 我爱你 wshop',
 ];

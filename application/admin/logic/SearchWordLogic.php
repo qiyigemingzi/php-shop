@@ -1,15 +1,7 @@
 <?php
 /**
- * tpshop
- * ============================================================================
- * 版权所有 2015-2027 深圳搜豹网络科技有限公司，并保留所有权利。
- * 网站地址: http://www.tp-shop.cn
- * ----------------------------------------------------------------------------
- * 这不是一个自由软件！您只能在不用于商业目的的前提下对程序代码进行修改和使用 .
- * 不允许对程序代码以任何形式任何目的的再发布。
- * ============================================================================
- * Author: IT宇宙人
- * Date: 2015-09-09
+ * @author wuhy
+ * @date 2018-07-03
  */
 
 namespace app\admin\logic;
@@ -26,6 +18,12 @@ use app\common\util\ChineseSpell;
  */
 class SearchWordLogic extends Model
 {
+    /**
+     * @return int
+     * @throws \think\exception\DbException
+     * @throws db\exception\DataNotFoundException
+     * @throws db\exception\ModelNotFoundException
+     */
     public function initGoodsSearchWord(){
         header("Content-Type:text/html;charset=utf-8");
         Db::query('TRUNCATE table '.C('database.prefix').'search_word');

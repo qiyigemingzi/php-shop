@@ -1,24 +1,24 @@
 <?php
 /**
- * tpshop
+ * wshop
  * ============================================================================
  * * 版权所有 2015-2027 深圳搜豹网络科技有限公司，并保留所有权利。
- * 网站地址: http://www.tp-shop.cn
+ * 网站地址: http://www.wujiaweb.com
  * ----------------------------------------------------------------------------
  * 这不是一个自由软件！您只能在不用于商业目的的前提下对程序代码进行修改和使用 .
  * 不允许对程序代码以任何形式任何目的的再发布。
  * 采用TP5助手函数可实现单字母函数M D U等,也可db::name方式,可双向兼容
  * ============================================================================
- * $Author: 当燃 2016-01-09
+ * @author wuhy
  */
 namespace app\api\controller;
 use Think\Db;
 class Index extends ApiGuest {
 
     public function index(){
-        $hot_goods = M('goods')->where("is_hot=1 and is_on_sale=1")->order('goods_id DESC')->limit(20)->cache(true,TPSHOP_CACHE_TIME)->select();//首页热卖商品
-        $themS = M('goods_category')->where('level=1')->order('sort_order')->limit(9)->cache(true,TPSHOP_CACHE_TIME)->select();
-        $favourite_goods = M('goods')->where("is_recommend=1 and is_on_sale=1")->order('goods_id DESC')->limit(20)->cache(true,TPSHOP_CACHE_TIME)->select();//首页推荐商品
+        $hot_goods = M('goods')->where("is_hot=1 and is_on_sale=1")->order('goods_id DESC')->limit(20)->cache(true,wshop_CACHE_TIME)->select();//首页热卖商品
+        $themS = M('goods_category')->where('level=1')->order('sort_order')->limit(9)->cache(true,wshop_CACHE_TIME)->select();
+        $favourite_goods = M('goods')->where("is_recommend=1 and is_on_sale=1")->order('goods_id DESC')->limit(20)->cache(true,wshop_CACHE_TIME)->select();//首页推荐商品
 
         //秒杀商品
         $now_time = time();  //当前时间
@@ -78,7 +78,7 @@ class Index extends ApiGuest {
     public function GetMore(){
     	$p = I('p/d',1);
         $where = ['is_recommend'=>1,'is_on_sale'=>1,'virtual_indate'=>['exp',' = 0 OR virtual_indate > '.time()]];
-    	$favourite_goods = Db::name('goods')->where($where)->order('goods_id DESC')->page($p,C('PAGESIZE'))->cache(true,TPSHOP_CACHE_TIME)->select();//首页推荐商品
+    	$favourite_goods = Db::name('goods')->where($where)->order('goods_id DESC')->page($p,C('PAGESIZE'))->cache(true,wshop_CACHE_TIME)->select();//首页推荐商品
     	$this->assign('favourite_goods',$favourite_goods);
         return $this->formatSuccess([
             'favourite_goods' => $favourite_goods

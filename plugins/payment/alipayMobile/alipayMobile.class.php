@@ -1,17 +1,4 @@
 <?php
-/**
- * tpshop 支付宝插件
- * ============================================================================
- * 版权所有 2015-2027 深圳搜豹网络科技有限公司，并保留所有权利。
- * 网站地址: http://www.tp-shop.cn
- * ----------------------------------------------------------------------------
- * 这不是一个自由软件！您只能在不用于商业目的的前提下对程序代码进行修改和使用 .
- * 不允许对程序代码以任何形式任何目的的再发布。
- * 如果商业用途务必到官方购买正版授权, 以免引起不必要的法律纠纷.
- * ============================================================================
- * Author: IT宇宙人
- * Date: 2015-09-09
- */
 
 //namespace plugins\payment\alipay;
 
@@ -47,17 +34,19 @@ class alipayMobile extends Model
         $this->alipay_config['cacert']        = getcwd().'\\cacert.pem'; //ca证书路径地址，用于curl中ssl校验 //请保证cacert.pem文件在当前文件夹目录中
         $this->alipay_config['transport']     = 'http';//访问模式,根据自己的服务器是否支持ssl访问，若支持请选择https；若不支持请选择http
         
-    }    
+    }
+
     /**
      * 生成支付代码
-     * @param   array   $order      订单信息
-     * @param   array   $config_value    支付方式信息
+     * @param   array $order 订单信息
+     * @param   array $config_value 支付方式信息
+     * @return 提交表单HTML文本
      */
     function get_code($order, $config_value)
     {         
             $shop_info = tpCache('shop_info');
             $shop_info && $store_name = $shop_info['store_name'];
-            empty($store_name) ? $store_name = "TPshop订单" : $store_name =$store_name.'订单';
+            empty($store_name) ? $store_name = "wshop订单" : $store_name =$store_name.'订单';
         
              // 接口类型
             $service = array(             
@@ -83,7 +72,7 @@ class alipayMobile extends Model
                         "out_trade_no"	=> $order['order_sn'], //商户订单号
                         "subject"       => $store_name, //订单名称，必填
                         "total_fee"	=> $order['order_amount'], //付款金额
-                        "show_url"	=> "http://www.tp-shop.cn", //收银台页面上，商品展示的超链接，必填
+                        "show_url"	=> "http://www.wujiaweb.com", //收银台页面上，商品展示的超链接，必填
                 
                     );
             //  如果是支付宝网银支付    
