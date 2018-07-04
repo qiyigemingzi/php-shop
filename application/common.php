@@ -305,7 +305,7 @@ function send_email($to,$subject='',$content=''){
 /**
  * 检测是否能够发送短信
  * @param unknown $scene
- * @return multitype:number string
+ * @return array :number string
  */
 function checkEnableSendSms($scene)
 {
@@ -335,6 +335,7 @@ function checkEnableSendSms($scene)
 /**
  * 发送短信逻辑
  * @param unknown $scene
+ * @return array|bool
  */
 function sendSms($scene, $sender, $params,$unique_id=0)
 {
@@ -917,6 +918,8 @@ function update_pay_status($order_sn,$ext=array())
  * @param $id 订单id
  * @param int $user_id
  * @return array
+ * @throws \think\Exception
+ * @throws \think\exception\PDOException
  */
 function confirm_order($id,$user_id = 0){
     $where['order_id'] = $id;
@@ -1166,4 +1169,8 @@ function getPayBody($order_id){
     $gns = implode($goodsNames, ',');
     $payBody = getSubstr($gns, 0, 18);
     return $payBody;
+}
+
+function _get_host_name(){
+    return "http://".$_SERVER['HTTP_HOST'];
 }
