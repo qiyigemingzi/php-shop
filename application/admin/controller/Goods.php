@@ -122,7 +122,7 @@ class Goods extends Base {
     }
     
     /**
-     * 获取商品分类 的帅选规格 复选框
+     * 获取商品分类 的筛选规格 复选框
      */
     public function ajaxGetSpecList(){
         $GoodsLogic = new GoodsLogic();
@@ -130,12 +130,12 @@ class Goods extends Base {
         $filter_spec = M('GoodsCategory')->where("id = ".$_REQUEST['category_id'])->getField('filter_spec');        
         $filter_spec_arr = explode(',',$filter_spec);        
         $str = $GoodsLogic->GetSpecCheckboxList($_REQUEST['type_id'],$filter_spec_arr);  
-        $str = $str ? $str : '没有可帅选的商品规格';
+        $str = $str ? $str : '没有可筛选的商品规格';
         exit($str);        
     }
  
     /**
-     * 获取商品分类 的帅选属性 复选框
+     * 获取商品分类 的筛选属性 复选框
      */
     public function ajaxGetAttrList(){
         $GoodsLogic = new GoodsLogic();
@@ -143,7 +143,7 @@ class Goods extends Base {
         $filter_attr = M('GoodsCategory')->where("id = ".$_REQUEST['category_id'])->getField('filter_attr');        
         $filter_attr_arr = explode(',',$filter_attr);        
         $str = $GoodsLogic->GetAttrCheckboxList($_REQUEST['type_id'],$filter_attr_arr);          
-        $str = $str ? $str : '没有可帅选的商品属性';
+        $str = $str ? $str : '没有可筛选的商品属性';
         exit($str);        
     }
 

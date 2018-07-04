@@ -354,7 +354,7 @@ class GoodsLogic extends Model
     }
 
     /**
-     * 获取指定规格类型下面的所有规格  但不包括规格项 供商品分类列表页帅选作用
+     * 获取指定规格类型下面的所有规格  但不包括规格项 供商品分类列表页筛选作用
      * @param type $type_id
      * @param type $checked
      * @return string
@@ -374,7 +374,7 @@ class GoodsLogic extends Model
     }
 
     /**
-     * 获取指定商品类型下面的所有属性  供商品分类列表页帅选作用
+     * 获取指定商品类型下面的所有属性  供商品分类列表页筛选作用
      * @param type $type_id
      * @param type $checked
      * @return string

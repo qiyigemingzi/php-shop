@@ -49,12 +49,12 @@ class Cx extends Taglib
         'for'        => ['attr' => 'start,end,name,comparison,step'],
         'url'        => ['attr' => 'link,vars,suffix,domain', 'close' => 0, 'expression' => true],
         'function'   => ['attr' => 'name,vars,use,call'],
-        'wshop'     => ['attr'=>'sql,key,item,result_name','close'=>1,'level'=>3], // wshop sql 万能标签
+        'tpshop'     => ['attr'=>'sql,key,item,result_name','close'=>1,'level'=>3], // tpshop sql 万能标签
         'adv'        => ['attr'=>'limit,order,where,item','close'=>1],        
     ];
 
     
-	public function tagwshop($tag, $content)
+	public function tagTpshop($tag, $content)
         {
             
             $sql = $tag['sql']; // sql 语句     
@@ -73,7 +73,7 @@ class Cx extends Taglib
             $key  =  !empty($tag['key']) ? $tag['key'] : 'key';// 返回的变量key
             $item  =  !empty($tag['item']) ? $tag['item'] : 'item';// 返回的变量item	
             $result_name  =  !empty($tag['result_name']) ? $tag['result_name'] : 'result_name';// 返回的变量key			
-            $t  =  !empty($tag['t']) ? $tag['t'] : wshop_CACHE_TIME;// 缓存时间
+            $t  =  !empty($tag['t']) ? $tag['t'] : TPSHOP_CACHE_TIME;// 缓存时间
             //$Model = new \Think\Model();
             //$name = 'sql_result_'.$item.rand(10000000,99999999); // 数据库结果集返回命名
             $name = 'sql_result_'.$item;//.rand(10000000,99999999); // 数据库结果集返回命名
@@ -109,8 +109,8 @@ class Cx extends Taglib
            
         $str = '<?php ';
         $str .= '$pid ='.$pid.';';
-        $str .= '$ad_position = M("ad_position")->cache(true,wshop_CACHE_TIME)->column("position_id,position_name,ad_width,ad_height","position_id");';
-        $str .= '$result = M("ad")->where("pid=$pid  and enabled = 1 and start_time < '.strtotime(date('Y-m-d H:00:00')).' and end_time > '.strtotime(date('Y-m-d H:00:00')).' ")->order("orderby desc")->cache(true,wshop_CACHE_TIME)->limit("'.$limit.'")->select();';
+        $str .= '$ad_position = M("ad_position")->cache(true,TPSHOP_CACHE_TIME)->column("position_id,position_name,ad_width,ad_height","position_id");';
+        $str .= '$result = M("ad")->where("pid=$pid  and enabled = 1 and start_time < '.strtotime(date('Y-m-d H:00:00')).' and end_time > '.strtotime(date('Y-m-d H:00:00')).' ")->order("orderby desc")->cache(true,TPSHOP_CACHE_TIME)->limit("'.$limit.'")->select();';
         $str .= '
 if(is_array($ad_position) && !in_array($pid,array_keys($ad_position)) && $pid)
 {

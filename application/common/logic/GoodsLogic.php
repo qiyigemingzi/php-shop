@@ -17,7 +17,7 @@ class GoodsLogic extends Model
      * @param $filter_param
      * @param $action
      * @return array|mixed 这里状态一般都为1 result 不是返回数据 就是空
-     * 获取 商品列表页帅选品牌
+     * 获取 商品列表页筛选品牌
      */
     public function get_filter_brand($goods_id_arr, $filter_param, $action)
     {
@@ -31,7 +31,7 @@ class GoodsLogic extends Model
         $list_brand = M('brand')->where('id','in',$brand_id_arr)->limit('30')->select();
 
         foreach ($list_brand as $k => $v) {
-            // 帅选参数
+            // 筛选参数
             $filter_param['brand_id'] = $v['id'];
             $list_brand[$k]['href'] = urldecode(U("Goods/$action", $filter_param, ''));
         }
@@ -44,7 +44,7 @@ class GoodsLogic extends Model
      * @param $action
      * @param int $mode  0  返回数组形式  1 直接返回result
      * @return array 这里状态一般都为1 result 不是返回数据 就是空
-     * 获取 商品列表页帅选规格
+     * 获取 商品列表页筛选规格
      */
     public function get_filter_spec($goods_id_arr, $filter_param, $action, $mode = 0)
     {
@@ -71,7 +71,7 @@ class GoodsLogic extends Model
             $list_spec[$spec_item[$v]['spec_id']]['name'] = $spec[$spec_item[$v]['spec_id']];
             //$list_spec[$spec_item[$v]['spec_id']]['item'][$v] = $spec_item[$v]['item'];
 
-            // 帅选参数
+            // 筛选参数
             if (!empty($old_spec))
                 $filter_param['spec'] = $old_spec . '@' . $spec_item[$v]['spec_id'] . '_' . $v;
             else
@@ -88,7 +88,7 @@ class GoodsLogic extends Model
      * @param $action
      * @param int $mode 0  返回数组形式  1 直接返回result
      * @return array
-     * 获取商品列表页帅选属性
+     * 获取商品列表页筛选属性
      */
     public function get_filter_attr($goods_id_arr = array(), $filter_param, $action, $mode = 0)
     {
@@ -104,7 +104,7 @@ class GoodsLogic extends Model
         $list_attr = $attr_value_arr = array();
         $old_attr = $filter_param['attr'];
         foreach ($goods_attr as $k => $v) {
-            // 存在的帅选不再显示
+            // 存在的筛选不再显示
             if (strpos($old_attr, $v['attr_id'] . '_') === 0 || strpos($old_attr, '@' . $v['attr_id'] . '_'))
                 continue;
             if ($goods_attribute[$v['attr_id']]['attr_index'] == 0)
@@ -118,7 +118,7 @@ class GoodsLogic extends Model
             $list_attr[$v['attr_id']]['attr_id'] = $v['attr_id'];
             $list_attr[$v['attr_id']]['attr_name'] = $goods_attribute[$v['attr_id']]['attr_name'];
 
-            // 帅选参数
+            // 筛选参数
             if (!empty($old_attr))
                 $filter_param['attr'] = $old_attr . '@' . $v['attr_id'] . '_' . $v['attr_value'];
             else
@@ -228,7 +228,7 @@ class GoodsLogic extends Model
 
     /**
      * 筛选的价格期间
-     * @param $goods_id_arr|帅选的分类id
+     * @param $goods_id_arr|筛选的分类id
      * @param $filter_param
      * @param $action
      * @param int $c 分几段 默认分5 段
@@ -378,8 +378,8 @@ class GoodsLogic extends Model
     }
 
     /**
-     * @param  $brand_id|帅选品牌id
-     * @param  $price|帅选价格
+     * @param  $brand_id|筛选品牌id
+     * @param  $price|筛选价格
      * @return array|mixed
      */
     function getGoodsIdByBrandPrice($brand_id, $price)
