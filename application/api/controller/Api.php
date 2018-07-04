@@ -92,10 +92,10 @@ class Api extends Controller
         // 请求方式检测
         $method = strtolower($request->method());
         $this->method = $method;
-        //这里可以加入header，防止前端ajax跨域
-        if (false === stripos($this->restMethodList, $method)) {
-            return self::returnMsg(405,"Method Not Allowed",[],["access-control-request-method" => $this->restMethodList]);
-        }
+//        //这里可以加入header，防止前端ajax跨域
+//        if (false === stripos($this->restMethodList, $method)) {
+//            return $this->formatError(405,"Method Not Allowed",[],["access-control-request-method" => $this->restMethodList]);
+//        }
     }
 
     /**

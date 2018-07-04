@@ -24,7 +24,6 @@ trait Send
     }
     /**
      * 失败响应
-     * @param int $error
      * @param string $message
      * @param int $code
      * @param array $data
@@ -32,9 +31,9 @@ trait Send
      * @param array $options
      * @return Response|\think\response\Json|\think\response\Jsonp|\think\response\Xml
      */
-    public function formatError($error = 400, $message = 'error', $code = 400, $data = [], $headers = [], $options = [])
+    public function formatError($code = 400, $message = 'error', $data = [], $headers = [], $options = [])
     {
-        $responseData['error'] = (int)$error;
+        $responseData['code'] = (int)$code;
         $responseData['message'] = (string)$message;
         if (!empty($data)) $responseData['data'] = $data;
         $responseData = array_merge($responseData, $options);
