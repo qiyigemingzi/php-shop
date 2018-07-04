@@ -257,9 +257,11 @@ class Goods extends Base {
     /**
      * 添加修改商品
      * @return mixed
+     * @throws \think\Exception
      * @throws \think\db\exception\DataNotFoundException
      * @throws \think\db\exception\ModelNotFoundException
      * @throws \think\exception\DbException
+     * @throws \think\exception\PDOException
      */
     public function addEditGoods()
     {

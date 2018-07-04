@@ -5,6 +5,7 @@
 namespace app\api\controller;
 use app\common\logic\GoodsLogic;
 use app\common\model\Ad;
+use app\common\model\Brand;
 use app\common\model\Goods as GoodsModel;
 use app\common\model\GoodsCategory;
 
@@ -95,11 +96,11 @@ class Goods extends ApiGuest {
     }
 
     /**
-     * 获取商品分类
-     * @throws \think\db\exception\DataNotFoundException
-     * @throws \think\db\exception\ModelNotFoundException
-     * @throws \think\exception\DbException
-     */
+ * 获取商品分类
+ * @throws \think\db\exception\DataNotFoundException
+ * @throws \think\db\exception\ModelNotFoundException
+ * @throws \think\exception\DbException
+ */
     public function category(){
         $category = (new GoodsCategory)->where(['parent_id' => 1,'is_show' => 1])->select();
 
@@ -107,6 +108,24 @@ class Goods extends ApiGuest {
         array_walk($category, function ($m, $k) use (&$result) {
             $data = $m;
             $data['image'] = _get_host_name() . $m->image;
+            $result[] = $data;
+        });
+        return $this->formatSuccess($result);
+    }
+
+    /**
+     * 获取商品品牌
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
+    public function brand(){
+        $brand = (new Brand())->where(['parent_cat_id' => 1])->select();
+
+        $result = [];
+        array_walk($brand, function ($m, $k) use (&$result) {
+            $data = $m;
+            $data['logo'] = _get_host_name() . $m->logo;
             $result[] = $data;
         });
         return $this->formatSuccess($result);

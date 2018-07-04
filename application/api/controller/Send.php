@@ -84,9 +84,9 @@ trait Send
     public function response($responseData, $code, $headers)
     {
         if (!isset($this->type) || empty($this->type)) $this->setType();
-        $header['Access-Control-Allow-Origin']  = '*';
-        $header['Access-Control-Allow-Headers'] = 'X-Requested-With,Content-Type';
-        $header['Access-Control-Allow-Methods'] = 'GET,POST,PATCH,PUT,DELETE,OPTIONS';
+        $headers['Access-Control-Allow-Origin']  = '*';
+        $headers['Access-Control-Allow-Headers'] = 'X-Requested-With,Content-Type';
+        $headers['Access-Control-Allow-Methods'] = 'GET,POST,PATCH,PUT,DELETE,OPTIONS';
         return Response::create($responseData, $this->type, $code, $headers);
     }
 
