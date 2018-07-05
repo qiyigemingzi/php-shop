@@ -3,6 +3,7 @@
  * 向客户端发送相应基类
  */
 namespace app\api\controller;
+use think\Config;
 use think\Response;
 use think\response\Redirect;
 trait Send
@@ -33,9 +34,10 @@ trait Send
      */
     public function formatError($code = 400, $message = 'error', $data = [], $headers = [], $options = [])
     {
+        $massages = Config::get('massage');
         $responseData['code'] = (int)$code;
-        $responseData['message'] = (string)$message;
-        if (!empty($data)) $responseData['data'] = $data;
+        $responseData['message'] = isset($massages[$code]) ? $massages[$code] : (string)$message;
+        $responseData['data'] = $data;
         $responseData = array_merge($responseData, $options);
         return $this->response($responseData, $code, $headers);
     }

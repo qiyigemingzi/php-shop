@@ -194,9 +194,10 @@ class GoodsLogic extends Model
             $filter_spec2 = \think\Db::query($sql);
             foreach ($filter_spec2 as $key => $val) {
                 $filter_spec[$val['name']][] = array(
+                    'name' => $val['name'],
                     'item_id' => $val['id'],
                     'item' => $val['item'],
-                    'src' => $specImage[$val['id']],
+                    'src' => $specImage[$val['id']] ? _get_host_name() . $specImage[$val['id']] : [],
                 );
             }
         }
@@ -619,8 +620,10 @@ class GoodsLogic extends Model
 
     /**
      * 用户浏览记录
-     * @author lxl
+     * @author wuhy
      * @time  17-4-20
+     * @param $user_id
+     * @param $goods
      */
     public function add_visit_log($user_id,$goods){
         $record = M('goods_visit')->where(array('user_id'=>$user_id,'goods_id'=>$goods['goods_id']))->find();

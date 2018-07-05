@@ -2,14 +2,21 @@
 /**
  * @author wuhy
  */
+
 namespace app\api\controller;
+
 use app\common\logic\GoodsLogic;
 use app\common\model\Ad;
 use app\common\model\Brand;
 use app\common\model\Goods as GoodsModel;
+use app\common\model\GoodsAttr;
+use app\common\model\GoodsAttribute;
 use app\common\model\GoodsCategory;
+use app\common\model\GoodsCollect;
+use app\common\model\Users;
 
-class Goods extends ApiGuest {
+class Goods extends ApiGuest
+{
 
     /**
      * @return \think\Response|\think\response\Json|\think\response\Jsonp|\think\response\Redirect|\think\response\Xml
@@ -17,7 +24,8 @@ class Goods extends ApiGuest {
      * @throws \think\db\exception\ModelNotFoundException
      * @throws \think\exception\DbException
      */
-    public function advertise(){
+    public function advertise()
+    {
         $advertise = (new Ad)->where(['pid' => 9])->limit(5)->select();
         $result = [];
         array_walk($advertise, function ($m, $k) use (&$result) {
@@ -34,75 +42,77 @@ class Goods extends ApiGuest {
      * @return \think\Response|\think\response\Json|\think\response\Jsonp|\think\response\Redirect|\think\response\Xml
      * @throws \think\exception\DbException
      */
-    public function lists(){
+    public function lists()
+    {
         $filter_param = array(); // 筛选数组
-        $page = I('page/d',1);
-        $pageSize = I('page_size/d',5);
+        $page = I('page/d', 1);
+        $pageSize = I('page_size/d', 5);
 
-        $id = I('get.id/d',0); // 当前分类id
-        $brand_id = I('brand_id/d',0);
-        $sort = I('sort','goods_id'); // 排序
-        $sort_asc = I('sort_asc','asc'); // 排序
-        $price = I('price',''); // 价钱
-        $start_price = trim(I('start_price','0')); // 输入框价钱
-        $end_price = trim(I('end_price','0')); // 输入框价钱
-        if($start_price && $end_price) $price = $start_price.'-'.$end_price; // 如果输入框有价钱 则使用输入框的价钱
+        $id = I('get.id/d', 0); // 当前分类id
+        $brand_id = I('brand_id/d', 0);
+        $sort = I('sort', 'goods_id'); // 排序
+        $sort_asc = I('sort_asc', 'asc'); // 排序
+        $price = I('price', ''); // 价钱
+        $start_price = trim(I('start_price', '0')); // 输入框价钱
+        $end_price = trim(I('end_price', '0')); // 输入框价钱
+        if ($start_price && $end_price) $price = $start_price . '-' . $end_price; // 如果输入框有价钱 则使用输入框的价钱
         $filter_param['id'] = $id; //加入筛选条件中
-        $brand_id  && ($filter_param['brand_id'] = $brand_id); //加入筛选条件中
-        $price  && ($filter_param['price'] = $price); //加入筛选条件中
-        $q = urldecode(trim(I('q',''))); // 关键字搜索
-        $q  && ($_GET['q'] = $filter_param['q'] = $q); //加入筛选条件中
-        $qtype = I('qtype','');
-        $where  = array('is_on_sale' => 1);
+        $brand_id && ($filter_param['brand_id'] = $brand_id); //加入筛选条件中
+        $price && ($filter_param['price'] = $price); //加入筛选条件中
+        $q = urldecode(trim(I('q', ''))); // 关键字搜索
+        $q && ($_GET['q'] = $filter_param['q'] = $q); //加入筛选条件中
+        $qtype = I('qtype', '');
+        $where = array('is_on_sale' => 1);
         $where['exchange_integral'] = 0;//不检索积分商品
-        if($qtype){
+        if ($qtype) {
             $filter_param['qtype'] = $qtype;
             $where[$qtype] = 1;
         }
-        if($q) $where['goods_name'] = array('like','%'.$q.'%');
+        if ($q) $where['goods_name'] = array('like', '%' . $q . '%');
 
         $goodsLogic = new GoodsLogic();
-        $filter_goods_id = M('goods')->where($where)->cache(true)->getField("goods_id",true);
+        $filter_goods_id = M('goods')->where($where)->cache(true)->getField("goods_id", true);
 
         // 过滤筛选的结果集里面找商品
-        if($brand_id || $price)// 品牌或者价格
+        if ($brand_id || $price)// 品牌或者价格
         {
-            $goods_id_1 = $goodsLogic->getGoodsIdByBrandPrice($brand_id,$price); // 根据 品牌 或者 价格范围 查找所有商品id
-            $filter_goods_id = array_intersect($filter_goods_id,$goods_id_1); // 获取多个筛选条件的结果 的交集
+            $goods_id_1 = $goodsLogic->getGoodsIdByBrandPrice($brand_id, $price); // 根据 品牌 或者 价格范围 查找所有商品id
+            $filter_goods_id = array_intersect($filter_goods_id, $goods_id_1); // 获取多个筛选条件的结果 的交集
         }
 
         //筛选网站自营,入驻商家,货到付款,仅看有货,促销商品
         $sel = I('sel');
-        if($sel)
-        {
+        if ($sel) {
             $goods_id_4 = $goodsLogic->getFilterSelected($sel);
-            $filter_goods_id = array_intersect($filter_goods_id,$goods_id_4);
+            $filter_goods_id = array_intersect($filter_goods_id, $goods_id_4);
         }
 
         $count = count($filter_goods_id);
         $pages = ceil($count / $pageSize);
-        $goods_list= [];
-        if($count > 0) {
-            $goods_list = (new GoodsModel)->where("goods_id","in", implode(',', $filter_goods_id))
-                ->order([$sort=>$sort_asc])->paginate($pageSize,false,['page' => $page])->each(function($item){
+        $goods_list = [];
+        if ($count > 0) {
+            $goods_list = (new GoodsModel)->where("goods_id", "in", implode(',', $filter_goods_id))
+                ->order([$sort => $sort_asc])->paginate($pageSize, false, ['page' => $page])->each(function ($item) {
                     $item->original_img = _get_host_name() . $item->original_img;
                 })->toArray();//->limit($offset.','.$pageSize)
         }
 
         return $this->formatSuccess([
             'pages' => $pages,
+            'total_count' => $count,
             'goods_list' => $goods_list['data'],
         ]);
     }
 
     /**
- * 获取商品分类
- * @throws \think\db\exception\DataNotFoundException
- * @throws \think\db\exception\ModelNotFoundException
- * @throws \think\exception\DbException
- */
-    public function category(){
-        $category = (new GoodsCategory)->where(['parent_id' => 1,'is_show' => 1])->select();
+     * 获取商品分类
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
+    public function category()
+    {
+        $category = (new GoodsCategory)->where(['parent_id' => 1, 'is_show' => 1])->select();
 
         $result = [];
         array_walk($category, function ($m, $k) use (&$result) {
@@ -119,7 +129,8 @@ class Goods extends ApiGuest {
      * @throws \think\db\exception\ModelNotFoundException
      * @throws \think\exception\DbException
      */
-    public function brand(){
+    public function brand()
+    {
         $brand = (new Brand())->where(['parent_cat_id' => 1])->select();
 
         $result = [];
@@ -129,6 +140,76 @@ class Goods extends ApiGuest {
             $result[] = $data;
         });
         return $this->formatSuccess($result);
+    }
+
+    /**
+     * 商品详情
+     * @return mixed
+     * @throws \think\Exception
+     * @throws \think\exception\DbException
+     */
+    public function info()
+    {
+        $goodsLogic = new GoodsLogic();
+        $goods_id = I("get.id/d");
+        $openid = I("get.openid/d");
+
+        $goodsModel = new GoodsModel();
+        $goods = $goodsModel::get($goods_id);
+        if (empty($goods) || ($goods['is_on_sale'] == 0) || ($goods['is_virtual'] == 1 && $goods['virtual_indate'] <= time())) {
+            return $this->formatError(20000);
+        }
+        $user = Users::get(['openid' => $openid]);
+        if ($user) {
+            $goodsLogic->add_visit_log($user->user_id, $goods);
+        }
+
+        if ($goods['brand_id']) {
+            $brand = M('brand')->where("id", $goods['brand_id'])->find();
+            $goods['brand_name'] = $brand['name'];
+        }
+
+        // 商品 图册
+        $goods_images_list = M('GoodsImages')->where("goods_id", $goods_id)->select();
+        $goods_images_list_result = [];
+        array_walk($goods_images_list, function ($m, $k) use (&$goods_images_list_result) {
+            $data = $m;
+            $data['image_url'] = _get_host_name() . $m['image_url'];
+            $goods_images_list_result[] = $data;
+        });
+
+        // 查询商品属性表
+        $goods_attr_list = (new GoodsAttr())->alias('gt')
+            ->join('GoodsAttribute ga', 'gt.attr_id = ga.attr_id')
+            ->where("goods_id", $goods_id)->field('gt.*,ga.attr_name')->limit(1)->select();
+
+
+        //规格参数
+        $filter_spec = $goodsLogic->get_spec($goods_id);
+
+        // 规格 对应 价格 库存表
+        $spec_goods_price = M('spec_goods_price')->where("goods_id", $goods_id)->getField("key,price,store_count,item_id");
+        $commentStatistics = $goodsLogic->commentStatistics($goods_id);// 获取某个商品的评论统计
+        $goods['sale_num'] = M('order_goods')->where(['goods_id' => $goods_id, 'is_send' => 1])->count();
+
+        //当前用户收藏
+        $is_collect = 0;
+        if ($user && (new GoodsCollect())->where(array("goods_id" => $goods_id, "user_id" => $user->user_id))->count()) {
+            $is_collect = 1;
+        }
+
+        $goods_collect_count = M('goods_collect')->where(array("goods_id" => $goods_id))->count(); //商品收藏数
+        $goods->original_img = _get_host_name() . $goods->original_img;
+        return $this->formatSuccess([
+            'spec_goods_price' => $spec_goods_price,// 规格 对应 价格 库存表
+            'is_collect' => $is_collect,
+            'commentStatistics' => $commentStatistics,//评论概览
+            'goods_attr_list' => $goods_attr_list,//属性列表
+            'filter_spec' => array_values($filter_spec),//规格参数
+            'goods_images_list' => $goods_images_list_result,//商品缩略图
+            'goods' => $goods,//商品
+            'goods_collect_count' => $goods_collect_count,//商品收藏人数
+        ]);
     }
 
 }
