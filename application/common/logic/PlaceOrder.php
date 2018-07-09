@@ -5,7 +5,7 @@ use app\common\model\CouponList;
 use app\common\model\Order;
 use app\common\model\TeamActivity;
 use app\common\model\Users;
-use app\common\util\wshopException;
+use app\common\util\WShopException;
 use think\Cache;
 use think\Hook;
 use think\Model;
@@ -127,7 +127,7 @@ class PlaceOrder
 
     /**
      * 提交订单前检查
-     * @throws wshopException
+     * @throws WShopException
      */
     public function check()
     {
@@ -136,16 +136,16 @@ class PlaceOrder
         if ($pay_points || $user_money) {
             $user = $this->pay->getUser();
             if ($user['is_lock'] == 1) {
-                throw new wshopException('提交订单', 0, ['status'=>-5,'msg'=>"账号异常已被锁定，不能使用余额支付！",'result'=>'']);
+                throw new WShopException('提交订单', 0, ['status'=>-5,'msg'=>"账号异常已被锁定，不能使用余额支付！",'result'=>'']);
             }
             if (empty($user['paypwd'])) {
-                throw new wshopException('提交订单', 0, ['status'=>-6,'msg'=>"请先设置支付密码",'result'=>'']);
+                throw new WShopException('提交订单', 0, ['status'=>-6,'msg'=>"请先设置支付密码",'result'=>'']);
             }
             if (empty($this->payPsw)) {
-                throw new wshopException('提交订单', 0, ['status'=>-7,'msg'=>"请输入支付密码",'result'=>'']);
+                throw new WShopException('提交订单', 0, ['status'=>-7,'msg'=>"请输入支付密码",'result'=>'']);
             }
              if ($this->payPsw !== $user['paypwd'] && encrypt($this->payPsw) !== $user['paypwd']) {
-                throw new wshopException('提交订单', 0, ['status'=>-8,'msg'=>'支付密码错误','result'=>'']);
+                throw new WShopException('提交订单', 0, ['status'=>-8,'msg'=>'支付密码错误','result'=>'']);
             }
         }
 
@@ -154,7 +154,7 @@ class PlaceOrder
     {
         $queue = Cache::get('queue');
         if($queue >= 100){
-            throw new wshopException('提交订单', 0, ['status' => -99, 'msg' => "当前人数过多请耐心排队!" . $queue, 'result' => '']);
+            throw new WShopException('提交订单', 0, ['status' => -99, 'msg' => "当前人数过多请耐心排队!" . $queue, 'result' => '']);
         }
         Cache::inc('queue');
     }
@@ -169,7 +169,7 @@ class PlaceOrder
 
     /**
      * 插入订单表
-     * @throws wshopException
+     * @throws WShopException
      */
     private function addOrder()
     {
@@ -226,7 +226,7 @@ class PlaceOrder
         $this->order->data($orderData, true);
         $orderSaveResult = $this->order->save();
         if ($orderSaveResult === false) {
-            throw new wshopException("订单入库", 0, ['status' => -8, 'msg' => '添加订单失败', 'result' => '']);
+            throw new WShopException("订单入库", 0, ['status' => -8, 'msg' => '添加订单失败', 'result' => '']);
         }
     }
 

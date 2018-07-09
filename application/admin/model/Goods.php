@@ -23,7 +23,7 @@ class Goods extends Model {
     {
         $item_img = I('item_img/a');
          // 商品货号
-         $goods_sn = "TP".str_pad($goods_id,7,"0",STR_PAD_LEFT);   
+         $goods_sn = "W".str_pad($goods_id,7,"0",STR_PAD_LEFT);
          $this->where("goods_id = $goods_id and goods_sn = ''")->save(array("goods_sn"=>$goods_sn)); // 根据条件更新记录
                  
          // 商品图片相册  图册

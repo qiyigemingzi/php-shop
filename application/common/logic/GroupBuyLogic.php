@@ -5,7 +5,7 @@ namespace app\common\logic;
 use app\common\model\GroupBuy;
 use app\common\model\SpecGoodsPrice;
 use app\common\model\Goods;
-use app\common\util\wshopException;
+use app\common\util\WShopException;
 use think\Model;
 use think\db;
 
@@ -151,17 +151,17 @@ class GroupBuyLogic extends Prom
      * 团购商品立即购买
      * @param $buyGoods
      * @return mixed
-     * @throws wshopException
+     * @throws WShopException
      */
     public function buyNow($buyGoods){
         //活动是否已经结束
         if($this->GroupBuy['is_end'] == 1 || empty($this->GroupBuy)){
-            throw new wshopException('团购商品立即购买',0,['status' => 0, 'msg' => '团购活动已结束', 'result' => '']);
+            throw new WShopException('团购商品立即购买',0,['status' => 0, 'msg' => '团购活动已结束', 'result' => '']);
         }
         if($this->checkActivityIsAble()){
             $groupBuyPurchase = $this->GroupBuy['goods_num'] - $this->GroupBuy['buy_num'];//团购剩余库存
             if($buyGoods['goods_num'] > $groupBuyPurchase){
-                throw new wshopException('团购商品立即购买',0,['status' => 0, 'msg' => '商品库存不足，剩余'.$groupBuyPurchase, 'result' => '']);
+                throw new WShopException('团购商品立即购买',0,['status' => 0, 'msg' => '商品库存不足，剩余'.$groupBuyPurchase, 'result' => '']);
             }
             $buyGoods['member_goods_price'] = $this->GroupBuy['price'];
             $buyGoods['prom_type'] = 2;

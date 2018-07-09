@@ -810,13 +810,14 @@ class Goods extends Base {
         $GoodsLogic = new GoodsLogic();
         //$_GET['spec_type'] =  13;
         $specList = M('Spec')->where("type_id = ".I('get.spec_type/d'))->order('`order` desc')->select();
-        foreach($specList as $k => $v)        
+        foreach($specList as $k => $v)
             $specList[$k]['spec_item'] = M('SpecItem')->where("spec_id = ".$v['id'])->order('id')->getField('id,item'); // 获取规格项                
-        
+
         $items_id = M('SpecGoodsPrice')->where('goods_id = '.$goods_id)->getField("GROUP_CONCAT(`key` SEPARATOR '_') AS items_id");
-        $items_ids = explode('_', $items_id);       
-        
-        // 获取商品规格图片                
+
+        $items_ids = explode('_', $items_id);
+
+        // 获取商品规格图片
         if($goods_id)
         {
            $specImageList = M('SpecImage')->where("goods_id = $goods_id")->getField('spec_image_id,src');                 

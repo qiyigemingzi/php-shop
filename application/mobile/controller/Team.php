@@ -14,7 +14,7 @@ use app\common\model\Order;
 use app\common\model\OrderGoods;
 use app\common\model\TeamActivity;
 use app\common\model\TeamFound;
-use app\common\util\wshopException;
+use app\common\util\WShopException;
 use think\Db;
 use think\Page;
 
@@ -242,7 +242,7 @@ class Team extends MobileBase
             $order = $placeOrder->getOrder();
             $team->log($order);
             $this->ajaxReturn(['status' => 1, 'msg' => '提交拼团订单成功', 'result' => ['order_id' => $order['order_id']]]);
-        }catch (wshopException $t){
+        }catch (WShopException $t){
             $error = $t->getErrorArr();
             $this->ajaxReturn($error);
         }
@@ -366,7 +366,7 @@ class Team extends MobileBase
                 ];
                 $this->ajaxReturn(['status' => 1, 'msg' => '计算成功', 'result' => $result]);
             }
-        }catch (wshopException $t){
+        }catch (WShopException $t){
             $error = $t->getErrorArr();
             $this->ajaxReturn($error);
         }

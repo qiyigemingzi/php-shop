@@ -15,7 +15,7 @@ use think\Exception;
  * Class File
  * @package Common\Util
  */
-class wshopException extends Exception
+class WShopException extends Exception
 {
      private $errorArr = [];
     //重定义构造器使第一个参数message变为必须被指定的属性

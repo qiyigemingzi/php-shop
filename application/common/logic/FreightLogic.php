@@ -7,7 +7,7 @@ use app\common\model\FreightRegion;
 use app\common\model\FreightTemplate;
 use app\common\model\Goods;
 use app\common\model\Store;
-use app\common\util\wshopException;
+use app\common\util\WShopException;
 use think\Model;
 use think\Db;
 /**

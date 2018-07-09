@@ -13,7 +13,7 @@ use app\common\model\TeamFollow;
 use app\common\model\TeamFound;
 use app\common\model\UserAddress;
 use app\common\model\Users;
-use app\common\util\wshopException;
+use app\common\util\WShopException;
 use think\Db;
 
 /**
@@ -42,7 +42,7 @@ class TeamOrder
      * @throws \think\db\exception\DataNotFoundException
      * @throws \think\db\exception\ModelNotFoundException
      * @throws \think\exception\DbException
-     * @throws wshopException
+     * @throws WShopException
      */
     public function __construct($user_id, $order_id)
     {
@@ -50,17 +50,17 @@ class TeamOrder
         $this->user_id = $user_id;
         $this->order = Order::get(['order_id' => $order_id, 'prom_type' => 6, 'user_id' => $user_id]);
         if (empty($this->order)) {
-            throw new wshopException('拼团订单', 0, ['status' => 0, 'msg' => '该订单已关闭或者不存在','code' => '808', 'result' => '']);
+            throw new WShopException('拼团订单', 0, ['status' => 0, 'msg' => '该订单已关闭或者不存在','code' => '808', 'result' => '']);
         }
         $OrderGoods = new OrderGoods();
         $this->orderGoods = $OrderGoods->where(['order_id' => $order_id, 'prom_type' => 6])->find();
         if (empty($this->orderGoods)) {
-            throw new wshopException('拼团订单', 0, ['status' => 0, 'msg' => '该订单失效或不存在', 'code' => '808','result' => '']);
+            throw new WShopException('拼团订单', 0, ['status' => 0, 'msg' => '该订单失效或不存在', 'code' => '808','result' => '']);
         }
         $TeamActivity = new TeamActivity();
         $this->teamActivity = $TeamActivity->where(['team_id'=> $this->orderGoods['prom_id']])->find();
         if(empty($this->teamActivity)){
-            throw new wshopException('拼团订单', 0, ['status' => 0, 'msg' => '订单失效或不存在', 'code' => '808','result' => '']);
+            throw new WShopException('拼团订单', 0, ['status' => 0, 'msg' => '订单失效或不存在', 'code' => '808','result' => '']);
         }
         $User = new Users();
         $this->user = $User->where(['user_id' => $user_id])->find();
@@ -84,18 +84,18 @@ class TeamOrder
      * @throws \think\db\exception\DataNotFoundException
      * @throws \think\db\exception\ModelNotFoundException
      * @throws \think\exception\DbException
-     * @throws wshopException
+     * @throws WShopException
      */
     public function useUserAddressById($address_id)
     {
         if(empty($this->order['province'])){
             if(empty($address_id)){
-                throw new wshopException('拼团订单', 0, ['status' => 0, 'msg' => '请选择地址', 'code' => 809, 'result' => '']);
+                throw new WShopException('拼团订单', 0, ['status' => 0, 'msg' => '请选择地址', 'code' => 809, 'result' => '']);
             }else{
                 $UserAddress = new UserAddress();
                 $userAddress = $UserAddress->where(['address_id'=>$address_id,'user_id'=>$this->user_id])->find();
                 if(empty($userAddress)){
-                    throw new wshopException('拼团订单', 0, ['status' => 0, 'msg' => '请选择地址', 'result' => []]);
+                    throw new WShopException('拼团订单', 0, ['status' => 0, 'msg' => '请选择地址', 'result' => []]);
                 }
                 $this->order['consignee'] = $userAddress['consignee'];
                 $this->order['country'] = $userAddress['country'];
@@ -117,29 +117,29 @@ class TeamOrder
     /**
      *  更改购买数量
      * @param $goods_num
-     * @throws wshopException
+     * @throws WShopException
      */
     public function changNum($goods_num)
     {
         if($this->teamActivity['buy_limit'] != 0 && $goods_num > $this->teamActivity['buy_limit']){
-            throw new wshopException('拼团订单', 0, ['status' => 0, 'msg' => '购买数已超过该活动单次购买限制数('.$this->teamActivity['buy_limit'].'个)', 'result' => []]);
+            throw new WShopException('拼团订单', 0, ['status' => 0, 'msg' => '购买数已超过该活动单次购买限制数('.$this->teamActivity['buy_limit'].'个)', 'result' => []]);
         }
         if($goods_num > $this->orderGoods['goods_num']){
             $add_goods_num = $goods_num - $this->orderGoods['goods_num'];
             if($this->spec_goods_price){
                 if($add_goods_num > $this->spec_goods_price['store_count']){
-                    throw new wshopException('拼团订单', 0, ['status' => 0, 'msg' => '商品库存不足，剩余'.$this->spec_goods_price['store_count'], 'result' => []]);
+                    throw new WShopException('拼团订单', 0, ['status' => 0, 'msg' => '商品库存不足，剩余'.$this->spec_goods_price['store_count'], 'result' => []]);
                 }
             }else{
                 if($add_goods_num > $this->goods['store_count']){
-                    throw new wshopException('拼团订单', 0, ['status' => 0, 'msg' => '商品库存不足，剩余'.$this->goods['store_count'], 'result' => []]);
+                    throw new WShopException('拼团订单', 0, ['status' => 0, 'msg' => '商品库存不足，剩余'.$this->goods['store_count'], 'result' => []]);
                 }
             }
         }
         //已经使用优惠券/积分/余额支付的订单不能更改数量
         if($this->orderGoods['goods_num'] != $goods_num){
             if($this->order['user_money'] > 0 || $this->order['coupon_price'] > 0 || $this->order['integral'] > 0){
-                throw new wshopException('拼团订单', 0, ['status' => 0, 'msg' => '使用优惠券/积分/余额支付的订单不能更改数量', 'result' => []]);
+                throw new WShopException('拼团订单', 0, ['status' => 0, 'msg' => '使用优惠券/积分/余额支付的订单不能更改数量', 'result' => []]);
             }
             $this->orderGoods['goods_num'] = $goods_num;
             $this->order['goods_price'] = round($this->orderGoods['member_goods_price'] * $goods_num, 2);
@@ -151,7 +151,7 @@ class TeamOrder
 
     /**
      * @param $user_money
-     * @throws wshopException
+     * @throws WShopException
      */
     public function useUserMoney($user_money)
     {
@@ -160,7 +160,7 @@ class TeamOrder
 
     /**
      * @param $pay_points
-     * @throws wshopException
+     * @throws WShopException
      */
     public function usePayPoints($pay_points)
     {
@@ -169,12 +169,12 @@ class TeamOrder
 
     /**
      * @param $coupon_id
-     * @throws wshopException
+     * @throws WShopException
      */
     public function useCouponById($coupon_id){
         if($coupon_id){
             if($this->order['coupon_price'] > 0){
-                throw new wshopException('拼团订单', 0, ['status' => 0, 'msg' => '该订单已使用过优惠券不能更改优惠券', 'result' => []]);
+                throw new WShopException('拼团订单', 0, ['status' => 0, 'msg' => '该订单已使用过优惠券不能更改优惠券', 'result' => []]);
             }
             $this->pay->useCouponById($coupon_id);
         }
@@ -245,7 +245,7 @@ class TeamOrder
      * @throws \think\Exception
      * @throws \think\exception\DbException
      * @throws \think\exception\PDOException
-     * @throws wshopException
+     * @throws WShopException
      */
     public function submit()
     {
@@ -271,24 +271,24 @@ class TeamOrder
     }
 
     /**
-     * @throws wshopException
+     * @throws WShopException
      */
     public function pay()
     {
         if($this->order['pay_status'] == 1){
-            throw new wshopException('拼团订单', 0, ['status' => 0, 'msg' => '该订单已支付成功', 'code' => 810, 'result' => '']);
+            throw new WShopException('拼团订单', 0, ['status' => 0, 'msg' => '该订单已支付成功', 'code' => 810, 'result' => '']);
         }
         if(empty($this->goods) || $this->goods['is_on_sale'] == 0){
-            throw new wshopException('拼团订单', 0, ['status'=>0,'msg'=>'该商品不存在或者已下架','result'=>[]]);
+            throw new WShopException('拼团订单', 0, ['status'=>0,'msg'=>'该商品不存在或者已下架','result'=>[]]);
         }
         if($this->teamFound['team_id'] != $this->teamActivity['team_id']){
-            throw new wshopException('拼团订单', 0, ['status' => 0, 'msg' => '该拼单数据不存在或已失效', 'result' => '']);
+            throw new WShopException('拼团订单', 0, ['status' => 0, 'msg' => '该拼单数据不存在或已失效', 'result' => '']);
         }
         if($this->teamFound['join'] >= $this->teamFound['need']){
-            throw new wshopException('拼团订单', 0, ['status' => 0, 'msg' => '该单已成功结束', 'result' => '']);
+            throw new WShopException('拼团订单', 0, ['status' => 0, 'msg' => '该单已成功结束', 'result' => '']);
         }
         if(time() - $this->teamFound['found_time'] > $this->teamActivity['time_limit']){
-            throw new wshopException('拼团订单', 0, ['status' => 0, 'msg' => '该拼单已过期', 'result' => '']);
+            throw new WShopException('拼团订单', 0, ['status' => 0, 'msg' => '该拼单已过期', 'result' => '']);
         }
         $this->pay->setUserId($this->user_id);
         $this->pay->payOrder([$this->orderGoods]);

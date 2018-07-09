@@ -10,7 +10,7 @@ use app\admin\logic\KdniaoLogic;
 use app\common\logic\PlaceOrder;
 use app\common\logic\Pay;
 use app\common\model\OrderGoods;
-use app\common\util\wshopException;
+use app\common\util\WShopException;
 use think\AjaxPage;
 use think\Page;
 use think\Db;
@@ -371,7 +371,7 @@ exit("请联系wshop官网客服购买高级版支持此功能");
                 $oldPay->payOrder($oldArr);
                 $oldPay->delivery($order['district']);
                 $oldPay->orderPromotion();
-            } catch (wshopException $t) {
+            } catch (WShopException $t) {
                 $error = $t->getErrorArr();
                 $this->error($error['msg']);
             }
@@ -404,7 +404,7 @@ exit("请联系wshop官网客服购买高级版支持此功能");
                     $newPay->payGoodsList($goods);
                     $newPay->delivery($order['district']);
                     $newPay->orderPromotion();
-                } catch (wshopException $t) {
+                } catch (WShopException $t) {
                     $error = $t->getErrorArr();
                     $this->error($error['msg']);
                 }
@@ -1087,7 +1087,7 @@ exit("请联系wshop官网客服购买高级版支持此功能");
                 $pay->payGoodsList($order_goods);
                 $pay->delivery($address['district']);
                 $pay->orderPromotion();
-            } catch (wshopException $t) {
+            } catch (WShopException $t) {
                 $error = $t->getErrorArr();
                 $this->error($error['msg']);
             }
@@ -1181,7 +1181,7 @@ exit("请联系wshop官网客服购买高级版支持此功能");
                 $pay->payOrder($goodsArr);
                 $pay->delivery($order['district']);
                 $pay->orderPromotion();
-            } catch (wshopException $t) {
+            } catch (WShopException $t) {
                 $error = $t->getErrorArr();
                 $this->error($error['msg']);
             }

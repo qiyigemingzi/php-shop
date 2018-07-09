@@ -23,20 +23,28 @@ trait Send
         $this->type = (string)(!empty($type)) ? $type : $this->restDefaultType;
         return $this;
     }
+
     /**
      * 失败响应
-     * @param string $message
      * @param int $code
+     * @param string $massage
      * @param array $data
      * @param array $headers
      * @param array $options
      * @return Response|\think\response\Json|\think\response\Jsonp|\think\response\Xml
      */
-    public function formatError($code = 400, $message = 'error', $data = [], $headers = [], $options = [])
+    public function formatError($code = 400, $massage = 'error', $data = [], $headers = [], $options = [])
     {
         $massages = Config::get('massage');
+        $extmsg = $massages[$code];
+
+        if (strpos($extmsg, '%s') !== false) {
+            $massage = sprintf($extmsg, $massage);
+        } else {
+            $massage = $massage ? $massage : $extmsg;
+        }
         $responseData['code'] = (int)$code;
-        $responseData['message'] = isset($massages[$code]) ? $massages[$code] : (string)$message;
+        $responseData['message'] = $massage;
         $responseData['data'] = $data;
         $responseData = array_merge($responseData, $options);
         return $this->response($responseData, $code, $headers);
@@ -54,7 +62,7 @@ trait Send
     {
         $responseData['code'] = 200;
         $responseData['message'] = (string)$message;
-        if (!empty($data)) $responseData['data'] = $data;
+        $responseData['data'] = $data;
         $responseData = array_merge($responseData, $options);
         return $this->response($responseData, $code, $headers);
     }

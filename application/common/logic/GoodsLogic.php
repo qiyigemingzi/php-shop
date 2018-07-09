@@ -160,9 +160,10 @@ class GoodsLogic extends Model
 
     /**
      * 商品收藏
-     * @param $user_id|用户id
-     * @param $goods_id|商品id
+     * @param $user_id |用户id
+     * @param $goods_id |商品id
      * @return array
+     * @throws \think\Exception
      */
     public function collect_goods($user_id, $goods_id)
     {

@@ -8,12 +8,13 @@ namespace app\api\controller;
 use app\common\logic\GoodsLogic;
 use app\common\model\Ad;
 use app\common\model\Brand;
+use app\common\model\Comment;
 use app\common\model\Goods as GoodsModel;
 use app\common\model\GoodsAttr;
-use app\common\model\GoodsAttribute;
 use app\common\model\GoodsCategory;
 use app\common\model\GoodsCollect;
 use app\common\model\Users;
+use think\Db;
 
 class Goods extends ApiGuest
 {
@@ -152,7 +153,7 @@ class Goods extends ApiGuest
     {
         $goodsLogic = new GoodsLogic();
         $goods_id = I("get.id/d");
-        $openid = I("get.openid/d");
+        $openid = I("get.openid/s");
 
         $goodsModel = new GoodsModel();
         $goods = $goodsModel::get($goods_id);
@@ -210,6 +211,90 @@ class Goods extends ApiGuest
             'goods' => $goods,//商品
             'goods_collect_count' => $goods_collect_count,//商品收藏人数
         ]);
+    }
+
+    /**
+     * 获取商品评论
+     * @return \think\Response|\think\response\Json|\think\response\Jsonp|\think\response\Redirect|\think\response\Xml
+     * @throws \think\exception\DbException
+     */
+    public function comment()
+    {
+        $goods_id = I("goods_id/d", 0);
+        $commentType = I('commentType', 1); // 1 全部 2好评 3 中评 4差评
+
+        $sort = [1, 2, 3, 4, 5];
+
+        if(!in_array($commentType,$sort)) return $this->formatError(90000);
+
+        $page = I('page/d', 1);
+        $pageSize = I('page_size/d', 5);
+
+        $goods = GoodsModel::get($goods_id);
+        if (empty($goods)) return $this->formatError(20000);
+
+        if ($commentType == 5) {
+            $where = array(
+                'goods_id' => $goods_id, 'parent_id' => 0, 'img' => ['<>', ''],'is_show'=>1
+            );
+        } else {
+            $typeArr = array('1' => '0,1,2,3,4,5', '2' => '4,5', '3' => '3', '4' => '0,1,2');
+            $where = array('is_show'=>1,'goods_id' => $goods_id, 'parent_id' => 0, 'ceil((deliver_rank + goods_rank + service_rank) / 3)' => ['in', $typeArr[$commentType]]);
+        }
+        $count = M('Comment')->where($where)->count();
+        $pages = ceil($count / $pageSize);
+        $list = (new Comment())
+            ->alias('c')
+            ->join('__USERS__ u', 'u.user_id = c.user_id', 'LEFT')
+            ->field("c.*,u.user_id,u.head_pic")
+            ->where($where)
+            ->order("add_time desc")
+            ->limit($page->firstRow . ',' . $page->listRows)
+            ->paginate($pageSize, false, ['page' => $page]) ->each(function ($item) use ($goods_id) {
+                $images = [];
+                $item['img'] = unserialize($item['img']);
+                if($item['img'] && is_array($item['img'])){
+                    array_walk($item['img'], function ($m, $k) use (&$images) {
+                        $images[] = _get_host_name() . $m;
+                    });
+                }
+
+                $item['img'] = $images; // 晒单图片
+                $item['reply_list'] = M('Comment')->where(['is_show' => 1, 'goods_id' => $goods_id, 'parent_id' => $item['comment_id']])->order("add_time desc")->select();
+//                $item['reply_num'] = Db::name('reply')->where(['comment_id'=>$item['comment_id'],'parent_id'=>0])->count();
+                return $item;
+            })->toArray();
+
+
+        return $this->formatSuccess([
+            'goods_id' => $goods_id,//商品id
+            'comment_list' => $list['data'],// 商品评论
+            'total_count' => $count,//总条数
+            'pages' => $pages,//总页数
+        ]);
+    }
+
+    /**
+     * 用户收藏某一件商品
+     * @throws \think\exception\DbException
+     * @throws \think\Exception
+     */
+    public function collect_goods(){
+        $goodsId = I('id/d');
+        $openid = I('openid/s');
+
+        $user = Users::get(['openid' => $openid]);
+        if(!$user) return $this->formatError(10000);
+
+        $goods = GoodsModel::get($goodsId);
+        if (empty($goods)) return $this->formatError(20000);
+
+        $goodsLogic = new GoodsLogic();
+        $result = $goodsLogic->collect_goods($user->user_id,$goodsId);
+        if($result['status'] <= 0){
+            return $this->formatError(50000,$result['msg']);
+        }
+        return $this->formatSuccess();
     }
 
 }

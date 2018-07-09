@@ -5,7 +5,7 @@ namespace app\common\logic;
 use app\common\model\PromGoods;
 use app\common\model\Goods;
 use app\common\model\SpecGoodsPrice;
-use app\common\util\wshopException;
+use app\common\util\WShopException;
 use think\Model;
 use think\db;
 
@@ -174,12 +174,12 @@ class PromGoodsLogic extends Prom
      * 促销商品立即购买
      * @param $buyGoods
      * @return mixed
-     * @throws wshopException
+     * @throws WShopException
      */
     public function buyNow($buyGoods){
         if(!$this->checkActivityIsEnd() && $this->checkActivityIsAble()){
             if($buyGoods['goods_num'] > $this->promGoods['buy_limit']){
-                throw new wshopException('促销商品立即购买', 0, ['status' => 0, 'msg' => '每人限购' . $this->promGoods['buy_limit'] . '件', 'result' => '']);
+                throw new WShopException('促销商品立即购买', 0, ['status' => 0, 'msg' => '每人限购' . $this->promGoods['buy_limit'] . '件', 'result' => '']);
             }
             $buyGoods['member_goods_price'] = $this->getPromotionPrice($buyGoods['member_goods_price']);
         }
@@ -187,10 +187,10 @@ class PromGoodsLogic extends Prom
         $userPromOrderGoodsNum = $this->getUserPromOrderGoodsNum($buyGoods['user_id']); //获取用户已购商品数量
         $userBuyGoodsNum = $buyGoods['goods_num'] + $userPromOrderGoodsNum;  //已经下单+要买
         if($userBuyGoodsNum > $this->promGoods['buy_limit']){
-            throw new wshopException('促销商品立即购买', 0, ['status' => 0, 'msg' => '每人限购'.$this->promGoods['buy_limit'].'件，您已下单'.$userPromOrderGoodsNum.'件', 'result' => '']);
+            throw new WShopException('促销商品立即购买', 0, ['status' => 0, 'msg' => '每人限购'.$this->promGoods['buy_limit'].'件，您已下单'.$userPromOrderGoodsNum.'件', 'result' => '']);
         }
         if($buyGoods['goods_num'] > $residue_buy_limit){  //不算购物车的
-            throw new wshopException('促销商品立即购买', 0, ['status' => 0, 'msg' => '商品库存不足，你只能购买'.$residue_buy_limit, 'result' => '']);
+            throw new WShopException('促销商品立即购买', 0, ['status' => 0, 'msg' => '商品库存不足，你只能购买'.$residue_buy_limit, 'result' => '']);
         }
         $buyGoods['prom_type'] = 3;
         $buyGoods['prom_id'] = $this->promGoods['id'];

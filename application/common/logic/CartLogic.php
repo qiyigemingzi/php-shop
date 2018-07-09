@@ -5,7 +5,7 @@ use app\common\model\SpecGoodsPrice;
 use app\common\model\Cart;
 use app\common\model\Goods;
 use app\common\model\Users;
-use app\common\util\wshopException;
+use app\common\util\WShopException;
 use think\Model;
 use think\Db;
 /**
@@ -84,15 +84,15 @@ class CartLogic extends Model
     /**
      * 立即购买
      * @return mixed
-     * @throws wshopException
+     * @throws WShopException
      * @throws \think\exception\DbException
      */
     public function buyNow(){
         if(empty($this->goods)){
-            throw new wshopException('立即购买',0,['status'=>0,'msg'=>'购买商品不存在','result'=>'']);
+            throw new WShopException('立即购买',0,['status'=>0,'msg'=>'购买商品不存在','result'=>'']);
         }
         if(empty($this->goodsBuyNum)){
-            throw new wshopException('立即购买',0,['status'=>0,'msg'=>'购买商品数量不能为0','result'=>'']);
+            throw new WShopException('立即购买',0,['status'=>0,'msg'=>'购买商品数量不能为0','result'=>'']);
         }
         $buyGoods = [
             'user_id'=>$this->user_id,
@@ -113,7 +113,7 @@ class CartLogic extends Model
         if(empty($this->specGoodsPrice)){
             $specGoodsPriceCount = Db::name('SpecGoodsPrice')->where("goods_id", $this->goods['goods_id'])->count('item_id');
             if($specGoodsPriceCount > 0){
-                throw new wshopException('立即购买',0,['status' => 0, 'msg' => '必须传递商品规格', 'result' => '']);
+                throw new WShopException('立即购买',0,['status' => 0, 'msg' => '必须传递商品规格', 'result' => '']);
             }
             $prom_type = $this->goods['prom_type'];
             $store_count = $this->goods['store_count'];
@@ -128,7 +128,7 @@ class CartLogic extends Model
         }
 
         if($this->goodsBuyNum > $store_count){
-            throw new wshopException('立即购买',0,['status' => 0, 'msg' => '商品库存不足，剩余'.$this->goods['store_count'], 'result' => '']);
+            throw new WShopException('立即购买',0,['status' => 0, 'msg' => '商品库存不足，剩余'.$this->goods['store_count'], 'result' => '']);
         }
         $goodsPromFactory = new GoodsPromFactory();
         if ($goodsPromFactory->checkPromType($prom_type)) {
@@ -175,7 +175,7 @@ class CartLogic extends Model
         }
         $specGoodsPriceCount = Db::name('SpecGoodsPrice')->where("goods_id", $this->goods['goods_id'])->count('item_id');
         if(empty($this->specGoodsPrice) && !empty($specGoodsPriceCount)){
-            return array('status' => -1, 'msg' => '必须传递商品规格', 'result' => '');
+            return array('status' => -1, 'msg' => '缺少商品规格', 'result' => '');
         }
         //有商品规格，和没有商品规格
         if($this->specGoodsPrice){
@@ -891,13 +891,13 @@ class CartLogic extends Model
     /**
      * 检查购物车数据是否满足库存购买
      * @param $cartList
-     * @throws wshopException
+     * @throws WShopException
      */
     public function checkStockCartList($cartList)
     {
         foreach ($cartList as $cartKey => $cartVal) {
             if ($cartVal->goods_num > $cartVal->limit_num) {
-                throw new wshopException('计算订单价格', 0, ['status' => 0, 'msg' => $cartVal->goods_name . '购买数量不能大于' . $cartVal->limit_num, 'result' => ['limit_num' => $cartVal->limit_num]]);
+                throw new WShopException('计算订单价格', 0, ['status' => 0, 'msg' => $cartVal->goods_name . '购买数量不能大于' . $cartVal->limit_num, 'result' => ['limit_num' => $cartVal->limit_num]]);
             }
         }
     }

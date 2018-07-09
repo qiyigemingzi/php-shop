@@ -5,7 +5,7 @@ namespace app\common\logic;
 use app\common\model\FlashSale;
 use app\common\model\Goods;
 use app\common\model\SpecGoodsPrice;
-use app\common\util\wshopException;
+use app\common\util\WShopException;
 use think\Model;
 use think\db;
 
@@ -190,22 +190,22 @@ class FlashSaleLogic extends Prom
      * 抢购商品立即购买
      * @param $buyGoods
      * @return mixed
-     * @throws wshopException
+     * @throws WShopException
      */
     public function buyNow($buyGoods){
         if($this->checkActivityIsAble()){
             if($buyGoods['goods_num'] > $this->flashSale['buy_limit']){
-                throw new wshopException('抢购商品立即购买', 0, ['status' => 0, 'msg' => '每人限购'.$this->flashSale['buy_limit'].'件', 'result' => '']);
+                throw new WShopException('抢购商品立即购买', 0, ['status' => 0, 'msg' => '每人限购'.$this->flashSale['buy_limit'].'件', 'result' => '']);
             }
         }
         $userFlashOrderGoodsNum = $this->getUserFlashOrderGoodsNum($buyGoods['user_id']); //获取用户抢购已购商品数量
         $userBuyGoodsNum = $buyGoods['goods_num'] + $userFlashOrderGoodsNum;
         if($userBuyGoodsNum > $this->flashSale['buy_limit']){
-            throw new wshopException('抢购商品立即购买', 0, ['status' => 0, 'msg' => '每人限购'.$this->flashSale['buy_limit'].'件，您已下单'.$userFlashOrderGoodsNum.'件', 'result' => '']);
+            throw new WShopException('抢购商品立即购买', 0, ['status' => 0, 'msg' => '每人限购'.$this->flashSale['buy_limit'].'件，您已下单'.$userFlashOrderGoodsNum.'件', 'result' => '']);
         }
         $flashSalePurchase = $this->flashSale['goods_num'] - $this->flashSale['buy_num'];//抢购剩余库存
         if($buyGoods['goods_num'] > $flashSalePurchase){
-            throw new wshopException('抢购商品立即购买', 0, ['status' => 0, 'msg' => '商品库存不足，剩余'.$flashSalePurchase, 'result' => '']);
+            throw new WShopException('抢购商品立即购买', 0, ['status' => 0, 'msg' => '商品库存不足，剩余'.$flashSalePurchase, 'result' => '']);
         }
         $buyGoods['member_goods_price'] = $this->flashSale['price'];
         $buyGoods['prom_type'] = 1;

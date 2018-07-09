@@ -12,7 +12,7 @@ use app\common\logic\OrderLogic;
 use app\common\logic\PickupLogic;
 use app\common\model\SpecGoodsPrice;
 use app\common\model\Goods;
-use app\common\util\wshopException;
+use app\common\util\WShopException;
 use think\Db;
 class Cart extends Base {
 
@@ -170,7 +170,7 @@ class Cart extends Base {
             $buyGoods = [];
             try{
                 $buyGoods = $cartLogic->buyNow();
-            }catch (wshopException $t){
+            }catch (WShopException $t){
                 $error = $t->getErrorArr();
                 $this->error($error['msg']);
             }
@@ -346,7 +346,7 @@ class Cart extends Base {
                 $this->ajaxReturn(['status'=>1,'msg'=>'提交订单成功','result'=>$order['order_sn']]);
             }
             $this->ajaxReturn(['status'=>1,'msg'=>'计算成功','result'=>$pay->toArray()]);
-        } catch (wshopException $t) {
+        } catch (WShopException $t) {
             $error = $t->getErrorArr();
             $this->ajaxReturn($error);
         }
@@ -509,7 +509,7 @@ class Cart extends Base {
             $url = U('Cart/integral', ['goods_id' => $goods_id, 'item_id' => $item_id, 'goods_num' => $goods_num]);
             $result = ['status' => 1, 'msg' => '购买成功', 'result' => ['url' => $url]];
             $this->ajaxReturn($result);
-        }catch (wshopException $t){
+        }catch (WShopException $t){
             $result = $t->getErrorArr();
             $this->ajaxReturn($result);
         }
@@ -601,7 +601,7 @@ class Cart extends Base {
                 $this->ajaxReturn(['status'=>1,'msg'=>'提交订单成功','result'=>$order['order_id']]);
             }
             $this->ajaxReturn(['status' => 1, 'msg' => '计算成功', 'result' => $pay->toArray()]);
-        }catch (wshopException $t){
+        }catch (WShopException $t){
             $error = $t->getErrorArr();
             $this->ajaxReturn($error);
         }
