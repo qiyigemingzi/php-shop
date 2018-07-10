@@ -49,14 +49,12 @@ class Cart extends ApiGuest {
         $cartLogic->setUserId($this->user_id);
         $cartList = $cartLogic->getCartList();//用户购物车
         $userCartGoodsTypeNum = $cartLogic->getUserCartGoodsTypeNum();//获取用户购物车商品总数
-        $hot_goods = M('Goods')->where('is_hot=1 and is_on_sale=1')->limit(20)->cache(true,wshop_CACHE_TIME)->select();
-        $this->assign('hot_goods', $hot_goods);
-        $this->assign('userCartGoodsTypeNum', $userCartGoodsTypeNum);
-        $this->assign('cartList', $cartList);//购物车列表
+//        $hot_goods = M('Goods')->where('is_hot=1 and is_on_sale=1')->limit(20)->cache(true,wshop_CACHE_TIME)->select();
+
         return $this->formatSuccess([
-            'hot_goods' => $hot_goods,
-            'userCartGoodsTypeNum' => $userCartGoodsTypeNum,
-            'cartList' => $cartList,
+//            'hot_goods' => $hot_goods,
+            'goods_number' => $userCartGoodsTypeNum,
+            'cart_list' => $cartList,//购物车列表
         ]);
     }
 
@@ -265,7 +263,7 @@ class Cart extends ApiGuest {
      */
     public function cart4(){
         if(empty($this->user_id)){
-            $this->redirect('User/login');
+            return $this->formatError(10000);
         }
         $order_id = I('order_id/d');
         $order_sn= I('order_sn/s','');
@@ -343,11 +341,11 @@ class Cart extends ApiGuest {
      * 将商品加入购物车
      * @throws \think\exception\DbException
      */
-    function ajaxAddCart()
+    function add()
     {
-        $goods_id = I("goods_id/d"); // 商品id
-        $goods_num = I("goods_num/d");// 商品数量
-        $item_id = I("item_id/d"); // 商品规格id
+        $goods_id = I("post.goods_id/d"); // 商品id
+        $goods_num = I("post.goods_num/d");// 商品数量
+        $item_id = I("post.item_id/d"); // 商品规格id
         if(empty($goods_id)) return $this->formatError(30001);
         if(empty($goods_num)) return $this->formatError(30002);
         $cartLogic = new CartLogic();

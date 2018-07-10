@@ -186,7 +186,7 @@ class Goods extends ApiGuest
 
 
         //规格参数
-        $filter_spec = $goodsLogic->get_spec($goods_id);
+        $filter_spec = $goodsLogic->get_apiSpec($goods_id);
 
         // 规格 对应 价格 库存表
         $spec_goods_price = M('spec_goods_price')->where("goods_id", $goods_id)->getField("key,price,store_count,item_id");

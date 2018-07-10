@@ -41,7 +41,7 @@ trait Send
         if (strpos($extmsg, '%s') !== false) {
             $massage = sprintf($extmsg, $massage);
         } else {
-            $massage = $massage ? $massage : $extmsg;
+            $massage = $massage != 'error' ? $massage : $extmsg;
         }
         $responseData['code'] = (int)$code;
         $responseData['message'] = $massage;
