@@ -1,32 +1,250 @@
-<table class="table table-bordered" id="goods_spec_table1">                                
+<div id="root">
+<table class="table table-bordered" id="goods_spec_table1">
     <tr>
         <td colspan="2"><b>商品规格:</b></td>
     </tr>
-    <foreach name="specList" item="vo" key="k" >
-    <tr>
-        <td>{$vo[name]}:</td>
-        <td>                            
-            <foreach name="vo[spec_item]" item="vo2" key="k2" >                            
-                <button type="button" data-spec_id='{$vo[id]}' data-item_id='{$k2}' class="btn <?php 
-                             if(in_array($k2,$items_ids))                         
-                                    echo 'btn-success'; 
-                             else 
-                                echo 'btn-default';                          
-                             ?>" >
-                    {$vo2}
-                </button>
-                <img width="35" height="35" src="{$specImageList[$k2]|default='/public/images/add-button.jpg'}" id="item_img_{$k2}" onclick="GetUploadify3('{$k2}');"/>
-                <input type="hidden" name="item_img[{$k2}]" value="{$specImageList[$k2]}" />
-                &nbsp;&nbsp;&nbsp;            
-            </foreach>         
-        </td>
-    </tr>                                    
-    </foreach>    
-</table>
-<div id="goods_spec_table2"> <!--ajax 返回 规格对应的库存--> </div>
+    <tr v-for="(vo,k) in specList">
+        <td>{{vo.name}}:</td>
+        <td>
+            <span v-for="(vo2,k2) in vo.spec_item">
+                <input type="checkbox" @change="labelChange(vo.name,vo.name,k2)" :id="'checkbox_'+k2" >
+                <input type="button"  :data-spec_id='vo.id' :id="'input_'+k2" :data-item_id='k2' class="btn" :value="vo2" style="max-width: 100px;" />
+                <img width="35" height="35" src="{$specImageList[$k2]|default='/public/images/add-button.jpg'}" :id="'item_img_'+k2" @click="GetUploadify3(k2);"/>
+                <input type="hidden" :name="'item_img['+k2+']'" value="{$specImageList[$k2]}" />
+            </span>
 
+        </td>
+    </tr>
+    <!--<foreach name="specList" item="vo" key="k" >-->
+    <!--<tr>-->
+        <!--<td>{$vo[name]}:</td>-->
+        <!--<td>                            -->
+            <!--<foreach name="vo[spec_item]" item="vo2" key="k2" >-->
+                <!--<input type="checkbox" id="checkbox_{$k2}" onclick="inputAndButtonShow(this, '{$k2}');">-->
+                <!--<input type="button"  data-spec_id='{$vo[id]}' id="input_{$k2}" data-item_id='{$k2}' class="btn btn-default <?php-->
+                         <!--if(in_array($k2,$items_ids))-->
+                                <!--echo 'btn-success';-->
+                         <!--else-->
+                            <!--echo 'btn-default';-->
+                         <!--?>" value="{$vo2}" style="max-width: 100px;" />-->
+                <!--<img width="35" height="35" src="{$specImageList[$k2]|default='/public/images/add-button.jpg'}" id="item_img_{$k2}" onclick="GetUploadify3('{$k2}');"/>-->
+                <!--<input type="hidden" name="item_img[{$k2}]" value="{$specImageList[$k2]}" />-->
+                <!--&nbsp;&nbsp;&nbsp;            -->
+            <!--</foreach>         -->
+        <!--</td>-->
+    <!--</tr>                                    -->
+    <!--</foreach>    -->
+</table>
+<input type="hidden" id="spec-list-data" value='{$specList}' />
+<div id="goods_spec_table2"> </div>
+</div>
+<script type="text/javascript">
+    var app = new Vue({
+        el: '#root',
+        data: {
+            specList:$.parseJSON($("#spec-list-data").val()),
+            columNum: 0,
+            arrayColumn: [],
+            res: {},
+            result: [],
+            defaultItem:['价格','库存','SKU',]
+        },
+        mounted: function () {
+        } ,
+        methods: {
+            labelChange(v, title,index) {
+                var _this = $("#checkbox_"+index);
+                var _obj = $("#input_"+index);
+                var width = this.textWidth(_obj.val())*2.5;
+                if(_this[0].checked){
+                    _obj.prop('type','text');
+                    _obj.width(width);
+                }else{
+                    _obj.prop('type','button');
+                }
+                if (!this.res[title]) {
+                    this.res[title] = [v];
+                } else {
+                    if (indexofArr(this.res[title], v) === -1) {
+                        this.res[title].push(v);
+                    } else {
+                        var index = indexofArr(this.res[title], v);
+                        this.res[title].splice(index, 1);
+                        if(this.res[title].length === 0){
+                            delete(this.res[title]);
+                        }
+                    }
+                }
+                var arr1 = [];
+                for (var title in this.res) {
+                    if (this.res[title].length > 0) {
+                        arr1.push(this.res[title])
+                    }
+                }
+                this.result = doExchange(arr1);
+                this.createTable();
+
+                var resArr = Object.keys(this.res)
+
+                var num = resArr ? resArr.length : 0;
+                for (var i = 0; i < num; i++) {
+                    this.mergeCell($('table'), i);
+                }
+            },
+            createTable() {
+                if ($('#goods_spec_table2').children().length == 0) {
+                    $('<table class="table table-bordered" id="spec_input_tab"><thead><tr></tr></thead><tbody></tbody></table>').appendTo($('#goods_spec_table2'));
+                }
+                var str = '';
+
+                for (var title in this.res) {
+                    str += '<th><b>' + title + '</b></th>';
+                }
+                this.defaultItem.forEach(function (item) {
+                    str += '<th><b>' + item + '</b></th>';
+                });
+                $('#goods_spec_table2 thead tr').html(str);
+
+                var strBody = '';
+
+                var num = this.result ? this.result.length : 0 ;
+                for (var i = 0; i < num; i++) {
+                    var newArr = this.result[i].split(',');
+                    var str2 = '';
+                    for (var j = 0; j < newArr.length; j++) {
+                        str2 += '<td>' + newArr[j] + '</td>'
+                    }
+                    this.defaultItem.forEach(function (item) {
+                        str2 += "<td><input name='item[$item_key][price]' value='{$keySpecGoodsPrice[$item_key][price]}' onkeyup='this.value=this.value.replace(/[^\\d.]/g,\\\"\\\")' onpaste='this.value=this.value.replace(/[^\\d.]/g,\\\"\\\")' /></td>";
+                    });
+
+                    strBody += '<tr>' + str2 + '</tr>';
+                }
+                $('#createTable tbody').html(strBody);
+            },
+            mergeCell($table, colIndex) {
+                $table.data('col-content', ''); // 存放单元格内容
+                $table.data('col-rowspan', 1); // 存放计算的rowspan值 默认为1
+                $table.data('col-td', $()); // 存放发现的第一个与前一行比较结果不同td(jQuery封装过的), 默认一个"空"的jquery对象
+
+                $table.data('trNum', $('tbody tr', $table).length); // 要处理表格的总行数, 用于最后一行做特殊处理时进行判断之用
+                // 我们对每一行数据进行"扫面"处理 关键是定位col-td, 和其对应的rowspan
+                $('tbody tr', $table).each(function (index) {
+                    // td:eq中的colIndex即列索引
+                    var $td = $('td:eq(' + colIndex + ')', this);
+
+                    // 取出单元格的当前内容
+                    var currentContent = $td.html();
+
+                    // 第一次时走此分支
+                    if ($table.data('col-content') == '') {
+                        $table.data('col-content', currentContent);
+                        $table.data('col-td', $td);
+                    } else {
+                        // 上一行与当前行内容相同
+                        if ($table.data('col-content') == currentContent) {
+                            // 上一行与当前行内容相同则col-rowspan累加, 保存新值
+                            var rowspan = $table.data('col-rowspan') + 1;
+                            $table.data('col-rowspan', rowspan);
+                            // 值得注意的是 如果用了$td.remove()就会对其他列的处理造成影响
+                            $td.hide();
+                            // 最后一行的情况比较特殊一点
+                            // 比如最后2行 td中的内容是一样的, 那么到最后一行就应该把此时的col-td里保存的td设置rowspan
+                            if (++index == $table.data('trNum'))
+                                $table.data('col-td').attr('rowspan', $table.data('col-rowspan'));
+                        } else { // 上一行与当前行内容不同
+                            // col-rowspan默认为1, 如果统计出的col-rowspan没有变化, 不处理
+                            if ($table.data('col-rowspan') != 1) {
+                                $table.data('col-td').attr('rowspan', $table.data('col-rowspan'));
+                            }
+                            // 保存第一次出现不同内容的td, 和其内容, 重置col-rowspan
+                            $table.data('col-td', $td);
+                            $table.data('col-content', $td.html());
+                            $table.data('col-rowspan', 1);
+                        }
+                    }
+                });
+            },
+            inputAndButtonShow(_this, id) {
+                var _obj = $("#input_"+id);
+                var width = this.textWidth(_obj.val())*2.5;
+                if(_this.checked){
+                    _obj.prop('type','text');
+                    _obj.width(width);
+                }else{
+                    _obj.prop('type','button');
+                }
+            },
+            textWidth(text){
+                var sensor = $('<pre>'+ text +'</pre>').css({display: 'none'});
+                $('body').append(sensor);
+                var width = sensor.width();
+                sensor.remove();
+                return width;
+            },
+            // 上传规格图片
+             GetUploadify3(k){
+                cur_item_id = k; //当前规格图片id 声明成全局 供后面回调函数调用
+                GetUploadify(1,'','goods','call_back3');
+            },
+
+
+            // 上传规格图片成功回调函数
+             call_back3(fileurl_tmp){
+                $("#item_img_"+cur_item_id).attr('src',fileurl_tmp); //  修改图片的路径
+                $("input[name='item_img["+cur_item_id+"]']").val(fileurl_tmp); // 输入框保存一下 方便提交
+            }
+        }
+    })
+
+    /**检查 某个元素v 在数组中是否存在,存在返回1  不存在返回-1**/
+    function indexofArr(arr, v) {
+        for (var i = 0; i < arr.length; i++) {
+            if (arr[i] == v) {
+                return i  //存在
+            }
+        }
+        return -1  //不存在
+    }
+
+    function doExchange(doubleArrays) {
+        var len = doubleArrays.length;
+        if (len >= 2) {
+            var arr1 = doubleArrays[0];
+            var arr2 = doubleArrays[1];
+            var len1 = doubleArrays[0].length;
+            var len2 = doubleArrays[1].length;
+            var newlen = len1 * len2;
+            var temp = new Array(newlen);
+            var index = 0;
+
+            for (var i = 0; i < len1; i++) {
+                for (var j = 0; j < len2; j++) {
+                    temp[index] = arr1[i] + "," + arr2[j];
+                    index++;
+                }
+            }
+            var newArray = new Array(len - 1);
+            newArray[0] = temp;
+
+            if (len > 2) {
+                var _count = 1;
+                for (var i = 2; i < len; i++) {
+                    newArray[_count] = doubleArrays[i];
+                    _count++;
+                }
+            }
+            return doExchange(newArray);
+        }
+        else {
+            return doubleArrays[0];
+        }
+    }
+</script>
 <script>
-    
+
+
+
     // 上传规格图片
     function GetUploadify3(k){        
         cur_item_id = k; //当前规格图片id 声明成全局 供后面回调函数调用
@@ -41,17 +259,9 @@
     }    
     
    // 规格按钮切换 class
-   $("#ajax_spec_data button").click(function(){
-	   if($(this).hasClass('btn-success'))
-	   {
-		   $(this).removeClass('btn-success');
-		   $(this).addClass('btn-default');
-	   }else{
-		   $(this).removeClass('btn-default');
-		   $(this).addClass('btn-success');
-	   }
-	   ajaxGetSpecInput();	  	   	 
-});
+   // $("#ajax_spec_data input[type=checkbox]").click(function(){
+	//    ajaxGetSpecInput();
+   // });
 	
 
 /**
@@ -63,16 +273,16 @@ function ajaxGetSpecInput()
 //	  spec_arr[2] = [3,4]; 
 	  var spec_arr = {};// 用户选择的规格数组 	  	  
 	// 选中了哪些属性	  
-	$("#goods_spec_table1  button").each(function(){
-	    if($(this).hasClass('btn-success'))	
-		{
+	$("#goods_spec_table1  input[type=text]").each(function(item){
+        // if($(this)[0].checked)
+		// {
 			var spec_id = $(this).data('spec_id');
 			var item_id = $(this).data('item_id');
 			if(!spec_arr.hasOwnProperty(spec_id))
 				spec_arr[spec_id] = [];
 		    spec_arr[spec_id].push(item_id);
 			//console.log(spec_arr);
-		}		
+		// }
 	});
 		ajaxGetSpecInput2(spec_arr); // 显示下面的输入框
 	

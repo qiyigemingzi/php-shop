@@ -446,10 +446,11 @@ class Goods extends MobileBase {
         }
         return $this->fetch();
     }
-    
+
     /**
      * 用户收藏某一件商品
      * @param type $goods_id
+     * @throws \think\Exception
      */
     public function collect_goods($goods_id){
         $goods_id = I('goods_id/d');

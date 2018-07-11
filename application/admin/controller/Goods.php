@@ -825,8 +825,8 @@ class Goods extends Base {
         $this->assign('specImageList',$specImageList);
         
         $this->assign('items_ids',$items_ids);
-        $this->assign('specList',$specList);
-        return $this->fetch('ajax_spec_select');        
+        $this->assign('specList',json_encode($specList));
+        return $this->fetch('ajax_spec_select');
     }    
     
     /**
