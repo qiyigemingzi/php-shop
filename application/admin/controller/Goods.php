@@ -6,6 +6,7 @@
 namespace app\admin\controller;
 use app\admin\logic\GoodsLogic;
 use app\admin\logic\SearchWordLogic;
+use app\common\model\SpecItem;
 use think\AjaxPage;
 use think\Loader;
 use think\Page;
@@ -810,8 +811,12 @@ class Goods extends Base {
         $GoodsLogic = new GoodsLogic();
         //$_GET['spec_type'] =  13;
         $specList = M('Spec')->where("type_id = ".I('get.spec_type/d'))->order('`order` desc')->select();
-        foreach($specList as $k => $v)
-            $specList[$k]['spec_item'] = M('SpecItem')->where("spec_id = ".$v['id'])->order('id')->getField('id,item'); // 获取规格项                
+        $result = [];
+        foreach($specList as $k => $v){
+            $uuid = get_uuid().$v['id'];
+            $result[$uuid] = $v;
+            $result[$uuid]['spec_item'] = (new SpecItem())->where("spec_id = ".$v['id'])->order('id')->getField('UUID(),item'); // 获取规格项
+        }
 
         $items_id = M('SpecGoodsPrice')->where('goods_id = '.$goods_id)->getField("GROUP_CONCAT(`key` SEPARATOR '_') AS items_id");
 
@@ -825,7 +830,7 @@ class Goods extends Base {
         $this->assign('specImageList',$specImageList);
         
         $this->assign('items_ids',$items_ids);
-        $this->assign('specList',json_encode($specList));
+        $this->assign('specList',json_encode($result));
         return $this->fetch('ajax_spec_select');
     }    
     

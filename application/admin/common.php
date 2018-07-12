@@ -259,7 +259,33 @@ function getMenuArr(){
 	}
 	return $menuArr;
 }
+function get_uuid()
+{
+    $stringTime = date('ymd') . substr((microtime(true) * 10000), -10) . mt_rand(100, 999);
+    $salt = 'h2ZUiQbzFea979uKbFTkeMIvlLvqIpqncmQquVo3aFRBmKwjDvXk7IgxtmBPcndq24LXF8cW2fztlwNTt6yaHAoaX40Nnffv2X4GHorx3OCRVXTJitQBoPe4GeIxpZZWjzdWyi1vt8VsUcWu1URFp1s2yuJmSuwa0G75QyjAsU7p9LTs10kYxhmLfpxbgq93IhWlANE4CG6NKEkhSDs5THRMUDS5dCGZ0gBdEHfCzB9Y1negb8LM3rdAYbnNPrgrYOHDiCM6O3lrYDVioEM8V7j6S8hwJEkZPA05PQRJlKzjwOc6SKO5yJ';
 
+    //hash表
+    $encodeChar = str_split($stringTime);
+    $base64hash = str_split($salt);
+
+    //转换成ascii码转二进制
+    $decbin = array_map(function ($v) {
+        return decbin(ord($v));
+    }, $encodeChar);
+
+    $decbin = implode($decbin);
+    $decbin = str_split($decbin, 8);
+
+    $baseArray = array_map(function ($v) use ($base64hash) {
+        if (mb_strlen($v, 'utf-8') < 8) {
+            $v = str_pad($v, 8, 0, STR_PAD_LEFT);
+        }
+        $baseDec = bindec($v);
+        return $base64hash[$baseDec];
+    }, $decbin);
+
+    return implode($baseArray);
+}
 
 function respose($res){
 	exit(json_encode($res));

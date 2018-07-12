@@ -1,4 +1,6 @@
+
 <div id="root">
+
 <table class="table table-bordered" id="goods_spec_table1">
     <tr>
         <td colspan="2"><b>商品规格:</b></td>
@@ -7,12 +9,11 @@
         <td>{{vo.name}}:</td>
         <td>
             <span v-for="(vo2,k2) in vo.spec_item">
-                <input type="checkbox" @change="labelChange(vo.name,vo.name,k2)" :id="'checkbox_'+k2" >
-                <input type="button"  :data-spec_id='vo.id' :id="'input_'+k2" :data-item_id='k2' class="btn" :value="vo2" style="max-width: 100px;" />
+                <input type="checkbox" @change="labelChange(k,k2,vo2)" :id="'checkbox_'+k2" >
+                <input type="button"  :data-spec_id='vo.id' :id="'input_'+k2" :data-item_id='k2' class="btn" :value="vo2" style="max-width: 90px;" @blur="contentSave(k,k2)"/>
                 <img width="35" height="35" src="{$specImageList[$k2]|default='/public/images/add-button.jpg'}" :id="'item_img_'+k2" @click="GetUploadify3(k2);"/>
                 <input type="hidden" :name="'item_img['+k2+']'" value="{$specImageList[$k2]}" />
             </span>
-
         </td>
     </tr>
     <!--<foreach name="specList" item="vo" key="k" >-->
@@ -36,10 +37,24 @@
     <!--</foreach>    -->
 </table>
 <input type="hidden" id="spec-list-data" value='{$specList}' />
-<div id="goods_spec_table2"> </div>
+<div id="goods_spec_table2">
+    <table class="table table-bordered" id="spec_input_tab" style="border: 1px solid #dedede;">
+        <thead>
+        <tr>
+            <td v-for="(vo,k) in res"><b>{{vo.name}}</b></td>
+            <td v-for="(vo,k) in defaultItem"><b>{{vo}}</b></td>
+        </tr>
+        </thead>
+        <tbody>
+            <tr v-for="(v,k) in result">
+
+            </tr>
+        </tbody>
+    </table>
+</div>
 </div>
 <script type="text/javascript">
-    var app = new Vue({
+    new Vue({
         el: '#root',
         data: {
             specList:$.parseJSON($("#spec-list-data").val()),
@@ -52,37 +67,46 @@
         mounted: function () {
         } ,
         methods: {
-            labelChange(v, title,index) {
-                var _this = $("#checkbox_"+index);
-                var _obj = $("#input_"+index);
-                var width = this.textWidth(_obj.val())*2.5;
+            labelChange(key1,key2,val) {
+                // console.log(this.generateUUID());
+                var _this = $("#checkbox_"+key2);
+                var _obj = $("#input_"+key2);
                 if(_this[0].checked){
                     _obj.prop('type','text');
-                    _obj.width(width);
                 }else{
                     _obj.prop('type','button');
                 }
-                if (!this.res[title]) {
-                    this.res[title] = [v];
+                var valObj = {}; valObj[key2] = val;
+                if (!this.res[key1]) {
+                    Vue.set(this.res, key1, {});
+                    Vue.set(this.res[key1], 'name', this.specList[key1].name);
+                    Vue.set(this.res[key1], 'item', valObj);
                 } else {
-                    if (indexofArr(this.res[title], v) === -1) {
-                        this.res[title].push(v);
+                    if (!this.res[key1].item[key2]) {
+                        Vue.set(this.res[key1].item, key2, valObj);
                     } else {
-                        var index = indexofArr(this.res[title], v);
-                        this.res[title].splice(index, 1);
-                        if(this.res[title].length === 0){
-                            delete(this.res[title]);
+                        if(this.res[key1].item[key2]){
+                            Vue.delete(this.res[key1].item,key2);
+                        }
+                        if(Object.keys(this.res[key1].item).length === 0){
+                            Vue.delete(this.res,key1);
                         }
                     }
                 }
                 var arr1 = [];
-                for (var title in this.res) {
-                    if (this.res[title].length > 0) {
-                        arr1.push(this.res[title])
+                for (var index in this.res) {
+                    var item = this.res[index].item;
+                    var itemKeys = Object.keys(this.res[index].item);
+                    if (itemKeys.length > 0) {
+                        var items = [];
+                        itemKeys.forEach(function (key) {
+                            items.push(item[key])
+                        });
+                        arr1.push(items)
                     }
                 }
                 this.result = doExchange(arr1);
-                this.createTable();
+                // this.createTable();
 
                 var resArr = Object.keys(this.res)
 
@@ -92,22 +116,25 @@
                 }
             },
             createTable() {
-                if ($('#goods_spec_table2').children().length == 0) {
-                    $('<table class="table table-bordered" id="spec_input_tab"><thead><tr></tr></thead><tbody></tbody></table>').appendTo($('#goods_spec_table2'));
+                if ($('#goods_spec_table2').children().length === 0) {
+                    $('<table class="table table-bordered" id="spec_input_tab" style="border: 1px solid #dedede;"><thead><tr></tr></thead><tbody></tbody></table>').appendTo($('#goods_spec_table2'));
                 }
                 var str = '';
 
-                for (var title in this.res) {
-                    str += '<th><b>' + title + '</b></th>';
+                for (var key in this.res) {
+                    console.log(key);
+                    var title = this.specList[key].name
+                    str += '<td><b>' + title + '</b></td>';
                 }
                 this.defaultItem.forEach(function (item) {
-                    str += '<th><b>' + item + '</b></th>';
+                    str += '<td><b>' + item + '</b></td>';
                 });
                 $('#goods_spec_table2 thead tr').html(str);
 
                 var strBody = '';
 
                 var num = this.result ? this.result.length : 0 ;
+
                 for (var i = 0; i < num; i++) {
                     var newArr = this.result[i].split(',');
                     var str2 = '';
@@ -120,7 +147,7 @@
 
                     strBody += '<tr>' + str2 + '</tr>';
                 }
-                $('#createTable tbody').html(strBody);
+                $('#goods_spec_table2 tbody').html(strBody);
             },
             mergeCell($table, colIndex) {
                 $table.data('col-content', ''); // 存放单元格内容
@@ -165,6 +192,14 @@
                     }
                 });
             },
+            contentSave(key1,key2){
+                var content = $("#input_"+key2).val();
+                this.specList[key1].spec_item[key2] = content;
+                if(this.res[key1]){
+
+                }
+
+            },
             inputAndButtonShow(_this, id) {
                 var _obj = $("#input_"+id);
                 var width = this.textWidth(_obj.val())*2.5;
@@ -193,18 +228,58 @@
              call_back3(fileurl_tmp){
                 $("#item_img_"+cur_item_id).attr('src',fileurl_tmp); //  修改图片的路径
                 $("input[name='item_img["+cur_item_id+"]']").val(fileurl_tmp); // 输入框保存一下 方便提交
+            },
+            generateUUID(len = 10, radix = 16) {
+                var chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'.split('');
+                var uuid = [], i;
+                radix = radix || chars.length;
+
+                if (len) {
+                    // Compact form
+                    for (i = 0; i < len; i++) uuid[i] = chars[0 | Math.random()*radix];
+                } else {
+                    // rfc4122, version 4 form
+                    var r;
+
+                    // rfc4122 requires these characters
+                    uuid[8] = uuid[13] = uuid[18] = uuid[23] = '-';
+                    uuid[14] = '4';
+
+                    // Fill in random data. At i==19 set the high bits of clock sequence as
+                    // per rfc4122, sec. 4.1.5
+                    for (i = 0; i < 36; i++) {
+                        if (!uuid[i]) {
+                            r = 0 | Math.random()*16;
+                            uuid[i] = chars[(i == 19) ? (r & 0x3) | 0x8 : r];
+                        }
+                    }
+                }
+                return uuid.join('');
             }
         }
-    })
+    });
 
     /**检查 某个元素v 在数组中是否存在,存在返回1  不存在返回-1**/
     function indexofArr(arr, v) {
-        for (var i = 0; i < arr.length; i++) {
-            if (arr[i] == v) {
+        arr.forEach(function (item) {
+            if (item == v) {
                 return i  //存在
             }
-        }
+        });
+        // for (var i = 0; i < arr.length; i++) {
+        //     if (arr[i] == v) {
+        //         return i  //存在
+        //     }
+        // }
         return -1  //不存在
+    }
+    function exitsObj(obj,v) {
+        for(var key in obj){
+            if(obj[key] == v){
+                return true
+            }
+        }
+        return false;
     }
 
     function doExchange(doubleArrays) {
