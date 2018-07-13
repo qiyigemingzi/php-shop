@@ -8,12 +8,18 @@
     <tr v-for="(vo,k) in specList">
         <td>{{vo.name}}:</td>
         <td>
-            <span v-for="(vo2,k2) in vo.spec_item">
-                <input type="checkbox" @change="labelChange(k,k2,vo2)" :id="'checkbox_'+k2" >
-                <input type="button"  :data-spec_id='vo.id' :id="'input_'+k2" :data-item_id='k2' class="btn" :value="vo2" style="max-width: 90px;" @blur="contentSave(k,k2)"/>
-                <img width="35" height="35" src="{$specImageList[$k2]|default='/public/images/add-button.jpg'}" :id="'item_img_'+k2" @click="GetUploadify3(k2);"/>
-                <input type="hidden" :name="'item_img['+k2+']'" value="{$specImageList[$k2]}" />
-            </span>
+            <div :id="'label_'+k">
+                <span v-for="(vo2,k2) in vo.spec_item">
+                    <label>
+                        <input type="checkbox" @change="labelChange(k,k2,vo2)" :id="'checkbox_'+k2" >
+                        <input type="button"  :data-spec_id='vo.id' :id="'input_'+k2" :data-item_id='k2' class="btn" :value="vo2" style="max-width: 90px;" @blur="contentSave(k,k2)"/>
+                    </label>
+                    <img width="35" height="35" src="{$specImageList[$k2]|default='/public/images/add-button.jpg'}" :id="'item_img_'+k2" @click="GetUploadify3(k2);"/>
+                    <input type="hidden" :name="'item_img['+k2+']'" value="{$specImageList[$k2]}" />
+                </span>
+            </div>
+
+            <input type="button" class="btn btn-success" value="添加" @click="addItem(k)"/>
         </td>
     </tr>
     <!--<foreach name="specList" item="vo" key="k" >-->
@@ -47,13 +53,38 @@
         </thead>
         <tbody>
             <tr v-for="(v,k) in result">
-
+                <td v-for="(val,key) in v.split(',')">
+                    {{showContent(val)}}
+                </td>
+                <td v-for="(vo,k) in defaultItem">
+                    <b><input name='item[$item_key][price]' value='{$keySpecGoodsPrice[$item_key][price]}' onkeyup='this.value=this.value.replace(/[^\d.]/g,\"\")' onpaste='this.value=this.value.replace(/[^\d.]/g,\"\")' /></b>
+                </td>
             </tr>
         </tbody>
     </table>
 </div>
 </div>
 <script type="text/javascript">
+    jQuery.fn.rowspan = function(colIdx) { //封装的一个JQuery小插件
+        return this.each(function(){
+            var that;
+            $('tr', this).each(function(row) {
+                $('td:eq('+colIdx+')', this).filter(':visible').each(function(col) {
+                    if (that!=null && $(this).html() == $(that).html()) {
+                        rowspan = $(that).attr("rowSpan");
+                        if (rowspan == undefined) {
+                            $(that).attr("rowSpan",1);
+                            rowspan = $(that).attr("rowSpan"); }
+                        rowspan = Number(rowspan)+1;
+                        $(that).attr("rowSpan",rowspan);
+                        $(this).hide();
+                    } else {
+                        that = this;
+                    }
+                });
+            });
+        });
+    };
     new Vue({
         el: '#root',
         data: {
@@ -65,8 +96,25 @@
             defaultItem:['价格','库存','SKU',]
         },
         mounted: function () {
+            console.log(this.specList);
         } ,
         methods: {
+            addItem(key){
+
+                var itemKey = this.generateUUID();
+                // var item = {};
+                // item[itemKey] = '新增';
+                Vue.set(this.specList[key].spec_item, itemKey, '新增');
+                // var html = '<span> <input type="checkbox" @change="labelChange('+key+','+itemKey+',\'新增\')" id="checkbox_'+itemKey+'" >' +
+                //     '                <input type="button"  id="input_'+itemKey+'" class="btn" value="新增" style="max-width: 90px;" @blur="contentSave('+key+','+itemKey+')"/>' +
+                //     '                <img width="35" height="35" src="/public/images/add-button.jpg" id="item_img_'+itemKey+'" @click="GetUploadify3('+itemKey+');"/>' +
+                //     '                <input type="hidden" name="item_img['+itemKey+']" value="/public/images/add-button.jpg" /> </span>';
+                //
+                // $("#label_"+key).append(html);
+            },
+            showContent(key){
+                return $("#input_"+key).val()
+            },
             labelChange(key1,key2,val) {
                 // console.log(this.generateUUID());
                 var _this = $("#checkbox_"+key2);
@@ -83,7 +131,7 @@
                     Vue.set(this.res[key1], 'item', valObj);
                 } else {
                     if (!this.res[key1].item[key2]) {
-                        Vue.set(this.res[key1].item, key2, valObj);
+                        Vue.set(this.res[key1].item,key2, val);
                     } else {
                         if(this.res[key1].item[key2]){
                             Vue.delete(this.res[key1].item,key2);
@@ -95,59 +143,24 @@
                 }
                 var arr1 = [];
                 for (var index in this.res) {
-                    var item = this.res[index].item;
                     var itemKeys = Object.keys(this.res[index].item);
                     if (itemKeys.length > 0) {
                         var items = [];
                         itemKeys.forEach(function (key) {
-                            items.push(item[key])
+                            items.push(key)
                         });
                         arr1.push(items)
                     }
                 }
                 this.result = doExchange(arr1);
-                // this.createTable();
 
-                var resArr = Object.keys(this.res)
-
+                var resArr = Object.keys(this.res);
+                console.log(resArr);
                 var num = resArr ? resArr.length : 0;
-                for (var i = 0; i < num; i++) {
-                    this.mergeCell($('table'), i);
-                }
-            },
-            createTable() {
-                if ($('#goods_spec_table2').children().length === 0) {
-                    $('<table class="table table-bordered" id="spec_input_tab" style="border: 1px solid #dedede;"><thead><tr></tr></thead><tbody></tbody></table>').appendTo($('#goods_spec_table2'));
-                }
-                var str = '';
-
-                for (var key in this.res) {
-                    console.log(key);
-                    var title = this.specList[key].name
-                    str += '<td><b>' + title + '</b></td>';
-                }
-                this.defaultItem.forEach(function (item) {
-                    str += '<td><b>' + item + '</b></td>';
-                });
-                $('#goods_spec_table2 thead tr').html(str);
-
-                var strBody = '';
-
-                var num = this.result ? this.result.length : 0 ;
-
-                for (var i = 0; i < num; i++) {
-                    var newArr = this.result[i].split(',');
-                    var str2 = '';
-                    for (var j = 0; j < newArr.length; j++) {
-                        str2 += '<td>' + newArr[j] + '</td>'
-                    }
-                    this.defaultItem.forEach(function (item) {
-                        str2 += "<td><input name='item[$item_key][price]' value='{$keySpecGoodsPrice[$item_key][price]}' onkeyup='this.value=this.value.replace(/[^\\d.]/g,\\\"\\\")' onpaste='this.value=this.value.replace(/[^\\d.]/g,\\\"\\\")' /></td>";
-                    });
-
-                    strBody += '<tr>' + str2 + '</tr>';
-                }
-                $('#goods_spec_table2 tbody').html(strBody);
+                // $("#spec_input_tab").rowspan(0);
+                // for (var i = 1; i <= num; i++) {
+                //     this.mergeCell($('table'), i);
+                // }
             },
             mergeCell($table, colIndex) {
                 $table.data('col-content', ''); // 存放单元格内容
@@ -198,7 +211,6 @@
                 if(this.res[key1]){
 
                 }
-
             },
             inputAndButtonShow(_this, id) {
                 var _obj = $("#input_"+id);

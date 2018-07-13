@@ -65,21 +65,21 @@
                     }
                 }
 
-                console.log(this.res);
+                // console.log(this.res);
                 var arr1 = [];
                 for (var title in this.res) {
                     if (this.res[title].length > 0) {
                         arr1.push(this.res[title])
                     }
                 }
-                console.log(arr1);
                 this.result = doExchange(arr1);
                 this.createTable();
-
+                console.log(this.res);
                 var resArr = Object.keys(this.res)
 
                 var num = resArr ? resArr.length : 0;
                 for (var i = 0; i < num; i++) {
+                    console.log(i);
                     this.mergeCell($('table'), i);
                 }
             },
