@@ -815,7 +815,7 @@ class Goods extends Base {
         foreach($specList as $k => $v){
             $uuid = get_uuid().$v['id'];
             $result[$uuid] = $v;
-            $result[$uuid]['spec_item'] = (new SpecItem())->where("spec_id = ".$v['id'])->order('id')->getField('UUID(),item'); // 获取规格项
+            $result[$uuid]['item'] = (new SpecItem())->where("spec_id = ".$v['id'])->order('id')->getField('UUID(),item'); // 获取规格项
         }
 
         $items_id = M('SpecGoodsPrice')->where('goods_id = '.$goods_id)->getField("GROUP_CONCAT(`key` SEPARATOR '_') AS items_id");

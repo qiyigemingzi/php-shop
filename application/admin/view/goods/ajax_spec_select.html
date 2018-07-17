@@ -6,13 +6,13 @@
         <td colspan="2"><b>商品规格:</b></td>
     </tr>
     <tr v-for="(vo,k) in specList">
-        <td>{{vo.name}}:</td>
+        <td><input type="text" :id="'input_'+k" :name="'base['+k+'][name]'"  :value="vo.name" @blur="contentSave(k,'')" style="max-width: 70px">:</td>
         <td>
             <div :id="'label_'+k">
-                <span v-for="(vo2,k2) in vo.spec_item">
+                <span v-for="(vo2,k2) in vo.item">
                     <label>
                         <input type="checkbox" @change="labelChange(k,k2,vo2)" :id="'checkbox_'+k2" >
-                        <input type="button"  :data-spec_id='vo.id' :id="'input_'+k2" :data-item_id='k2' class="btn" :value="vo2" style="max-width: 90px;" @blur="contentSave(k,k2)"/>
+                        <input type="button"  :data-spec_id='vo.id' :id="'input_'+k2" :name="'base['+k+'][item]['+k2+']'" :data-item_id='k2' class="btn" :value="vo2" :pvalue="vo.name" style="max-width: 90px;" @blur="contentSave(k,k2)"/>
                     </label>
                     <img width="35" height="35" src="{$specImageList[$k2]|default='/public/images/add-button.jpg'}" :id="'item_img_'+k2" @click="GetUploadify3(k2);"/>
                     <input type="hidden" :name="'item_img['+k2+']'" value="{$specImageList[$k2]}" />
@@ -25,25 +25,6 @@
     <tr>
         <td colspan="2"><b><input type="button" class="btn btn-success" value="添加规格" @click="addSpec()"/></b></td>
     </tr>
-    <!--<foreach name="specList" item="vo" key="k" >-->
-    <!--<tr>-->
-        <!--<td>{$vo[name]}:</td>-->
-        <!--<td>                            -->
-            <!--<foreach name="vo[spec_item]" item="vo2" key="k2" >-->
-                <!--<input type="checkbox" id="checkbox_{$k2}" onclick="inputAndButtonShow(this, '{$k2}');">-->
-                <!--<input type="button"  data-spec_id='{$vo[id]}' id="input_{$k2}" data-item_id='{$k2}' class="btn btn-default <?php-->
-                         <!--if(in_array($k2,$items_ids))-->
-                                <!--echo 'btn-success';-->
-                         <!--else-->
-                            <!--echo 'btn-default';-->
-                         <!--?>" value="{$vo2}" style="max-width: 100px;" />-->
-                <!--<img width="35" height="35" src="{$specImageList[$k2]|default='/public/images/add-button.jpg'}" id="item_img_{$k2}" onclick="GetUploadify3('{$k2}');"/>-->
-                <!--<input type="hidden" name="item_img[{$k2}]" value="{$specImageList[$k2]}" />-->
-                <!--&nbsp;&nbsp;&nbsp;            -->
-            <!--</foreach>         -->
-        <!--</td>-->
-    <!--</tr>                                    -->
-    <!--</foreach>    -->
 </table>
 <input type="hidden" id="spec-list-data" value='{$specList}' />
 <div id="goods_spec_table2">
@@ -58,17 +39,21 @@
         </thead>
         <tbody>
             <tr v-for="(v,k) in result">
+                {initDefaultValue(v)}
                 <td v-for="(val,key) in v.split(',')">
                     {{showContent(val)}}
                 </td>
                 <td>
-                    <b><input :name='"item["+ v.replace(/,/,"_") +"][price]"' value='{$keySpecGoodsPrice[$item_key][price]}' onkeyup='this.value=this.value.replace(/[^\d.]/g,\"\")' onpaste='this.value=this.value.replace(/[^\d.]/g,\"\")' /></b>
+                    <b><input type="text" :name='"item["+ v +"][price]"' :value='showDefaultValue(v,"price")' onkeyup="value=value.replace(/[^(\d+)\.(\d\d)]/g,'')"/></b>
                 </td>
                 <td>
-                    <b><input name='item["+ v.replace(/,/,_) +"][store_count]' value='{$keySpecGoodsPrice[$item_key][price]}' onkeyup='this.value=this.value.replace(/[^\d.]/g,\"\")' onpaste='this.value=this.value.replace(/[^\d.]/g,\"\")' /></b>
+                    <b><input type="number" :name='"item["+ v +"][store_count]"' :value='showDefaultValue(v,"store_count")' onkeyup="value=value.replace(/[^\d]/g,'')" /></b>
                 </td>
                 <td>
-                    <b><input name='item["+ v.replace(/,/,_) +"][sku]' value='{$keySpecGoodsPrice[$item_key][price]}' onkeyup='this.value=this.value.replace(/[^\d.]/g,\"\")' onpaste='this.value=this.value.replace(/[^\d.]/g,\"\")' /></b>
+                    <b>
+                        <input type="text" :name='"item["+ v +"][sku]"' :value='showDefaultValue(v,"sku")'/>
+                        <input type="hidden" :name='"item["+ v +"][sku]"' :value='showKeyName(v)'/>
+                    </b>
                 </td>
             </tr>
         </tbody>
@@ -84,21 +69,35 @@
             arrayColumn: [],
             res: {},
             result: [],
-            defaultItem:[{name:'价格'},'库存','SKU',]
+            defaultValue:{}
         },
         mounted: function () {
-            console.log(this.specList);
         } ,
         methods: {
+            showKeyName(key){
+                var key_name = "";
+                key.split(',').forEach(function (item) {
+                    var obj = $("#input_"+item);
+                    key_name+= obj.attr('pvalue')+':'+ obj.val()+' '
+                });
+                return key_name;
+            },
+            showDefaultValue(key,item){
+                if(this.defaultValue[key] === undefined){
+                 return ""
+                }
+                return this.defaultValue[key][item];
+            },
+
             addItem(key){
                 var itemKey = this.generateUUID();
-                Vue.set(this.specList[key].spec_item, itemKey, '新增');
+                Vue.set(this.specList[key].item, itemKey, '新增');
             },
             addSpec(){
                 var key = this.generateUUID();
                 var data = {
                     name:'新规格',
-                    spec_item:{}
+                    item:{}
                 }
                 Vue.set(this.specList, key, data);
             },
@@ -143,14 +142,6 @@
                     }
                 }
                 this.result = doExchange(arr1);
-
-                var resArr = Object.keys(this.res);
-                console.log(resArr);
-                var num = resArr ? resArr.length : 0;
-                // $("#spec_input_tab").rowspan(0);
-                // for (var i = 1; i <= num; i++) {
-                //     this.mergeCell($('table'), i);
-                // }
             },
             mergeCell($table, colIndex) {
                 $table.data('col-content', ''); // 存放单元格内容
@@ -196,10 +187,14 @@
                 });
             },
             contentSave(key1,key2){
-                var content = $("#input_"+key2).val();
-                this.specList[key1].spec_item[key2] = content;
-                if(this.res[key1]){
-
+                if(key2){
+                    var content = $("#input_"+key2).val();
+                    Vue.set(this.specList[key1].item, key2, content);
+                    Vue.set(this.res[key1].item, key2, content);
+                }else {
+                    var content = $("#input_"+key1).val();
+                    Vue.set(this.specList[key1], 'name', content);
+                    Vue.set(this.res[key1], 'name', content);
                 }
             },
             inputAndButtonShow(_this, id) {
@@ -224,8 +219,6 @@
                 cur_item_id = k; //当前规格图片id 声明成全局 供后面回调函数调用
                 GetUploadify(1,'','goods','call_back3');
             },
-
-
             // 上传规格图片成功回调函数
              call_back3(fileurl_tmp){
                 $("#item_img_"+cur_item_id).attr('src',fileurl_tmp); //  修改图片的路径
