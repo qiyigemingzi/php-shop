@@ -6,6 +6,7 @@
 namespace app\admin\controller;
 use app\admin\logic\GoodsLogic;
 use app\admin\logic\SearchWordLogic;
+use app\common\model\SpecGoodsPrice;
 use app\common\model\SpecItem;
 use think\AjaxPage;
 use think\Loader;
@@ -272,6 +273,7 @@ class Goods extends Base {
         $type = $goods_id > 0 ? 2 : 1; // 标识自动验证时的 场景 1 表示插入 2 表示更新
         //ajax提交验证
         if ((I('is_ajax') == 1) && IS_POST) {
+
             // 数据验证
             $is_distribut = input('is_distribut');
             $virtual_indate = input('post.virtual_indate');//虚拟商品有效期
@@ -800,24 +802,34 @@ class Goods extends Base {
            $goodsTypeList = M("GoodsType")->select();           
            $this->assign('goodsTypeList',$goodsTypeList);           
            return $this->fetch('_spec');
-    }  
-    
-    
+    }
+
+
     /**
      * 动态获取商品规格选择框 根据不同的数据返回不同的选择框
+     * @return mixed
      */
     public function ajaxGetSpecSelect(){
-        $goods_id = I('get.goods_id/d') ? I('get.goods_id/d') : 0;        
-        $GoodsLogic = new GoodsLogic();
-        //$_GET['spec_type'] =  13;
-        $specList = M('Spec')->where("type_id = ".I('get.spec_type/d'))->order('`order` desc')->select();
-        $result = [];
-        foreach($specList as $k => $v){
-            $uuid = get_uuid().$v['id'];
-            $result[$uuid] = $v;
-            $result[$uuid]['item'] = (new SpecItem())->where("spec_id = ".$v['id'])->order('id')->getField('UUID(),item'); // 获取规格项
+        $goods_id = I('get.goods_id/d') ? I('get.goods_id/d') : 0;
+        $specId = I('get.spec_type/d');
+        if($specId){
+            $specList = M('Spec')->where(["type_id" => $specId,'is_default' => 1])->order('`order` desc')->select();
+        }else{
+            $specList = M('Spec')->where(["goods_id" => $goods_id,'is_default' => 0])->select();
         }
 
+        $result = [];
+        foreach($specList as $k => $v){
+            if($specId){
+                $uuid = get_uuid().$v['id'];
+                $item = (new SpecItem())->where("spec_id = ".$v['id'])->order('id')->getField('UUID(),item'); // 获取规格项
+            }else{
+                $uuid = $v['key'];
+                $item = (new SpecItem())->where("spec_id = ".$v['id'])->order('id')->getField('key,item'); // 获取规格项
+            }
+            $result[$uuid] = $v;
+            $result[$uuid]['item'] = empty($item)?(object)[]:$item;
+        }
         $items_id = M('SpecGoodsPrice')->where('goods_id = '.$goods_id)->getField("GROUP_CONCAT(`key` SEPARATOR '_') AS items_id");
 
         $items_ids = explode('_', $items_id);
@@ -828,9 +840,18 @@ class Goods extends Base {
            $specImageList = M('SpecImage')->where("goods_id = $goods_id")->getField('spec_image_id,src');                 
         }        
         $this->assign('specImageList',$specImageList);
-        
+        $specPrice = [];
+        if(!$specId){
+            $specPrice = (new SpecGoodsPrice)->where(['goods_id' => $goods_id])->getField("key_key,price,store_count,sku");
+            $resList = $result;
+        }else{
+            $resList = [];
+        }
+
         $this->assign('items_ids',$items_ids);
         $this->assign('specList',json_encode($result));
+        $this->assign('defaultValue',json_encode($specPrice));
+        $this->assign('resList',json_encode($resList));
         return $this->fetch('ajax_spec_select');
     }    
     

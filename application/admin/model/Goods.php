@@ -70,20 +70,98 @@ class Goods extends Model {
 
         //商品规格处理
         $this->saveSpec($baseItem,$goods_id);
+        $this->saveSpecGoodsPrice($item_img,$goods_id);
+        refresh_stock($goods_id); // 刷新商品库存
+    }
 
+    /**
+     * 处理商品规格
+     * @param $baseItem
+     * @param $goods_id
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     * @throws \think\Exception
+     */
+    function saveSpec($baseItem,$goods_id){
+        $specIds = [];
+        foreach ($baseItem as $key => $spec){
+
+            if(empty($spec['item'])) continue;//没有子选项忽略
+
+            $specData = (new Spec)->where(['key' => $key])->find();
+            if($specData){
+                (new Spec)->save(['name' => $spec['name']],['id' => $spec['id']]);
+                $specId = $specData['id'];
+            }else{
+                $specModel = (new Spec);
+                $specModel->data([
+                    'type_id' => 0,
+                    'name' => $spec['name'],
+                    'order' => 0,
+                    'search_index' => 0,
+                    'goods_id' => $goods_id,
+                    'is_default' => 0,
+                    'key' => $key,
+                ])->save();
+                $specId = $specModel->getLastInsID();
+            }
+
+            $itemIds = [];
+            foreach ($spec['item'] as $itemKey => $item){
+                $itemData = (new SpecItem())->where(['key' => $itemKey])->find();
+                if($itemData){
+                    (new SpecItem())->save(['name' => $spec['name']],['id' => $spec['id']]);
+                    $itemId = $itemData['id'];
+                }else{
+                    $specItemModel = (new SpecItem);
+                    $specItemModel->data([
+                        'spec_id' => $specId,
+                        'item' => $item,
+                        'key' => $itemKey,
+                    ])->save();
+                    $itemId = $specItemModel->getLastInsID();
+                }
+                $itemIds[] = $itemId;
+            }
+            //清除该规格多余规格项
+            (new SpecItem())->where(['spec_id' => $specId])->whereNotIn('id',$itemIds)->delete();
+            $specIds[] = $specId;
+        }
+        //清除该商品多余规格
+        (new Spec())->where(['goods_id' => $goods_id])->whereNotIn('id',$specIds)->delete();
+    }
+
+    /**
+     * 处理商品规格信息
+     * @param $item_img
+     * @param $goods_id
+     * @throws \think\Exception
+     * @throws \think\exception\PDOException
+     */
+    public function saveSpecGoodsPrice($item_img, $goods_id){
         $goods_item = I('item/a');
         $eidt_goods_id = I('goods_id',0);
         $specStock = Db::name('spec_goods_price')->where('goods_id = '.$goods_id)->getField('key,store_count');
+        $goods = (new \app\common\model\Goods())->where(['goods_id' => $goods_id])->find();
         if ($goods_item) {
             $keyArr = '';//规格key数组
             foreach ($goods_item as $k => $v) {
+                $keyKey = $k;
+                $items = (new SpecItem())->whereIn('key',$k)->field('id')->select();
+                $ids = "";
+                array_walk($items, function ($m, $k) use (&$ids) {
+                    $ids.= $m->id.',';
+                });
+                $k = str_replace(',','_',trim($ids,','));
+
                 $keyArr .= $k.',';
                 // 批量添加数据
                 $v['price'] = trim($v['price']);
                 $store_count = $v['store_count'] = trim($v['store_count']); // 记录商品总库存
                 $v['sku'] = trim($v['sku']);
-                $data = ['goods_id' => $goods_id, 'key' => $k, 'key_name' => $v['key_name'], 'price' => $v['price'], 'store_count' => $v['store_count'], 'sku' => $v['sku']];
-                
+                $data = ['goods_id' => $goods_id, 'key' => $k, 'key_name' => $v['key_name'], 'key_key' => $keyKey, 'price' => $v['price'] ? $v['price'] : $goods['shop_price'], 'store_count' => $v['store_count'], 'sku' => $v['sku']];
+
                 if ($item_img) {
                     $spec_key_arr = explode('_', $k);
                     foreach ($item_img as $key => $val) {
@@ -93,20 +171,20 @@ class Goods extends Model {
                         }
                     }
                 }
-                
+
                 if (!empty($specStock[$k])) {
                     Db::name('spec_goods_price')->where(['goods_id' => $goods_id, 'key' => $k])->update($data);
                 } else {
                     Db::name('spec_goods_price')->insert($data);
                 }
-                
+
                 if(!empty($specStock[$k]) && $v['store_count'] != $specStock[$k] && $eidt_goods_id>0){
-                	$stock = $v['store_count'] - $specStock[$k];
+                    $stock = $v['store_count'] - $specStock[$k];
                 }else{
-                	$stock = $v['store_count'];
+                    $stock = $v['store_count'];
                 }
                 //记录库存日志
-                update_stock_log(session('admin_id'),$stock,array('goods_id'=>$goods_id,'goods_name'=>I('goods_name'),'spec_key_name'=>$v['key_name']));               
+                update_stock_log(session('admin_id'),$stock,array('goods_id'=>$goods_id,'goods_name'=>I('goods_name'),'spec_key_name'=>$v['key_name']));
                 // 修改商品后购物车的商品价格也修改一下
                 M('cart')->where("goods_id = $goods_id and spec_key = '$k'")->save(array(
                     'market_price' => $v['price'], //市场价
@@ -118,69 +196,16 @@ class Goods extends Model {
                 Db::name('spec_goods_price')->where('goods_id',$goods_id)->whereNotIn('key',$keyArr)->delete();
             }
         }
-         
-         // 商品规格图片处理
-         if(I('item_img/a'))
-         {    
-             M('SpecImage')->where("goods_id = $goods_id")->delete(); // 把原来是删除再重新插入
-             foreach (I('item_img/a') as $key => $val)
-             {                 
-                 M('SpecImage')->insert(array('goods_id'=>$goods_id ,'spec_image_id'=>$key,'src'=>$val));
-             }                                                    
-         }
-         refresh_stock($goods_id); // 刷新商品库存
-    }
 
-    /**
-     * 处理商品规格
-     * @param $baseItem
-     * @param $goods_id
-     * @throws \think\db\exception\DataNotFoundException
-     * @throws \think\db\exception\ModelNotFoundException
-     * @throws \think\exception\DbException
-     */
-    function saveSpec($baseItem,$goods_id){
-        $specIds = [];
-        foreach ($baseItem as $key => $spec){
-
-            if(empty($spec['item'])) continue;//没有子选项忽略
-
-            $specData = (new Spec)->where(['key' => $key])->find();
-            if($specData){
-                $spec->name = $spec['name'];
-                (new Spec)->save(['name' => $spec['name']],['id' => $spec['id']]);
-            }else{
-                $specData = Spec::create([
-                    'type_id' => 0,
-                    'name' => $spec['name'],
-                    'order' => 0,
-                    'search_index' => 0,
-                    'goods_id' => $goods_id,
-                    'is_default' => 0,
-                    'key' => $key,
-                ]);
-            }
-
-            $itemIds = [];
-            foreach ($spec['item'] as $itemKey => $item){
+        // 商品规格图片处理
+        if(I('item_img/a'))
+        {
+            M('SpecImage')->where("goods_id = $goods_id")->delete(); // 把原来是删除再重新插入
+            foreach (I('item_img/a') as $key => $val)
+            {
                 $itemData = (new SpecItem())->where(['key' => $key])->find();
-                if($itemData){
-                    (new SpecItem())->save(['name' => $spec['name']],['id' => $spec['id']]);
-                }else{
-                    $itemData = SpecItem::create([
-                        'spec_id' => $specData['id'],
-                        'item' => $item,
-                        'key' => $itemKey,
-                    ]);
-                }
-                $itemIds[] = $itemData['id'];
+                M('SpecImage')->insert(array('goods_id'=>$goods_id ,'spec_image_id'=>$itemData['id'],'src'=>$val));
             }
-            //清除该规格多余规格项
-            (new SpecItem())->whereNotIn('id',$itemIds)->delete();
-            $specIds[] = $specData['id'];
         }
-        //清除该商品多余规格
-        (new Spec())->whereNotIn('id',$specIds)->delete();
-
     }
 }

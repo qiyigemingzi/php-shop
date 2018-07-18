@@ -6,13 +6,13 @@
         <td colspan="2"><b>商品规格:</b></td>
     </tr>
     <tr v-for="(vo,k) in specList">
-        <td><input type="text" :id="'input_'+k" :name="'base['+k+'][name]'"  :value="vo.name" @blur="contentSave(k,'')" style="max-width: 70px">:</td>
+        <td style="max-width: 130px"><input type="text" :id="'input_'+k" :name="'base['+k+'][name]'"  :value="vo.name" @blur="contentSave(k,'')" style="max-width: 70px">:</td>
         <td>
             <div :id="'label_'+k">
                 <span v-for="(vo2,k2) in vo.item">
                     <label>
-                        <input type="checkbox" @change="labelChange(k,k2,vo2)" :id="'checkbox_'+k2" >
-                        <input type="button"  :data-spec_id='vo.id' :id="'input_'+k2" :name="'base['+k+'][item]['+k2+']'" :data-item_id='k2' class="btn" :value="vo2" :pvalue="vo.name" style="max-width: 90px;" @blur="contentSave(k,k2)"/>
+                        <input type="checkbox" @change="labelChange(k,k2,vo2)" :id="'checkbox_'+k2" :checked="res[k] && res[k].item[k2]?true:false"  >
+                        <input :type="res[k] && res[k].item[k2]?'text':'button'"  :data-spec_id='vo.id' :id="'input_'+k2" :name="'base['+k+'][item]['+k2+']'" :data-item_id='k2' class="btn" :value="vo2" :pvalue="vo.name" style="max-width: 90px;" @blur="contentSave(k,k2)"/>
                     </label>
                     <img width="35" height="35" src="{$specImageList[$k2]|default='/public/images/add-button.jpg'}" :id="'item_img_'+k2" @click="GetUploadify3(k2);"/>
                     <input type="hidden" :name="'item_img['+k2+']'" value="{$specImageList[$k2]}" />
@@ -26,7 +26,6 @@
         <td colspan="2"><b><input type="button" class="btn btn-success" value="添加规格" @click="addSpec()"/></b></td>
     </tr>
 </table>
-<input type="hidden" id="spec-list-data" value='{$specList}' />
 <div id="goods_spec_table2">
     <table class="table table-bordered" id="spec_input_tab" style="border: 1px solid #dedede;">
         <thead>
@@ -39,7 +38,6 @@
         </thead>
         <tbody>
             <tr v-for="(v,k) in result">
-                {initDefaultValue(v)}
                 <td v-for="(val,key) in v.split(',')">
                     {{showContent(val)}}
                 </td>
@@ -52,7 +50,7 @@
                 <td>
                     <b>
                         <input type="text" :name='"item["+ v +"][sku]"' :value='showDefaultValue(v,"sku")'/>
-                        <input type="hidden" :name='"item["+ v +"][sku]"' :value='showKeyName(v)'/>
+                        <input type="hidden" :name='"item["+ v +"][key_name]"' :value='showKeyName(v)'/>
                     </b>
                 </td>
             </tr>
@@ -60,6 +58,11 @@
     </table>
 </div>
 </div>
+<input type="hidden" id="spec-list-data" value='{$specList}' />
+<input type="hidden" id="spec-res-data" value='{$resList}' />
+<input type="hidden" id="spec-default-data" value='{$defaultValue}' />
+
+
 <script type="text/javascript">
     new Vue({
         el: '#root',
@@ -72,6 +75,38 @@
             defaultValue:{}
         },
         mounted: function () {
+            var defaultValue = $.parseJSON($("#spec-default-data").val());
+            if(defaultValue instanceof Object && Object.keys(defaultValue).length !== 0){
+                Vue.set(this, 'defaultValue', defaultValue);
+            }
+
+            if(this.specList instanceof Array && this.specList.length===0){
+                this.specList = {};
+                this.addSpec();
+            }else if(this.specList instanceof Array && this.specList.length!==0){
+                var obj = {};
+                for(var key  in this.specList){
+                    obj[key] = this.specList[key]
+                }
+                Vue.set(this, 'specList', obj);
+            }
+
+            var resList = $.parseJSON($("#spec-res-data").val());
+            if(resList instanceof Object && Object.keys(resList).length !== 0){
+                Vue.set(this, 'res', resList);
+                var arr1 = [];
+                for (var index in this.res) {
+                    var itemKeys = Object.keys(this.res[index].item);
+                    if (itemKeys.length > 0) {
+                        var items = [];
+                        itemKeys.forEach(function (key) {
+                            items.push(key)
+                        });
+                        arr1.push(items)
+                    }
+                }
+                Vue.set(this, 'result', doExchange(arr1));
+            }
         } ,
         methods: {
             showKeyName(key){
@@ -83,10 +118,10 @@
                 return key_name;
             },
             showDefaultValue(key,item){
-                if(this.defaultValue[key] === undefined){
-                 return ""
+                if(this.defaultValue[key]){
+                    return this.defaultValue[key][item];
                 }
-                return this.defaultValue[key][item];
+                return "";
             },
 
             addItem(key){
@@ -98,14 +133,13 @@
                 var data = {
                     name:'新规格',
                     item:{}
-                }
+                };
                 Vue.set(this.specList, key, data);
             },
             showContent(key){
                 return $("#input_"+key).val()
             },
             labelChange(key1,key2,val) {
-                // console.log(this.generateUUID());
                 var _this = $("#checkbox_"+key2);
                 var _obj = $("#input_"+key2);
                 if(_this[0].checked){
@@ -351,7 +385,6 @@ function ajaxGetSpecInput()
 			if(!spec_arr.hasOwnProperty(spec_id))
 				spec_arr[spec_id] = [];
 		    spec_arr[spec_id].push(item_id);
-			//console.log(spec_arr);
 		// }
 	});
 		ajaxGetSpecInput2(spec_arr); // 显示下面的输入框
