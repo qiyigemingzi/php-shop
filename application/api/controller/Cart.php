@@ -114,6 +114,27 @@ class Cart extends ApiGuest {
     }
 
     /**
+     * 购物车商品的选择
+     * @return \think\Response|\think\response\Json|\think\response\Jsonp|\think\response\Redirect|\think\response\Xml
+     */
+    public function selected(){
+        $cartId = input('cart_id/d');
+        $status = input('status/d');
+
+        if(empty($cartId)) return $this->formatError(30000);
+
+        if(!in_array($status, [0,1])) return $this->formatError(30003);
+
+        $result = (new \app\common\model\Cart())->save(['selected' => $status],['id' => $cartId]);
+
+        if($result){
+            return $this->formatSuccess();
+        }else{
+            return $this->formatError(90001);
+        }
+    }
+
+    /**
      * 购物车第二步确定页面
      * @return mixed
      * @throws \think\db\exception\DataNotFoundException
