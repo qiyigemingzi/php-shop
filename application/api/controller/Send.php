@@ -47,7 +47,7 @@ trait Send
         $responseData['message'] = $massage;
         $responseData['data'] = $data;
         $responseData = array_merge($responseData, $options);
-        return $this->response($responseData, $code, $headers);
+        return $this->response($responseData, 200, $headers);
     }
     /**
      * 成功响应

@@ -73,6 +73,12 @@ class PlaceOrder
         $this->promId = $prom_id;
     }
 
+    /**
+     * @throws WShopException
+     * @throws \think\Exception
+     * @throws \think\exception\DbException
+     * @throws \think\exception\PDOException
+     */
     public function addNormalOrder()
     {
         $this->check();
@@ -93,6 +99,13 @@ class PlaceOrder
         $this->queueDec();
     }
 
+    /**
+     * @param TeamActivity $teamActivity
+     * @throws WShopException
+     * @throws \think\Exception
+     * @throws \think\exception\DbException
+     * @throws \think\exception\PDOException
+     */
     public function addTeamOrder(TeamActivity $teamActivity)
     {
         $this->setPromType(6);

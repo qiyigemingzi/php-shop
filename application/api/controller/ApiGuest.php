@@ -10,7 +10,7 @@ class ApiGuest extends Api
 
     public function _initialize()
     {
-        $this->openid = I('openid','');
+        $this->openid = I('param.openid','');
     }
 
 }

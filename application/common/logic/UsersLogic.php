@@ -820,8 +820,9 @@ class UsersLogic extends Model
 
     /**
      * 地址添加/编辑
-     * @param $user_id 用户id
      * @param $user_id 地址id(编辑时需传入)
+     * @param int $address_id
+     * @param $data
      * @return array
      */
     public function add_address($user_id,$address_id=0,$data){

@@ -35,6 +35,9 @@ class Pay
      * 计算订单表的普通订单商品
      * @param $order_goods
      * @throws WShopException
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
      */
     public function payOrder($order_goods){
         $this->payList = $order_goods;
@@ -118,8 +121,11 @@ class Pay
 
     /**
      * 设置用户ID
-     * @throws WShopException
      * @param $user_id
+     * @throws WShopException
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
      */
     public function setUserId($user_id)
     {
@@ -214,6 +220,9 @@ class Pay
     /**
      * 使用优惠券
      * @param $coupon_id
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
      */
     public function useCouponById($coupon_id){
         if($coupon_id > 0){
@@ -271,6 +280,9 @@ class Pay
 
     /**
      * 使用订单优惠
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
      */
     public function orderPromotion()
     {
