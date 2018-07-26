@@ -106,7 +106,7 @@ class Cart extends ApiGuest
      */
     public function delete()
     {
-        $cart_ids = input('cart_ids/a', []);
+        $cart_ids = input('post.cart_ids/a', []);
 
         if (empty($cart_ids)) return $this->formatError(30000);
 
@@ -123,17 +123,25 @@ class Cart extends ApiGuest
     /**
      * 购物车商品的选择
      * @return \think\Response|\think\response\Json|\think\response\Jsonp|\think\response\Redirect|\think\response\Xml
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     * @throws \think\Exception
      */
     public function selected()
     {
         $cartId = input('cart_id/d');
         $status = input('status/d');
 
-        if (empty($cartId)) return $this->formatError(30000);
+        $cart = (new \app\common\model\Cart())->find($cartId)->toArray();
+        if (empty($cart)) return $this->formatError(30000);
 
         if (!in_array($status, [0, 1])) return $this->formatError(30003);
 
-        $result = (new \app\common\model\Cart())->save(['selected' => $status], ['id' => $cartId]);
+        $result = true;
+        if($cart['selected'] != $status){
+            $result = (new \app\common\model\Cart())->save(['selected' => $status], ['id' => $cartId]);
+        }
 
         if ($result) {
             return $this->formatSuccess();
