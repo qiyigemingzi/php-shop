@@ -82,13 +82,15 @@ class Cart extends ApiGuest
      * 购物车加减
      * @return \think\Response|\think\response\Json|\think\response\Jsonp|\think\response\Redirect|\think\response\Xml
      * @throws \think\exception\DbException
+     * @throws \think\Exception
      */
     public function changeNum()
     {
         $cartId = I('cart_id/d');
         $num = input('num/d');
 
-        if (!$cartId) return $this->formatError(20001);
+        $cart = (new \app\common\model\Cart())->find($cartId);
+        if (!$cartId || !$cart) return $this->formatError(20001);
         if (!$num) return $this->formatError(90000, 'num');
 
         $cartLogic = new CartLogic();
@@ -173,7 +175,6 @@ class Cart extends ApiGuest
             $address = M('user_address')->where(['user_id' => $this->user_id])->find();
         }
         $cartLogic = new CartLogic();
-        $couponLogic = new CouponLogic();
         $cartLogic->setUserId($this->user_id);
         $cartLogic->setGoodsModel($goods_id);
         $cartLogic->setSpecGoodsPriceModel($item_id);
@@ -188,19 +189,11 @@ class Cart extends ApiGuest
         $cartList['cartList'][0] = $buyGoods;
         $cartGoodsTotalNum = $goods_num;
 
-        $cartGoodsList = get_arr_column($cartList['cartList'], 'goods');
-        $cartGoodsId = get_arr_column($cartGoodsList, 'goods_id');
-        $cartGoodsCatId = get_arr_column($cartGoodsList, 'cat_id');
         $cartPriceInfo = $cartLogic->getCartPriceInfo($cartList['cartList']);  //初始化数据。商品总额/节约金额/商品总共数量
-        $userCouponList = $couponLogic->getUserAbleCouponList($this->user_id, $cartGoodsId, $cartGoodsCatId);//用户可用的优惠券列表
         $cartList = array_merge($cartList, $cartPriceInfo);
-        $userCartCouponList = $cartLogic->getCouponCartList($cartList, $userCouponList);
-        $userCouponNum = $cartLogic->getUserCouponNumArr();
 
         return $this->formatSuccess([
             'address' => $address, //收货地址
-            'userCartCouponList' => $userCartCouponList,   //优惠券，用able判断是否可用
-            'userCouponNum' => $userCouponNum,  //优惠券数量
             'cartGoodsTotalNum' => $cartGoodsTotalNum,
             'cartList' => $cartList['cartList'], // 购物车的商品
             'cartPriceInfo' => $cartPriceInfo, //商品优惠总价
@@ -229,29 +222,37 @@ class Cart extends ApiGuest
             $address = M('user_address')->where(['user_id' => $this->user_id])->find();
         }
         $cartLogic = new CartLogic();
-        $couponLogic = new CouponLogic();
+//        $couponLogic = new CouponLogic();
         $cartLogic->setUserId($this->user_id);
 
         if ($cartLogic->getUserCartOrderCount() == 0) {
             return $this->formatError(30000);
         }
 
-        $cartList['cartList'] = $cartLogic->getCartList(1); // 获取用户选中的购物车商品
+        $list = $cartLogic->getCartList(1); // 获取用户选中的购物车商品
+        $result = [];
+        array_walk($list, function ($m, $k) use (&$result) {
+            $data = $m;
+            $data->goods->original_img = _get_host_name() . $m->goods->original_img;
+            $result[] = $data;
+        });
+
+        $cartList['cartList'] = $result;
         $cartGoodsTotalNum = count($cartList['cartList']);
 
-        $cartGoodsList = get_arr_column($cartList['cartList'], 'goods');
-        $cartGoodsId = get_arr_column($cartGoodsList, 'goods_id');
-        $cartGoodsCatId = get_arr_column($cartGoodsList, 'cat_id');
+//        $cartGoodsList = get_arr_column($cartList['cartList'], 'goods');
+//        $cartGoodsId = get_arr_column($cartGoodsList, 'goods_id');
+//        $cartGoodsCatId = get_arr_column($cartGoodsList, 'cat_id');
         $cartPriceInfo = $cartLogic->getCartPriceInfo($cartList['cartList']);  //初始化数据。商品总额/节约金额/商品总共数量
-        $userCouponList = $couponLogic->getUserAbleCouponList($this->user_id, $cartGoodsId, $cartGoodsCatId);//用户可用的优惠券列表
+//        $userCouponList = $couponLogic->getUserAbleCouponList($this->user_id, $cartGoodsId, $cartGoodsCatId);//用户可用的优惠券列表
         $cartList = array_merge($cartList, $cartPriceInfo);
-        $userCartCouponList = $cartLogic->getCouponCartList($cartList, $userCouponList);
-        $userCouponNum = $cartLogic->getUserCouponNumArr();
+//        $userCartCouponList = $cartLogic->getCouponCartList($cartList, $userCouponList);
+//        $userCouponNum = $cartLogic->getUserCouponNumArr();
 
         return $this->formatSuccess([
             'address' => $address, //收货地址
-            'userCartCouponList' => $userCartCouponList,   //优惠券，用able判断是否可用
-            'userCouponNum' => $userCouponNum,  //优惠券数量
+//            'userCartCouponList' => $userCartCouponList,   //优惠券，用able判断是否可用
+//            'userCouponNum' => $userCouponNum,  //优惠券数量
             'cartGoodsTotalNum' => $cartGoodsTotalNum,
             'cartList' => $cartList['cartList'], // 购物车的商品
             'cartPriceInfo' => $cartPriceInfo, //商品优惠总价

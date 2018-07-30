@@ -88,6 +88,16 @@ class User extends ApiGuest {
         if(!$id && !$userAddress) return $this->formatError(50000);
 
         $post_data = input('post.');
+        $areaCode = input('post.area_code');
+
+        //地区处理
+        $district = \app\common\model\Region::get(['code' => $areaCode,'level' => 3]);
+        if(!$areaCode && !$district) return $this->formatError(90001,'地区选择有误');
+        $city = \app\common\model\Region::get(['id' => $district->parent_id]);
+        $post_data['province'] = $city->parent_id;
+        $post_data['city'] = $city->id;
+        $post_data['district'] = $district->id;
+
         $logic = new UsersLogic();
         $data = $logic->add_address($this->user_id, $id, $post_data);
 

@@ -11,4 +11,5 @@ $home_config = [
 
 $html_config = include_once 'html.php';
 $massage_config = include_once 'massage.php';
-return array_merge($home_config,$html_config,$massage_config);
+$area_config = include_once 'area.php';
+return array_merge($home_config,$html_config,$massage_config,$area_config);

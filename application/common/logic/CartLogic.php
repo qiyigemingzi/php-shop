@@ -759,15 +759,16 @@ class CartLogic extends Model
      * @return array
      */
     public function getCartPriceInfo($cartList = null){
+
         $total_fee = $goods_fee = $goods_num = 0;//初始化数据。商品总额/节约金额/商品总共数量
         if($cartList){
             foreach ($cartList as $cartKey => $cartItem) {
-                $total_fee += $cartItem['goods_fee'];
-                $goods_fee += $cartItem['cut_fee'];
+                $total_fee += $cartItem['goods_price'];
+//                $goods_fee += $cartItem['cut_fee'];
                 $goods_num += $cartItem['goods_num'];
             }
         }
-        return compact('total_fee', 'goods_fee', 'goods_num');
+        return compact('total_fee', 'goods_num');
     }
 
     /**
