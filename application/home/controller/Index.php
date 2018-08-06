@@ -8,7 +8,6 @@ class Index extends Base {
     
     public function index(){
 
-        die('欢迎来到微商城');
 
         // 如果是手机跳转到 手机模块
         if(isMobile()){
