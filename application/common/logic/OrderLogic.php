@@ -3,7 +3,6 @@
 namespace app\common\logic;
 
 use app\common\logic\wechat\WechatUtil;
-use app\common\model\Order;
 use app\common\model\SpecGoodsPrice;
 use think\Db;
 /**
@@ -16,13 +15,16 @@ class OrderLogic
     public function setUserId($user_id){
         $this->user_id=$user_id;
     }
-	/**
-	 * 取消订单
-	 * @param $user_id|用户ID
-	 * @param $order_id|订单ID
-	 * @param string $action_note 操作备注
-	 * @return array
-	 */
+
+    /**
+     * 取消订单
+     * @param $user_id |用户ID
+     * @param $order_id |订单ID
+     * @param string $action_note 操作备注
+     * @return array
+     * @throws \think\Exception
+     * @throws \think\exception\PDOException
+     */
 	public function cancel_order($user_id,$order_id,$action_note='您取消了订单'){
 		$order = M('order')->where(array('order_id'=>$order_id,'user_id'=>$user_id))->find();
 		//检查是否未支付订单 已支付联系客服处理退款

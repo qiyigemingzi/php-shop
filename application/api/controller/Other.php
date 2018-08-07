@@ -30,4 +30,8 @@ class Other extends ApiGuest {
         return $this->formatSuccess($result);
     }
 
+    public function order_status(){
+        return $this->formatSuccess(C('ORDER_STATUS'));
+    }
+
 }

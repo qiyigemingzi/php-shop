@@ -3,16 +3,12 @@
  * @author wuhy
  * @date 2018-07-03
  */
-namespace api\mobile\controller;
+namespace app\api\controller;
 
-use app\api\controller\ApiGuest;
-use app\common\model\TeamFound;
 use app\common\logic\UsersLogic;
 use app\common\logic\OrderLogic;
-use app\common\logic\CommentLogic;
 use app\common\model\Users;
 use think\Page;
-use think\Request;
 use think\db;
 
 class Order extends ApiGuest
@@ -40,36 +36,38 @@ class Order extends ApiGuest
             $this->user = $user;
             $this->user_id = $user['user_id'];
         }
-        if(!$this->user) return $this->formatError(10001);
+        if(!$this->user){
+            return $this->formatError(10001);
+        }
     }
 
     /**
      * 订单列表
      * @return mixed
+     * @throws \think\exception\DbException
      */
     public function order_list()
     {
+        $page = I('page/d', 1);
+        $pageSize = I('page_size/d', 5);
+
         $where = ' user_id=' . $this->user_id;
         //条件搜索
         if(I('get.type')){
             $where .= C(strtoupper(I('get.type')));
         }
         $where.=' and prom_type < 5 ';//虚拟订单和拼团订单不列出来
-        $count = M('order')->where($where)->count();
-        $Page = new Page($count, 10);
-        $show = $Page->show();
         $order_str = "order_id DESC";
-        $order_list = M('order')->order($order_str)->where($where)->limit($Page->firstRow . ',' . $Page->listRows)->select();
-
-        //获取订单商品
         $model = new UsersLogic();
-        foreach ($order_list as $k => $v) {
-            $order_list[$k] = set_btn_order_status($v);  // 添加属性  包括按钮显示属性 和 订单状态显示属性
+        $order_paginate = (new \app\common\model\Order())->order($order_str)->where($where)->paginate($pageSize, false, ['page' => $page])->each(function ($item) use ($model) {
+            //$item = set_btn_order_status($item->toArray());  // 添加属性  包括按钮显示属性 和 订单状态显示属性
             //$order_list[$k]['total_fee'] = $v['goods_amount'] + $v['shipping_fee'] - $v['integral_money'] -$v['bonus'] - $v['discount']; //订单总额
-            $data = $model->get_order_goods($v['order_id']);
-            $order_list[$k]['goods_list'] = $data['result'];
-        }
 
+            //获取订单商品
+            $data = $model->get_order_goods($item['order_id']);
+            $item['goods_list'] = $data['result'];
+        })->toArray();
+        $order_list = $order_paginate['data'];
         //统计订单商品数量
         foreach ($order_list as $key => $value) {
             $count_goods_num = 0;
@@ -83,10 +81,9 @@ class Order extends ApiGuest
             "order_status" => C('ORDER_STATUS'),
             "shipping_status" => C('SHIPPING_STATUS'),
             "pay_status" =>  C('PAY_STATUS'),
-            "page" => $show,
+            "pages" => $order_paginate['last_page'],
+            "total_count" => $order_paginate['total'],
             "lists" => $order_list,
-            "active" => 'order_list',
-            "active_status" => I('get.type'),
         ]);
     }
 
@@ -137,7 +134,8 @@ class Order extends ApiGuest
 
     /**
      * 物流信息
-     * @return mixed
+     * @author wuhy
+     * @return \think\Response|\think\response\Json|\think\response\Jsonp|\think\response\Redirect|\think\response\Xml
      */
     public function express()
     {
@@ -155,15 +153,23 @@ class Order extends ApiGuest
     }
 
     /**
-    * 取消订单
-    */
+     * 取消订单
+     * @author wuhy
+     * @return \think\Response|\think\response\Json|\think\response\Jsonp|\think\response\Redirect|\think\response\Xml
+     * @throws \think\Exception
+     * @throws \think\exception\PDOException
+     */
     public function cancel_order()
     {
         $id = I('get.order_id/d');
         //检查是否有积分，余额支付
         $logic = new OrderLogic();
         $data = $logic->cancel_order($this->user_id, $id);
-        $this->ajaxReturn($data);
+        if ($data['status'] != 1) {
+            return $this->formatError(40000, $data['msg']);
+        } else {
+            return $this->formatSuccess();
+        }
     }
 
     /**
@@ -363,8 +369,7 @@ class Order extends ApiGuest
 
     /**
      * 取消售后服务
-     * @author lxl
-     * @time 2017-4-19
+     * @author wuhy
      */
     public function return_goods_cancel(){
         $id = I('id',0);
@@ -380,8 +385,7 @@ class Order extends ApiGuest
     }
     /**
      * 换货商品确认收货
-     * @author lxl
-     * @time  17-4-25
+     * @author wuhy
      * */
     public function receiveConfirm(){
         $return_id=I('return_id/d');
@@ -399,8 +403,7 @@ class Order extends ApiGuest
 
     /**
      * 待收货列表
-     * @author lxl
-     * @time   2017/1
+     * @author wuhy
      */
     public function wait_receive()
     {
