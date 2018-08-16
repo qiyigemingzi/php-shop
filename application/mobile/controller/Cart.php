@@ -158,6 +158,11 @@ class Cart extends MobileBase {
 
     /**
      * ajax 获取订单商品价格 或者提交 订单
+     * @throws \think\Exception
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     * @throws \think\exception\PDOException
      */
     public function cart3(){
         if($this->user_id == 0){

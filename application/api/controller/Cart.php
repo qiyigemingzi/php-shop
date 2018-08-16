@@ -222,7 +222,6 @@ class Cart extends ApiGuest
             $address = M('user_address')->where(['user_id' => $this->user_id])->find();
         }
         $cartLogic = new CartLogic();
-//        $couponLogic = new CouponLogic();
         $cartLogic->setUserId($this->user_id);
 
         if ($cartLogic->getUserCartOrderCount() == 0) {
@@ -239,20 +238,11 @@ class Cart extends ApiGuest
 
         $cartList['cartList'] = $result;
         $cartGoodsTotalNum = count($cartList['cartList']);
-
-//        $cartGoodsList = get_arr_column($cartList['cartList'], 'goods');
-//        $cartGoodsId = get_arr_column($cartGoodsList, 'goods_id');
-//        $cartGoodsCatId = get_arr_column($cartGoodsList, 'cat_id');
         $cartPriceInfo = $cartLogic->getCartPriceInfo($cartList['cartList']);  //初始化数据。商品总额/节约金额/商品总共数量
-//        $userCouponList = $couponLogic->getUserAbleCouponList($this->user_id, $cartGoodsId, $cartGoodsCatId);//用户可用的优惠券列表
         $cartList = array_merge($cartList, $cartPriceInfo);
-//        $userCartCouponList = $cartLogic->getCouponCartList($cartList, $userCouponList);
-//        $userCouponNum = $cartLogic->getUserCouponNumArr();
 
         return $this->formatSuccess([
             'address' => $address, //收货地址
-//            'userCartCouponList' => $userCartCouponList,   //优惠券，用able判断是否可用
-//            'userCouponNum' => $userCouponNum,  //优惠券数量
             'cartGoodsTotalNum' => $cartGoodsTotalNum,
             'cartList' => $cartList['cartList'], // 购物车的商品
             'cartPriceInfo' => $cartPriceInfo, //商品优惠总价
@@ -273,15 +263,22 @@ class Cart extends ApiGuest
 
         if (empty($this->user)) return $this->formatError(10001);
 
-        $address_id = I("address_id/d"); //  收货地址id
-        $invoice_title = I('invoice_title'); // 发票
-        $taxpayer = I('taxpayer'); // 纳税人编号
-        $coupon_id = I("coupon_id/d"); //  优惠券id
-        $pay_points = I("pay_points/d", 0); //  使用积分
-        $user_money = I("user_money/f", 0); //  使用余额
-        $user_note = trim(I('user_note'));   //买家留言
-        $payPwd = I("payPwd", ''); // 支付密码
-        strlen($user_note) > 50 && exit(json_encode(['status' => -1, 'msg' => "备注超出限制可输入字符长度！", 'result' => null]));
+        $address_id = I("post.address_id/d"); //  收货地址id
+        $invoice_title = I('post.invoice_title'); // 发票
+        $taxpayer = I('post.taxpayer'); // 纳税人编号
+        $coupon_id = I("post.coupon_id/d"); //  优惠券id
+        $pay_points = I("post.pay_points/d", 0); //  使用积分
+        $user_money = I("post.user_money/f", 0); //  使用余额
+        $user_note = trim(I('post.user_note'));   //买家留言
+        $payPwd = I("post.payPwd", ''); // 支付密码
+
+        //立即购买
+        $goods_id = I("post.goods_id/d"); // 商品id
+        $goods_num = I("post.goods_num/d");// 商品数量
+        $item_id = I("post.item_id/d"); // 商品规格id
+
+        if(strlen($user_note) > 50) return $this->formatError(90001, "备注超出限制可输入字符长度！");
+
         $address = Db::name('UserAddress')->where("address_id", $address_id)->find();
         $cartLogic = new CartLogic();
         $pay = new Pay();
@@ -289,10 +286,19 @@ class Cart extends ApiGuest
         try {
             $cartLogic->setUserId($this->user_id);
             $pay->setUserId($this->user_id);
-            $userCartList = $cartLogic->getCartList(1);
-            $cartLogic->checkStockCartList($userCartList);
-            $cartList = array_merge_recursive($cartList, $userCartList);
-            $pay->payCart($cartList);
+            if ($goods_id) {
+                $cartLogic->setGoodsModel($goods_id);
+                $cartLogic->setSpecGoodsPriceModel($item_id);
+                $cartLogic->setGoodsBuyNum($goods_num);
+                $buyGoods = $cartLogic->buyNow();
+                array_push($cartList,$buyGoods);
+                $pay->payGoodsList($cartList);
+            } else {
+                $userCartList = $cartLogic->getCartList(1);
+                $cartLogic->checkStockCartList($userCartList);
+                $cartList = array_merge_recursive($cartList,$userCartList);
+                $pay->payCart($cartList);
+            }
             $pay->delivery($address['district']);
             $pay->orderPromotion();
             $pay->useCouponById($coupon_id);
@@ -300,7 +306,7 @@ class Cart extends ApiGuest
             $pay->usePayPoints($pay_points);
         } catch (WShopException $t) {
             $error = $t->getErrorArr();
-            return $this->formatError(20000, reset($error));
+            return $this->formatError(20000, $error['msg']);
         }
 
         $placeOrder = new PlaceOrder($pay);
@@ -312,7 +318,7 @@ class Cart extends ApiGuest
         $placeOrder->addNormalOrder();
         $cartLogic->clear();
         $order = $placeOrder->getOrder();
-        return $this->formatSuccess(['order_sn' => $order['order_sn']]);
+        return $this->formatSuccess($order);
 
     }
 
@@ -341,33 +347,10 @@ class Cart extends ApiGuest
             return $this->formatError(10000);
         }
         // 如果已经支付过的订单直接到订单详情页面. 不再进入支付页面
-        if ($order['pay_status'] == 1) {
-            return $this->formatError(40002);
-        }
-        $orderGoodsPromType = M('order_goods')->where(['order_id' => $order['order_id']])->getField('prom_type', true);
+        if ($order['pay_status'] == 1) return $this->formatError(40002);
         $payment_where['type'] = 'payment';
-        $no_cod_order_prom_type = ['4,5'];//预售订单，虚拟订单不支持货到付款
-        if (strstr($_SERVER['HTTP_USER_AGENT'], 'MicroMessenger')) {
-            //微信浏览器
-            if (in_array($order['prom_type'], $no_cod_order_prom_type) || in_array(1, $orderGoodsPromType)) {
-                //预售订单和抢购不支持货到付款
-                $payment_where['code'] = 'weixin';
-            } else {
-                $payment_where['code'] = array('in', array('weixin', 'cod'));
-            }
-        } else {
-            if (in_array($order['prom_type'], $no_cod_order_prom_type) || in_array(1, $orderGoodsPromType)) {
-                //预售订单和抢购不支持货到付款
-                $payment_where['code'] = array('neq', 'cod');
-            }
-            $payment_where['scene'] = array('in', array('0', '1'));
-        }
+        $payment_where['code'] = 'weixin';
         $payment_where['status'] = 1;
-        //预售和抢购暂不支持货到付款
-        $orderGoodsPromType = M('order_goods')->where(['order_id' => $order['order_id']])->getField('prom_type', true);
-        if ($order['prom_type'] == 4 || in_array(1, $orderGoodsPromType)) {
-            $payment_where['code'] = array('neq', 'cod');
-        }
         $paymentList = M('Plugin')->where($payment_where)->select();
         $paymentList = convert_arr_key($paymentList, 'code');
 
@@ -383,10 +366,8 @@ class Cart extends ApiGuest
             }
         }
 
-        $bank_img = include APP_PATH . 'home/bank.php'; // 银行对应图片
         return $this->formatSuccess([
             'paymentList' => $paymentList,
-            'bank_img' => $bank_img,
             'order' => $order,
             'bankCodeList' => $bankCodeList,
             'pay_date' => date('Y-m-d', strtotime("+1 day")),

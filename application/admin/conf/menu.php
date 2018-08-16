@@ -138,8 +138,8 @@ return	array(
 	'resource'=>array('name'=>'插件','child'=>array(
 			array('name' => '云服务','child' => array(
 				array('name' => '插件库', 'act'=>'index', 'op'=>'Plugin'),
-				//array('name' => '数据备份', 'act'=>'index', 'op'=>'Tools'),
-				//array('name' => '数据还原', 'act'=>'restore', 'op'=>'Tools'),
+//				array('name' => '数据备份', 'act'=>'index', 'op'=>'Tools'),
+//				array('name' => '数据还原', 'act'=>'restore', 'op'=>'Tools'),
 			)),
             array('name' => 'App','child' => array(
 				array('name' => '安卓APP管理', 'act'=>'index', 'op'=>'MobileApp'),

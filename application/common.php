@@ -769,6 +769,19 @@ function set_btn_order_status($order)
     return array_merge($order,$orderBtnArr); // 订单该显示的按钮
 }
 
+/**
+ * 给订单数组添加属性  包括按钮显示属性 和 订单状态显示属性
+ * @param type $order
+ * @return array
+ */
+function set_order_status($order)
+{
+    $order_status_arr = C('ORDER_STATUS_DESC');
+    $order['order_status_code'] = $order_status_code = orderStatusDesc(0, $order); // 订单状态显示给用户看的
+    $order['order_status_desc'] = $order_status_arr[$order_status_code];
+    return array_merge($order); // 订单该显示的按钮
+}
+
 
 
 /**

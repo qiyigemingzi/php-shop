@@ -189,8 +189,10 @@ class Api extends Base {
         else
             exit ('0');
     }
+
     /**
      * 查询物流
+     * @return \think\response\Json
      */
     public function queryExpress()
     {

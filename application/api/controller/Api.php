@@ -105,6 +105,6 @@ class Api extends Controller
      */
     public function _empty()
     {
-        return $this->formatSuccess([], 'empty method!', 200);
+        return $this->formatSuccess([], 'empty method!', 404);
     }
 }

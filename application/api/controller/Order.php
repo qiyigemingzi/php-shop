@@ -36,9 +36,6 @@ class Order extends ApiGuest
             $this->user = $user;
             $this->user_id = $user['user_id'];
         }
-        if(!$this->user){
-            return $this->formatError(10001);
-        }
     }
 
     /**
@@ -48,12 +45,14 @@ class Order extends ApiGuest
      */
     public function order_list()
     {
+        if(!$this->user) return $this->formatError(10001);
+
         $page = I('page/d', 1);
         $pageSize = I('page_size/d', 5);
 
         $where = ' user_id=' . $this->user_id;
         //条件搜索
-        if(I('get.type')){
+        if(I('get.type') && isset(C('ORDER_STATUS_DESC')[I('get.type')])){
             $where .= C(strtoupper(I('get.type')));
         }
         $where.=' and prom_type < 5 ';//虚拟订单和拼团订单不列出来
@@ -78,9 +77,6 @@ class Order extends ApiGuest
         }
 
         return $this->formatSuccess([
-            "order_status" => C('ORDER_STATUS'),
-            "shipping_status" => C('SHIPPING_STATUS'),
-            "pay_status" =>  C('PAY_STATUS'),
             "pages" => $order_paginate['last_page'],
             "total_count" => $order_paginate['total'],
             "lists" => $order_list,
@@ -93,11 +89,13 @@ class Order extends ApiGuest
      */
     public function order_detail()
     {
+        if(!$this->user) return $this->formatError(10001);
+
         $id = I('get.order_id/d');
         $map['order_id'] = $id;
         $map['user_id'] = $this->user_id;
         $order_info = M('order')->where($map)->find();
-        $order_info = set_btn_order_status($order_info);  // 添加属性  包括按钮显示属性 和 订单状态显示属性
+        $order_info = set_order_status($order_info);  // 添加属性  包括按钮显示属性 和 订单状态显示属性
         if (!$order_info) {
             $this->error('没有获取到订单信息');
             exit;
@@ -115,18 +113,16 @@ class Order extends ApiGuest
             $order_info['pre_sell_deliver_goods'] = $pre_sell_item['deliver_goods'];
         }else{
             $order_info['pre_sell_is_finished'] = -1;//没有参与预售的订单
+            $order_info['pre_sell_retainage_start'] = 0;
+            $order_info['pre_sell_retainage_end'] = 0;
+            $order_info['pre_sell_deliver_goods'] = 0;
         }
-        $region_list = get_region_list();
         $invoice_no = M('DeliveryDoc')->where("order_id", $id)->getField('invoice_no', true);
         $order_info[invoice_no] = implode(' , ', $invoice_no);
         //获取订单操作记录
         $order_action = M('order_action')->where(array('order_id' => $id))->select();
 
         return $this->formatSuccess([
-            'order_status' => C('ORDER_STATUS'),
-            'shipping_status' => C('SHIPPING_STATUS'),
-            'pay_status' => C('PAY_STATUS'),
-            'region_list' => $region_list,
             'order_info' => $order_info,
             'order_action' => $order_action,
         ]);
@@ -136,19 +132,56 @@ class Order extends ApiGuest
      * 物流信息
      * @author wuhy
      * @return \think\Response|\think\response\Json|\think\response\Jsonp|\think\response\Redirect|\think\response\Xml
+     * @throws \think\exception\DbException
      */
     public function express()
     {
+        if(!$this->user) return $this->formatError(10001);
+
         $order_id = I('get.order_id/d', 0);
+        $order = \app\common\model\Order::get(['order_id' => $order_id]);
         $order_goods = M('order_goods')->where("order_id", $order_id)->select();
-        if(empty($order_goods) || empty($order_id)){
+        if( empty($order) || empty($order_goods) || empty($order_id)){
             return $this->formatError(40000);
         }
+
+        if($order->shipping_status > 1) return $this->formatError(40004);
         $delivery = M('delivery_doc')->where("order_id", $order_id)->find();
+        $deliveryResult = [
+            'status' => 0,
+            'message' => "",
+            'shipping_name' => "",
+            'invoice_no' => "",
+            'data' => [],
+        ];
+        if($delivery){
+            $deliveryResult['shipping_name'] = $delivery['shipping_name'];
+            $express_switch = tpCache('express.express_switch');
+            if($express_switch == 1){
+                require_once(PLUGIN_PATH . 'kdniao/kdniao.php');
+                $kdniao = new \kdniao();
+                $data['OrderCode'] = $order->order_sn;
+                $data['ShipperCode'] = $delivery['shipping_code'];
+                $data['LogisticCode'] = $deliveryResult['invoice_no'] = $delivery['invoice_no'];
+                $res = $kdniao->getOrderTracesByJson(json_encode($data));
+                $res =  json_decode($res, true);
+                if($res['State'] == 3){
+                    foreach ($res['Traces'] as $val){
+                        $tmp['context'] = $val['AcceptStation'];
+                        $tmp['time'] = $val['AcceptTime'];
+                        $deliveryResult['data'][] = $tmp;
+                    }
+                    $deliveryResult['status'] = 1;
+                    $deliveryResult['message'] = "加载成功";
+                }else{
+                    $deliveryResult['message'] = $res['Reason'];
+                }
+            }
+        }
 
         return $this->formatSuccess([
             'order_goods' => $order_goods,
-            'delivery' => $delivery
+            'delivery' => $deliveryResult
         ]);
     }
 
@@ -161,6 +194,8 @@ class Order extends ApiGuest
      */
     public function cancel_order()
     {
+        if(!$this->user) return $this->formatError(10001);
+
         $id = I('get.order_id/d');
         //检查是否有积分，余额支付
         $logic = new OrderLogic();
@@ -180,6 +215,8 @@ class Order extends ApiGuest
      */
     public function order_confirm()
     {
+        if(!$this->user) return $this->formatError(10001);
+
         $id = I('order_id/d', 0);
         $data = confirm_order($id, $this->user_id);
         if ($data['status'] != 1) {
@@ -197,6 +234,8 @@ class Order extends ApiGuest
      */
     public function refund_order()
     {
+        if(!$this->user) return $this->formatError(10001);
+
         $order_id = I('get.order_id/d');
 
         $order = M('order')
@@ -214,6 +253,8 @@ class Order extends ApiGuest
      */
     public function record_refund_order()
     {
+        if(!$this->user) return $this->formatError(10001);
+
         $order_id   = input('post.order_id', 0);
         $user_note  = input('post.user_note', '');
         $consignee  = input('post.consignee', '');
@@ -233,6 +274,8 @@ class Order extends ApiGuest
      */
     public function return_goods()
     {
+        if(!$this->user) return $this->formatError(10001);
+
         $rec_id = I('rec_id',0);
         $return_goods = M('return_goods')->where(array('rec_id'=>$rec_id))->find();
         if(!empty($return_goods)) return $this->formatError(40003);
@@ -277,6 +320,8 @@ class Order extends ApiGuest
      */
     public function return_goods_list()
     {
+        if(!$this->user) return $this->formatError(10001);
+
         //退换货商品信息
         $count = M('return_goods')->where("user_id", $this->user_id)->count();
         $pageSize =  I('page_size', C('PAGESIZE'));
@@ -312,6 +357,8 @@ class Order extends ApiGuest
      */
     public function return_goods_info()
     {
+        if(!$this->user) return $this->formatError(10001);
+
         $id = I('id/d', 0);
         $return_goods = M('return_goods')->where("id = $id")->find();
         if(empty($return_goods)){ return $this->formatError(90000,'id');
@@ -334,6 +381,8 @@ class Order extends ApiGuest
      */
     public function checkReturnInfo()
     {
+        if(!$this->user) return $this->formatError(10001);
+
         $data = I('post.');
         $data['delivery'] = serialize($data['delivery']);
         $data['status'] = 2;
@@ -347,6 +396,8 @@ class Order extends ApiGuest
 
     public function return_goods_refund()
     {
+        if(!$this->user) return $this->formatError(10001);
+
         $order_sn = I('order_sn');
         $where = array('user_id'=>$this->user_id);
         if($order_sn){
@@ -372,6 +423,8 @@ class Order extends ApiGuest
      * @author wuhy
      */
     public function return_goods_cancel(){
+        if(!$this->user) return $this->formatError(10001);
+
         $id = I('id',0);
         if(empty($id))$this->ajaxReturn(['status'=>-1,'msg'=>'参数错误']);
         $return_goods = M('return_goods')->where(array('id'=>$id,'user_id'=>$this->user_id))->find();
@@ -388,6 +441,8 @@ class Order extends ApiGuest
      * @author wuhy
      * */
     public function receiveConfirm(){
+        if(!$this->user) return $this->formatError(10001);
+
         $return_id=I('return_id/d');
         $return_info=M('return_goods')->field('order_id,order_sn,goods_id,spec_key')->where('id',$return_id)->find(); //查找退换货商品信息
         $update = M('return_goods')->where('id',$return_id)->save(['status'=>3]);  //要更新状态为已完成
@@ -407,6 +462,8 @@ class Order extends ApiGuest
      */
     public function wait_receive()
     {
+        if(!$this->user) return $this->formatError(10001);
+
         $where = ' user_id=' . $this->user_id;
         //条件搜索
         if (I('type') == 'WAITRECEIVE') {

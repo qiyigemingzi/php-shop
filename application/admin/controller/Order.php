@@ -283,6 +283,10 @@ exit("请联系wshop官网客服购买高级版支持此功能");
      * 订单详情
      * @param $order_id
      * @return mixed
+     * @throws \think\Exception
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
      */
     public function detail($order_id){
         $orderModel = new \app\common\model\Order();
@@ -331,11 +335,15 @@ exit("请联系wshop官网客服购买高级版支持此功能");
         }
         $this->ajaxReturn(['status'=>1,'msg'=>'参数错误！！','data'=>$action_log]);
     }
-    
-    
 
-    /*
+
+    /**
      * 拆分订单
+     * @return mixed
+     * @throws \think\Exception
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
      */
     public function split_order(){
     	$order_id = I('order_id');
@@ -438,8 +446,12 @@ exit("请联系wshop官网客服购买高级版支持此功能");
     	return $this->fetch();
     }
 
-    /*
+    /**
      * 价钱修改
+     * @param $order_id
+     * @return mixed
+     * @throws \think\Exception
+     * @throws \think\exception\DbException
      */
     public function editprice($order_id){
         $orderModel = new \app\common\model\Order();
@@ -469,7 +481,6 @@ exit("请联系wshop官网客服购买高级版支持此功能");
 
     /**
      * 订单删除
-     * @param int $id 订单id
      */
     public function delete_order(){
         $order_id = I('post.order_id/d',0);
@@ -482,6 +493,9 @@ exit("请联系wshop官网客服购买高级版支持此功能");
      * 订单取消付款
      * @param $order_id
      * @return mixed
+     * @throws \think\Exception
+     * @throws \think\exception\DbException
+     * @throws \think\exception\PDOException
      */
     public function pay_cancel($order_id){
     	if(I('remark')){
@@ -509,6 +523,8 @@ exit("请联系wshop官网客服购买高级版支持此功能");
      * 订单打印
      * @param string $id
      * @return mixed
+     * @throws \think\Exception
+     * @throws \think\exception\DbException
      */
     public function order_print($id=''){
         if($id){
@@ -534,8 +550,12 @@ exit("请联系wshop官网客服购买高级版支持此功能");
         }
     }
 
-    /*
-     *批量打印发货单
+    /**
+     * 批量打印发货单
+     * @return mixed
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
      */
     public function delivery_print(){
         $ids =input('print_ids');
@@ -554,6 +574,12 @@ exit("请联系wshop官网客服购买高级版支持此功能");
 
     /**
      * 快递单打印
+     * @param string $id
+     * @return array|false|mixed|\PDOStatement|string|\think\Model
+     * @throws \think\Exception
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
      */
     public function shipping_print($id=''){
         if($id){
@@ -600,8 +626,13 @@ exit("请联系wshop官网客服购买高级版支持此功能");
 
     }
 
-    /*
-     *批量打印快递单
+    /**
+     * 批量打印快递单
+     * @return mixed
+     * @throws \think\Exception
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
      */
     public function shipping_print_batch(){
         $ids=I('post.ids3');
@@ -621,6 +652,8 @@ exit("请联系wshop官网客服购买高级版支持此功能");
 
     /**
      * 生成发货单
+     * @return mixed
+     * @throws \think\Exception
      */
     public function deliveryHandle(){
         $orderLogic = new OrderLogic();
@@ -637,6 +670,14 @@ exit("请联系wshop官网客服购买高级版支持此功能");
 		}
     }
 
+    /**
+     * @param string $id
+     * @return array|mixed
+     * @throws \think\Exception
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
     public function delivery_info($id=''){
         if($id){
            $order_id=$id; 
@@ -735,7 +776,10 @@ exit("请联系wshop官网客服购买高级版支持此功能");
     }
 
     /**
-     *修改退货状态
+     * 修改退货状态
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
      */
     public function checkReturniInfo()
     {
@@ -771,7 +815,12 @@ exit("请联系wshop官网客服购买高级版支持此功能");
         $this->ajaxReturn(['status'=>1,'msg'=>'修改成功','url'=>'']);
     }
 
-    //售后退款原路退回
+    /**
+     * 售后退款原路退回
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
     public function refund_back(){
     	$return_id = I('id');
         $return_goods = M('return_goods')->where("id= $return_id")->find();
@@ -847,7 +896,9 @@ exit("请联系wshop官网客服购买高级版支持此功能");
 
     /**
      * 订单操作
-     * @param $id
+     * @throws \think\Exception
+     * @throws \think\exception\DbException
+     * @throws \think\exception\PDOException
      */
     public function order_action(){    	
         $orderLogic = new OrderLogic();
@@ -930,6 +981,11 @@ exit("请联系wshop官网客服购买高级版支持此功能");
         return;
     }
 
+    /**
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
     public function export_order()
     {
     	//搜索条件
@@ -1061,6 +1117,12 @@ exit("请联系wshop官网客服购买高级版支持此功能");
 
     /**
      * 提交添加订单
+     * @throws WShopException
+     * @throws \think\Exception
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     * @throws \think\exception\PDOException
      */
     public function addOrder(){
             $user_id = I('user_id');// 用户id 可以为空
@@ -1117,6 +1179,10 @@ exit("请联系wshop官网客服购买高级版支持此功能");
     /**
      * 订单编辑
      * @return mixed
+     * @throws \think\Exception
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
      */
     public function edit_order(){
         $order_id = I('order_id');
@@ -1223,6 +1289,7 @@ exit("请联系wshop官网客服购买高级版支持此功能");
 
     /**
      * 选择搜索商品
+     * @return mixed
      */
     public function search_goods()
     {
@@ -1256,6 +1323,7 @@ exit("请联系wshop官网客服购买高级版支持此功能");
             $spec_goods = M('spec_goods_price')->where("goods_id = {$val['goods_id']}")->select();
             $goodsList[$key]['spec_goods'] = $spec_goods;            
         }
+        $count = 0;
         if($goodsList){
             //计算商品数量
             foreach ($goodsList as $value){
@@ -1280,6 +1348,8 @@ exit("请联系wshop官网客服购买高级版支持此功能");
 
     /**
      * 删除订单日志
+     * @throws \think\Exception
+     * @throws \think\exception\PDOException
      */
     public function delOrderLogo(){
         $ids = I('ids');

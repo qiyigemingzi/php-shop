@@ -30,8 +30,66 @@ class Other extends ApiGuest {
         return $this->formatSuccess($result);
     }
 
+    /**
+     * 订单状态
+     * @return \think\Response|\think\response\Json|\think\response\Jsonp|\think\response\Redirect|\think\response\Xml
+     */
     public function order_status(){
-        return $this->formatSuccess(C('ORDER_STATUS'));
+        $status = C('ORDER_STATUS');
+        $result = [];
+        array_walk($status, function ($m, $k) use (&$result) {
+            $data ['name'] = $m;
+            $data ['value'] = $k;
+            $result[] = $data;
+        });
+        return $this->formatSuccess($result);
     }
+
+    /**
+     * 订单列表筛选状态
+     * @return \think\Response|\think\response\Json|\think\response\Jsonp|\think\response\Redirect|\think\response\Xml
+     */
+    public function order_status_search(){
+        $status = C('ORDER_STATUS_DESC');
+        $result = [];
+        array_walk($status, function ($m, $k) use (&$result) {
+            $data ['name'] = $m;
+            $data ['value'] = $k;
+            $result[] = $data;
+        });
+        return $this->formatSuccess($result);
+    }
+
+    /**
+     * 发货状态
+     * @return \think\Response|\think\response\Json|\think\response\Jsonp|\think\response\Redirect|\think\response\Xml
+     */
+    public function shipping_status(){
+        $status = C('SHIPPING_STATUS');
+        $result = [];
+        array_walk($status, function ($m, $k) use (&$result) {
+            $data ['name'] = $m;
+            $data ['value'] = $k;
+            $result[] = $data;
+        });
+        return $this->formatSuccess($result);
+    }
+
+    /**
+     * 支付状态
+     * @return \think\Response|\think\response\Json|\think\response\Jsonp|\think\response\Redirect|\think\response\Xml
+     */
+    public function pay_status(){
+        $status = C('PAY_STATUS');
+        $result = [];
+        array_walk($status, function ($m, $k) use (&$result) {
+            $data ['name'] = $m;
+            $data ['value'] = $k;
+            $result[] = $data;
+        });
+        return $this->formatSuccess($result);
+    }
+
+
 
 }
