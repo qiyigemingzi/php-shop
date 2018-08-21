@@ -296,6 +296,7 @@ function send_email($to,$subject='',$content=''){
     //$mail->addAttachment('images/phpmailer_mini.png');
     //send the message, check for errors
     if (!$mail->send()) {
+        var_dump($mail->ErrorInfo);
         return array('status'=>-1 , 'msg'=>'发送失败: '.$mail->ErrorInfo);
     } else {
         return array('status'=>1 , 'msg'=>'发送成功');

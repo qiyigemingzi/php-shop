@@ -90,6 +90,35 @@ class Other extends ApiGuest {
         return $this->formatSuccess($result);
     }
 
+    /**
+     * 售后类型
+     * @return \think\Response|\think\response\Json|\think\response\Jsonp|\think\response\Redirect|\think\response\Xml
+     */
+    public function return_type(){
+        $status = C('RETURN_TYPE');
+        $result = [];
+        array_walk($status, function ($m, $k) use (&$result) {
+            $data ['name'] = $m;
+            $data ['value'] = $k;
+            $result[] = $data;
+        });
+        return $this->formatSuccess($result);
+    }
+    /**
+     * 售后类型
+     * @return \think\Response|\think\response\Json|\think\response\Jsonp|\think\response\Redirect|\think\response\Xml
+     */
+    public function refund_status(){
+        $status = C('REFUND_STATUS');
+        $result = [];
+        array_walk($status, function ($m, $k) use (&$result) {
+            $data ['name'] = $m;
+            $data ['value'] = $k;
+            $result[] = $data;
+        });
+        return $this->formatSuccess($result);
+    }
+
 
 
 }

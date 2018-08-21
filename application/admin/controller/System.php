@@ -246,18 +246,24 @@ class System extends Base
             $json_str = json_encode($json_arr);            
             exit($json_str);            
       }
-      
-	//发送测试邮件
+
+    /**
+     * 发送测试邮件
+     * @throws \Exception
+     * @throws \phpmailerException
+     */
 	public function send_email(){
 		$param = I('post.');
 //		tpCache($param['inc_type'],$param); //注释掉，不注释会出现重复写入数据库
-        	$res = send_email($param['test_eamil'],'后台测试','测试发送验证码:'.mt_rand(1000,9999));
+        	$res = send_email($param['test_eamil'],'后台测试','wshop测试发送验证码:'.mt_rand(1000,9999));
         	exit(json_encode($res));
       }
-	        
+
     /**
-     *  管理员登录后 处理相关操作
-     */        
+     * 管理员登录后 处理相关操作
+     * @throws \think\Exception
+     * @throws \think\exception\PDOException
+     */
      public function login_task()
      {
          

@@ -204,7 +204,8 @@ class OrderLogic
      * @param type $keywords
      * @param type $addtime
      * @param type $status
-     * @return type
+     * @param int $user_id
+     * @return array
      */
     public function getReturnGoodsList($keywords, $addtime, $status, $user_id = 0)
 	{
@@ -239,11 +240,11 @@ class OrderLogic
             'page' => $page->show()
         ];
 	}
-    
+
     /**
      * 删除订单
      * @param type $order_id
-     * @return type
+     * @return array
      */
     public function delOrder($order_id)
     {
@@ -259,9 +260,15 @@ class OrderLogic
         }
         return ['status'=>1,'msg'=>'删除成功'];
     }
-    
+
     /**
      * 记录取消订单
+     * @param $user_id
+     * @param $order_id
+     * @param $user_note
+     * @param $consignee
+     * @param $mobile
+     * @return array
      */
     public function recordRefundOrder($user_id, $order_id, $user_note, $consignee, $mobile)
     {

@@ -139,14 +139,15 @@ class Order extends ApiGuest
         if(!$this->user) return $this->formatError(10001);
 
         $order_id = I('get.order_id/d', 0);
+        $goods_id = I('get.goods_id/d', 0);
         $order = \app\common\model\Order::get(['order_id' => $order_id]);
-        $order_goods = M('order_goods')->where("order_id", $order_id)->select();
+        $order_goods = M('order_goods')->where(["order_id" => $order_id, 'goods_id' => $goods_id])->find();
         if( empty($order) || empty($order_goods) || empty($order_id)){
             return $this->formatError(40000);
         }
 
         if($order->shipping_status > 1) return $this->formatError(40004);
-        $delivery = M('delivery_doc')->where("order_id", $order_id)->find();
+        $delivery = M('delivery_doc')->where(["id" => $order_goods['delivery_id']])->find();
         $deliveryResult = [
             'status' => 0,
             'message' => "",
@@ -222,9 +223,7 @@ class Order extends ApiGuest
         if ($data['status'] != 1) {
             return $this->formatError(40000, $data['msg']);
         } else {
-            $model = new UsersLogic();
-            $order_goods = $model->get_order_goods($id);
-            return $this->formatSuccess(['order_goods' => $order_goods]);
+            return $this->formatSuccess();
         }
     }
 
@@ -307,7 +306,6 @@ class Order extends ApiGuest
         $return_address = M('region')->where("id in (".implode(',', $region_id).")")->getField('id,name');
         return $this->formatSuccess([
             'return_address' => $return_address,
-            'return_type' => C('RETURN_TYPE'),
             'goods' => $order_goods,
             'order' => $order,
         ]);
@@ -342,13 +340,11 @@ class Order extends ApiGuest
                     $item->imgs = $imgS;
                 }
             })->toArray();
-        $state = C('REFUND_STATUS');
 
         return $this->formatSuccess([
             'pages' => $pages,
             'total_count' => $count,
             'list' => $list,
-            'state' => $state,
         ]);
     }
 
@@ -369,7 +365,6 @@ class Order extends ApiGuest
             $return_goods['imgs'] = explode(',', $return_goods['imgs']);
         $goods = M('order_goods')->where("rec_id = {$return_goods['rec_id']} ")->find();
         return $this->formatSuccess([
-            'state' => C('REFUND_STATUS'),
             'return_type' => C('RETURN_TYPE'),
             'goods' => $goods,
             'return_goods' => $return_goods,

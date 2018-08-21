@@ -202,7 +202,12 @@ class Admin extends Base {
 		$this->assign('modules',$modules);
     	return $this->fetch();
     }
-    
+
+    /**
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
     public function roleSave(){
     	$data = I('post.');
     	$res = $data['data'];
@@ -246,7 +251,13 @@ class Admin extends Base {
     		}
     	}
     }
-    
+
+    /**
+     * @return mixed
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
     public function log(){
     	$p = I('p/d',1);
     	$logs = DB::name('admin_log')->alias('l')->join('__ADMIN__ a','a.admin_id =l.admin_id')->order('log_time DESC')->page($p.',20')->select();
@@ -260,9 +271,13 @@ class Admin extends Base {
     }
 
 
-	/**
-	 * 供应商列表
-	 */
+    /**
+     * 供应商列表
+     * @return mixed
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
 	public function supplier()
 	{
 		$supplier_count = DB::name('suppliers')->count();
@@ -279,9 +294,13 @@ class Admin extends Base {
 		return $this->fetch();
 	}
 
-	/**
-	 * 供应商资料
-	 */
+    /**
+     * 供应商资料
+     * @return mixed
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
 	public function supplier_info()
 	{
 		$suppliers_id = I('get.suppliers_id/d', 0);
