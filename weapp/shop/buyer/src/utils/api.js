@@ -1,14 +1,18 @@
 import request from './request'
 
-const ApiRootUrl = 'http://127.0.0.1:8360/api/'
+const ApiRootUrl = 'http://www.wujiaweb.com/api';
 
 const api = {
   // 首页数据接口
-  getIndexData: (r) => request.get('index/index', null, {
+  getIndexData: (r) => request.get('/goods/lists', null, {
+    baseURL: ApiRootUrl
+  }),
+  // 商品广告轮播接口
+  getGoodsAdvertise: (paramObj) => request.get('/goods/advertise', paramObj, {
     baseURL: ApiRootUrl
   }),
   // 分类目录全部分类数据接口
-  getCatalogList: (r) => request.get('catalog/index', null, {
+  getCatalogList: (r) => request.get('/goods/category', null, {
     baseURL: ApiRootUrl
   }),
   // 分类目录当前分类数据接口
@@ -29,15 +33,15 @@ const api = {
     baseURL: ApiRootUrl
   }),
   // 获得分类商品列表,条件比较复杂用paramObj接收
-  getGoodsList: (paramObj) => request.get('goods/list', paramObj, {
+  getGoodsList: (paramObj) => request.get('/goods/lists', paramObj, {
     baseURL: ApiRootUrl
   }),
   // 获得分类数据
-  getGoodsCategory: (paramObj) => request.get('goods/category', paramObj, {
+  getGoodsCategory: (paramObj) => request.get('/goods/category', paramObj, {
     baseURL: ApiRootUrl
   }),
   // 获得商品的详情
-  getGoodsDetail: (paramObj) => request.get('goods/detail', paramObj, {
+  getGoodsDetail: (paramObj) => request.get('/goods/info', paramObj, {
     baseURL: ApiRootUrl
   }),
   // 新品
@@ -53,7 +57,7 @@ const api = {
     baseURL: ApiRootUrl
   }),
   // 品牌列表
-  getBrandList: (paramObj) => request.get('brand/list', paramObj, {
+  getBrandList: (paramObj) => request.get('/goods/brand', paramObj, {
     baseURL: ApiRootUrl
   }),
   // 品牌详情

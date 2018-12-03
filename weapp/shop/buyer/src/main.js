@@ -3,14 +3,14 @@ import store from '@/store'
 import App from '@/App'
 import MpvueRouterPatch from 'mpvue-router-patch'
 
-Vue.config.productionTip = false
-Vue.use(MpvueRouterPatch)
+Vue.config.productionTip = false;
+Vue.use(MpvueRouterPatch);
 
 const app = new Vue({
   store,
   ...App
-})
-app.$mount()
+});
+app.$mount();
 
 export default {
   // 这个字段走 app.json
@@ -25,7 +25,7 @@ export default {
     window: {
       backgroundTextStyle: 'dark',
       navigationBarBackgroundColor: '#fff',
-      navigationBarTitleText: 'xbyj商城',
+      navigationBarTitleText: '靓颜坊',
       navigationBarTextStyle: 'black',
       'enablePullDownRefresh': true
     },
